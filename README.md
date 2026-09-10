@@ -41,6 +41,7 @@ All human and AI users must read [`AGENTS.md`](AGENTS.md) first. It points to th
 
 ## Repository maintenance
 
+- Follow [`docs/knowledge-maintenance.md`](docs/knowledge-maintenance.md): verified learning that changes an answer must be documented, validated, added to the changelog, and pushed in the same work cycle.
 - Update definitions through pull requests; do not change business rules silently.
 - Review schema changes and reporting behavior together.
 - Add a dated entry to `CHANGELOG.md` for every change that affects answers.

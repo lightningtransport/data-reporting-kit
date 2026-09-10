@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1 — 2026-09-10
+
+- Added a continuous-knowledge maintenance rule: verified reporting knowledge must be documented, validated, changelogged, pushed, and shared with the immediate answer before work is complete.
+
 ## 0.2.0 — 2026-09-10
 
 - Added `AGENTS.md` and mandatory agent rules covering approved sources, confidentiality, date windows, cardinality, financial definitions, current-vs-historical attribution, answer evidence, and the owner-assignment accounting-bucket rule.

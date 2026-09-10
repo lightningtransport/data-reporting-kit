@@ -21,6 +21,8 @@ This repository is the canonical **reporting contract** for Lightning Transporta
 - If a requested field, definition, period, or data coverage is ambiguous, say what is missing and ask for clarification. Do not guess.
 - For a question requiring a grouping, aggregate returned rows locally only after checking the documented grain. Never join current `trucks` attributes onto historical `settlements` to attribute a historical owner or dispatcher.
 
-## Change discipline
+## Continuous knowledge rule
+
+Follow [`docs/knowledge-maintenance.md`](docs/knowledge-maintenance.md). When verified knowledge changes how an agent should select, interpret, calculate, aggregate, secure, or explain data, update this kit in the same work cycle before declaring the work complete. Do not publish guesses: mark incomplete semantics as **not established** until verified.
 
 A documentation change that could affect an answer must update `CHANGELOG.md`. A schema or API change must update the data dictionary, routing rules, metric definitions, API contract, and this file when applicable. Verify against the live schema before claiming the kit is current.
