@@ -1,7 +1,7 @@
 ---
 name: itpros-supabase-reporting
 description: Answer Lightning reports through the approved reporting API.
-version: 0.2.0
+version: 0.3.0
 author: Ibrain Ortega, Hermes Agent
 license: Proprietary
 platforms: [linux, macos, windows]
@@ -25,7 +25,7 @@ Answer Lightning Transportation data questions with the authenticated `reporting
 Use `terminal` to run the installed script. It prompts locally for the caller's Supabase password without printing it:
 
 ```bash
-python "$HERMES_HOME/skills/itpros-supabase-reporting/scripts/reporting.py" login --email ibrain.ortega@gmail.com
+python "$HERMES_HOME/skills/itpros-supabase-reporting/scripts/reporting.py" login --email YOUR_COMPANY_EMAIL
 ```
 
 For the default profile, substitute `${HERMES_HOME:-$HOME/.hermes}` if `HERMES_HOME` is unset. The script stores the refreshable session at `$HERMES_HOME/reporting/lightning-session.json`, mode `0600`.

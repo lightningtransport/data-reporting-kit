@@ -2,11 +2,15 @@
 
 Versioned, agent-readable instructions for answering business questions from Lightning Transportation's Supabase data.
 
+## Start here
+
+All human and AI users must read [`AGENTS.md`](AGENTS.md) first. It points to the canonical routing rules, metric definitions, complete data dictionary, and API contract.
+
 ## What this kit provides
 
-- A safe question-to-report routing guide.
-- A data dictionary based on the live Supabase schema.
-- Metric definitions, time windows, joins, and double-counting guardrails.
+- A mandatory agent rulebook for source selection, aggregation, dates, confidentiality, and answer evidence.
+- A live-schema-verified, column-by-column data dictionary for every current public table.
+- Metric definitions, time windows, joins, cardinality, and double-counting guardrails.
 - A Hermes skill and a portable HTTP API contract for other agent systems.
 - Onboarding and offboarding procedures.
 
@@ -30,10 +34,10 @@ Versioned, agent-readable instructions for answering business questions from Lig
 
 ## Quick start
 
-1. Obtain a personal Supabase Auth session from the company onboarding flow.
-2. Read `docs/question-routing.md` and `docs/metric-definitions.md`.
-3. Call `https://aaqquwhdglueqlnbifvn.supabase.co/functions/v1/reporting-query` with your own JWT, following `api/openapi.yaml`.
-4. For Hermes, install the private reporting skill and authenticate using its local password prompt; see `skills/itpros-supabase-reporting/SKILL.md`.
+1. Read [`AGENTS.md`](AGENTS.md), then the routing guide and metric definitions it requires.
+2. During the public knowledge-test phase, use the repository to understand the reporting contract only. Individual Supabase Auth provisioning and live team API access are intentionally paused pending company Auth email/SMTP setup.
+3. Once provisioned, obtain a personal Supabase Auth session and call `https://aaqquwhdglueqlnbifvn.supabase.co/functions/v1/reporting-query` with your own JWT, following `api/openapi.yaml`.
+4. For Hermes, install the reporting skill and authenticate with the local password prompt; see `skills/itpros-supabase-reporting/SKILL.md`.
 
 ## Repository maintenance
 

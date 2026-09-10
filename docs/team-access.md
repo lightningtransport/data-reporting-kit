@@ -8,7 +8,7 @@ Supabase user provisioning and team API access remain intentionally paused until
 
 ## Hermes installation
 
-After being granted access to this private GitHub repository, each team member runs:
+During the current public knowledge-test phase, anyone may read this repository and install the skill. When the repository returns to private, only approved GitHub collaborators/team members may do so:
 
 ```bash
 hermes skills tap add lightningtransport/data-reporting-kit

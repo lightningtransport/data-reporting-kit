@@ -1,6 +1,6 @@
 # Question routing and analysis rules
 
-Use the smallest approved report that answers the question. Never substitute a similar-looking metric.
+Use the smallest approved report that answers the question. Never substitute a similar-looking metric. `docs/agent-rules.md` is mandatory and overrides an interpretation that conflicts with the rules below.
 
 | User question | Report | Required filters / analysis |
 |---|---|---|

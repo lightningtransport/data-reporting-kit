@@ -1,8 +1,11 @@
 openapi: 3.1.0
 info:
   title: Lightning Reporting API
-  version: 0.1.0
-  description: Read-only, role-scoped reporting interface for agent systems.
+  version: 0.2.0
+  description: |
+    Read-only, role-scoped reporting interface. Agents must read AGENTS.md and
+    docs/agent-rules.md before calling this API. Unsupported filter keys are not
+    an error at the endpoint, so clients MUST send only the documented keys.
 servers:
   - url: https://aaqquwhdglueqlnbifvn.supabase.co/functions/v1
 paths:
@@ -10,6 +13,9 @@ paths:
     post:
       operationId: runReportingQuery
       summary: Run an approved read-only Lightning report.
+      description: |
+        Response includes report, supplied filters, row_count, as_of, data, and
+        request_id. The caller must apply documented aggregation/cardinality rules.
       security:
         - bearerAuth: []
       requestBody:
@@ -25,16 +31,78 @@ paths:
                   enum: [fleet_status, current_returns, driver_assignments, settlement_summary]
                 filters:
                   type: object
-                  additionalProperties: true
+                  description: Use only the filter keys documented for the selected report in components.schemas. The endpoint currently ignores unsupported keys, so clients must validate before calling.
+              additionalProperties: false
+            examples:
+              fleetStatus:
+                value: {report: fleet_status, filters: {dispatcher: Group 1}}
+              currentReturns:
+                value: {report: current_returns, filters: {return_from: '2026-09-07', return_to: '2026-09-13'}}
+              driverAssignments:
+                value: {report: driver_assignments, filters: {out_from: '2026-09-07', out_to: '2026-09-13'}}
+              settlementPeriod:
+                value: {report: settlement_summary, filters: {from: '2026-09-08', to: '2026-09-14'}}
       responses:
         '200':
           description: Role-authorized report result.
-        '400': {description: Invalid report or filters.}
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportResponse'
+        '400': {description: Invalid report, malformed JSON, or missing required driver-assignment anchor filter.}
         '401': {description: Missing or invalid bearer token.}
         '403': {description: No active membership or insufficient role.}
+        '405': {description: POST required.}
+        '500': {description: Report query failed; request_id is returned when available.}
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+  schemas:
+    FleetStatusFilters:
+      type: object
+      additionalProperties: false
+      properties:
+        truck_number: {type: string, description: Exact current trucks.truck_number match.}
+        owner: {type: string, description: Exact current trucks.owner match.}
+        dispatcher: {type: string, description: Exact current trucks.dispatcher match.}
+        mechanic_status: {type: string, description: Exact current trucks.mechanic_status match.}
+    CurrentReturnsFilters:
+      type: object
+      additionalProperties: false
+      properties:
+        truck: {type: string, description: Exact returns.Truck match.}
+        return_from: {type: string, format: date, description: Inclusive filter on parseable returns.Return Date only.}
+        return_to: {type: string, format: date, description: Inclusive filter on parseable returns.Return Date only.}
+    DriverAssignmentFilters:
+      type: object
+      additionalProperties: false
+      description: At least one of truck_number, out_from, or return_from is required.
+      properties:
+        truck_number: {type: string, description: Exact DriverPay.Truck_Number match.}
+        out_from: {type: string, format: date, description: Inclusive DriverPay.Out Date lower bound.}
+        out_to: {type: string, format: date, description: Inclusive DriverPay.Out Date upper bound.}
+        return_from: {type: string, format: date, description: Inclusive DriverPay.Return Date lower bound.}
+        return_to: {type: string, format: date, description: Inclusive DriverPay.Return Date upper bound.}
+    SettlementSummaryFilters:
+      type: object
+      additionalProperties: false
+      properties:
+        from: {type: string, format: date, description: Inclusive settlements.From lower bound; send exact Tuesday for one settlement period.}
+        to: {type: string, format: date, description: Inclusive settlements.To upper bound; send exact Monday for one settlement period.}
+        truck: {type: string, description: Exact settlements.Truck match.}
+        owner: {type: string, description: Exact historical settlements.Owner match.}
+        dispatch: {type: string, description: Exact historical settlements.Dispatch match.}
+      description: Without from and to, endpoint uses current-cycle To Report values Yes, true, or TRUE.
+    ReportResponse:
+      type: object
+      required: [report, filters, row_count, as_of, data, request_id]
+      properties:
+        report: {type: string, enum: [fleet_status, current_returns, driver_assignments, settlement_summary]}
+        filters: {type: object, description: Filter object received by the endpoint.}
+        row_count: {type: integer, minimum: 0}
+        as_of: {type: string, format: date-time, description: API response timestamp, not necessarily source-row update time.}
+        data: {type: array, items: {type: object}}
+        request_id: {type: string, format: uuid}
