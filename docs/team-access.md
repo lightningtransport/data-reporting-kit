@@ -4,6 +4,13 @@
 
 This public repository lets any Hermes or other agent system read the same data dictionary, metric definitions, approved filters, and reporting guardrails. It contains **no Supabase business records, secrets, access tokens, or service-role credentials**.
 
+### GitHub write-access policy
+
+- Public visibility grants **read access only**. It does not grant permission to change this repository.
+- Only the repository-owning `lightningtransport` GitHub account may hold `admin`, `maintain`, or `write`/push access.
+- Every other collaborator must have the `read` role only. Do not grant `triage`, `maintain`, or `admin` as a workaround.
+- Do not leave pending collaborator invitations or write-capable deploy keys. Re-check direct collaborators, invitations, deploy keys, GitHub App installations, and branch-protection settings whenever access changes.
+
 Supabase user provisioning and team API access remain intentionally paused until company Auth email delivery is configured with the approved subdomain/SMTP setup. Do not distribute a shared Supabase password, service-role key, database password, JWT, or refresh token as a workaround.
 
 ## Hermes installation

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.2 — 2026-09-10
+
+- Established and documented the GitHub access policy: public read access is allowed, while only the `lightningtransport` repository owner may retain write/admin access; all other collaborators are read-only.
+
 ## 0.2.1 — 2026-09-10
 
 - Added a continuous-knowledge maintenance rule: verified reporting knowledge must be documented, validated, changelogged, pushed, and shared with the immediate answer before work is complete.
