@@ -15,7 +15,7 @@
 2. In Supabase Auth, ban/delete the user and revoke their active sessions. Existing access JWTs remain valid only until their configured expiry, but the missing membership also denies the reporting endpoint now.
 3. Remove the person from the GitHub Team/repository.
 4. Revoke any third-party agent integration token they personally configured.
-5. Review `reporting.agent_query_audit` for recent requests and preserve it under company retention policy.
+5. Review `public.agent_query_audit` for recent requests and preserve it under company retention policy.
 
 ## Provisioning SQL
 
