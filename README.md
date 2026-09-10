@@ -16,6 +16,7 @@ Versioned, agent-readable instructions for answering business questions from Lig
 - Team members use the authenticated `reporting-query` Edge Function; they do **not** receive database passwords or service-role keys.
 - The function checks active membership on every request, limits reports by role, and writes an audit record.
 - Raw base tables remain protected by RLS. Removing a membership immediately stops API access, even if a JWT has not yet expired.
+- Individual Supabase Auth provisioning is currently paused until the company Auth subdomain/SMTP setup is complete; do not use shared credentials as a temporary workaround.
 - This repository must remain private. Never commit `.env`, Supabase access tokens, database passwords, JWTs, or service-role keys.
 
 ## Roles
