@@ -1,0 +1,40 @@
+openapi: 3.1.0
+info:
+  title: Lightning Reporting API
+  version: 0.1.0
+  description: Read-only, role-scoped reporting interface for agent systems.
+servers:
+  - url: https://YOUR_PROJECT_REF.supabase.co/functions/v1
+paths:
+  /reporting-query:
+    post:
+      operationId: runReportingQuery
+      summary: Run an approved read-only Lightning report.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [report]
+              properties:
+                report:
+                  type: string
+                  enum: [fleet_status, current_returns, driver_assignments, settlement_summary]
+                filters:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '200':
+          description: Role-authorized report result.
+        '400': {description: Invalid report or filters.}
+        '401': {description: Missing or invalid bearer token.}
+        '403': {description: No active membership or insufficient role.}
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
