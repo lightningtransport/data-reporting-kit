@@ -86,7 +86,6 @@ create policy users_read_own_memberships on public.user_memberships
 for select to authenticated
 using (user_id = (select auth.uid()));
 
-create index if not exists driverpay_organization_id_idx on public."DriverPay" (organization_id);
 create index if not exists drivers_organization_id_idx on public.drivers (organization_id);
 create index if not exists returns_organization_id_idx on public.returns (organization_id);
 create index if not exists settlements_organization_id_idx on public.settlements (organization_id);

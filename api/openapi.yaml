@@ -4,7 +4,7 @@ info:
   version: 0.1.0
   description: Read-only, role-scoped reporting interface for agent systems.
 servers:
-  - url: https://YOUR_PROJECT_REF.supabase.co/functions/v1
+  - url: https://aaqquwhdglueqlnbifvn.supabase.co/functions/v1
 paths:
   /reporting-query:
     post:
