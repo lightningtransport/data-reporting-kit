@@ -32,7 +32,7 @@ Versioned, agent-readable instructions for answering business questions from Lig
 1. Obtain a personal Supabase Auth session from the company onboarding flow.
 2. Read `docs/question-routing.md` and `docs/metric-definitions.md`.
 3. Call `https://aaqquwhdglueqlnbifvn.supabase.co/functions/v1/reporting-query` with your own JWT, following `api/openapi.yaml`.
-4. State the report, filters, time period, source freshness, and caveats in every answer.
+4. For Hermes, install the private reporting skill and authenticate using its local password prompt; see `skills/itpros-supabase-reporting/SKILL.md`.
 
 ## Repository maintenance
 

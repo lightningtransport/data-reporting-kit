@@ -1,7 +1,7 @@
 ---
 name: itpros-supabase-reporting
 description: Answer Lightning reports through the approved reporting API.
-version: 0.1.0
+version: 0.2.0
 author: Ibrain Ortega, Hermes Agent
 license: Proprietary
 platforms: [linux, macos, windows]
@@ -13,17 +13,33 @@ metadata:
 
 # Lightning reporting
 
-Answer Lightning Transportation data questions with the authenticated `reporting-query` Edge Function. Use only the caller's personal Supabase Auth session; never use a service-role key, database password, or another employee's token.
+Answer Lightning Transportation data questions with the authenticated `reporting-query` Edge Function. The helper saves only the caller's refreshable Supabase session in the active Hermes profile with owner-only file permissions. Never use a service-role key, database password, or another employee's token.
 
 ## When to Use
 
 - Requests about fleet status, returns, driver assignment history, or settlement summaries.
 - Do not use for writes, provisioning, schema changes, or direct access to protected driver PII.
 
+## Authenticate
+
+Use `terminal` to run the installed script. It prompts locally for the caller's Supabase password without printing it:
+
+```bash
+python "$HERMES_HOME/skills/itpros-supabase-reporting/scripts/reporting.py" login --email ibrain.ortega@gmail.com
+```
+
+For the default profile, substitute `${HERMES_HOME:-$HOME/.hermes}` if `HERMES_HOME` is unset. The script stores the refreshable session at `$HERMES_HOME/reporting/lightning-session.json`, mode `0600`.
+
 ## Procedure
 
 1. Read `docs/question-routing.md` and `docs/data-dictionary.md` from the Data Reporting Kit repository. Completion: the report type, filters, period, and metric are unambiguous.
-2. Call `POST /functions/v1/reporting-query` with a personal bearer JWT and an allowlisted report name. Completion: a response returns `data`, `row_count`, and `as_of`.
+2. Run the helper through `terminal` using an allowlisted report and JSON filters. Example:
+
+```bash
+python "$HERMES_HOME/skills/itpros-supabase-reporting/scripts/reporting.py" query --report fleet_status --filters '{"dispatcher":"Group 1"}'
+```
+
+Completion: the response returns `data`, `row_count`, and `as_of`.
 3. Validate date windows, type conversions, and driver/truck cardinality according to the routing guide. Completion: the result uses the stated business definition.
 4. Respond with the source report, filters, exact period, result, freshness, and material caveats. Completion: no raw PII or secret appears in the response.
 
