@@ -8,7 +8,7 @@ This is a public, knowledge-only repository. It contains reporting instructions 
 
 Approved agents use `GET /functions/v1/agent-reporting` with an individually assigned `x-agent-key`.
 
-- Each key can be bound to an organization, report allowlist, role label, expiry, and sensitive-field permission.
+- Each `AGENT_API_KEY` / `AGENT_API_KEY_<number>` key has full read access by default to every approved report and its explicit sensitive-field allowlists. Optional controls can bind organization, report allowlist, role label, expiry, or explicitly set `AGENT_ALLOW_SENSITIVE_<n>=false` for a restricted key.
 - The function scopes organization server-side and audits data requests by key identifier without storing the key value.
 - Never share one key between independent agents. Never put a key in a browser, URL, prompt, repository, or log.
 - Provision and test keys only through the approved Supabase secret workflow. Revocation is performed by removing the corresponding Edge Function secret.

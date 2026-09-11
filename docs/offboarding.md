@@ -6,7 +6,7 @@
 
 1. Assign one new sequential `AGENT_API_KEY_<n>` secret; never reuse another agent's value.
 2. Optionally set matching controls: `AGENT_ORGANIZATION_ID_<n>`, `AGENT_REPORTS_<n>`, `AGENT_ROLE_<n>`, `AGENT_EXPIRES_AT_<n>`, and `AGENT_ALLOW_SENSITIVE_<n>`.
-3. Default to no sensitive permission. Grant it only for a documented need.
+3. By default, the key has full read access to all six approved reports and their explicit sensitive-field allowlists. Set `AGENT_ALLOW_SENSITIVE_<n>=false` only when a particular key needs to be restricted.
 4. Give the key once through an approved private channel; never commit or log it.
 5. Test `report=catalog`, one allowed data query, one disallowed/sensitive query, and an invalid key.
 6. Confirm `public.agent_query_audit` contains the authorized data request under the key identifier and no secret value.

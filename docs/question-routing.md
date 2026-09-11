@@ -11,7 +11,7 @@ Read `AGENTS.md` first. Use the smallest `agent-reporting` report that answers t
 | Which trucks returned historically? | `driver_pay` | Filter `return_from`/`return_to` only; count distinct `Truck_Number`. |
 | Weekly headline gross/expense/net | `settlement_summary` | Supply `period_from` (and normally the same Tuesday in `period_to`) or a truck. |
 | Full weekly expenses/components | `settlements` | Supply `period_from` or truck; use explicit period for owner/dispatch totals. |
-| Current driver profile | `drivers` | Prefer exact `driver_id`; use name only for discovery. Sensitive fields require explicit user need and authorized key. |
+| Current driver profile | `drivers` | Prefer exact `driver_id`; use name only for discovery. Any `AGENT_API_KEY` can request the documented sensitive fields with `include_sensitive=true` unless its explicit `AGENT_ALLOW_SENSITIVE_<n>` control is set to `false`. |
 | Planned teams/departures | unsupported | Requires live Ninox Schedule_Teams; do not substitute DriverPay history. |
 | Exact trucks in yard/off duty/on road | unsupported | Supabase lacks `days_in_yard_` and numeric insurance-choice fields required by the Ninox definition. |
 

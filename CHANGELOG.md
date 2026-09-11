@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.2 — 2026-09-11
+
+- Restored full read access for every `AGENT_API_KEY` and `AGENT_API_KEY_<number>` principal across all six approved reports and their documented sensitive-field allowlists when requested with `include_sensitive=true`.
+- Retained an explicit opt-out: `AGENT_ALLOW_SENSITIVE_<n>=false` restricts a particular key without changing the default for other approved agents.
+- Aligned the runtime catalog, API contract, routing, access guide, and installed reporting skill so agents no longer classify the `drivers` table or its requested documented fields as unavailable.
+
 ## 0.6.1 — 2026-09-11
 
 - Added an approved CDL-based driver lookup and truck-number-based vehicle lookup rule for relational report fallbacks. Agents must resolve absent required attributes from related approved-report sources before finalizing, while preserving left joins for historical vehicle data.

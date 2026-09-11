@@ -6,7 +6,7 @@ These rules govern every Lightning Transportation answer.
 
 - Approved service agents use `agent-reporting`; approved personal members use `reporting-query`.
 - Organization scope is server-enforced. Never send or accept a caller-selected `organization_id`.
-- Default projections omit sensitive driver and vehicle fields. Request sensitive fields only for an explicit need and authorized key.
+- Default projections omit sensitive driver and vehicle fields. Use `include_sensitive=true` only for an explicit need. All agent API keys are allowed by default; a matching `AGENT_ALLOW_SENSITIVE_<n>=false` setting is the opt-out restriction.
 - Never seek a bypass when access is denied.
 
 ## 2. Dates

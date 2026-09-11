@@ -41,7 +41,7 @@ paths:
         - name: include_sensitive
           in: query
           schema: {type: boolean, default: false}
-          description: Requires explicit sensitive permission on the authenticated key.
+          description: All approved AGENT_API_KEY principals can request the explicit sensitive-field allowlist by default; a matching AGENT_ALLOW_SENSITIVE control set to false restricts a specific key.
         - name: truck
           in: query
           schema: {type: string}

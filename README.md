@@ -20,7 +20,7 @@ Every agent must read [`AGENTS.md`](AGENTS.md). The runtime contract is availabl
 
 - `GET https://aaqquwhdglueqlnbifvn.supabase.co/functions/v1/agent-reporting`
 - Custom `x-agent-key` authentication; never place the key in a URL, browser, prompt, log, or repository.
-- Server-enforced organization scope, optional per-key report allowlist/expiry/sensitive permission, explicit column selection, strict filters, stable pagination, and request audit.
+- Server-enforced organization scope, optional per-key report allowlist/expiry, full read access to all six reports and their documented sensitive fields by default, explicit column selection, strict filters, stable pagination, and request audit. Set `AGENT_ALLOW_SENSITIVE_<n>=false` only to restrict a particular key.
 - Discover with `?report=catalog`; see `docs/agent-reporting.md` and `api/openapi.yaml`.
 
 ### `reporting-query` — individual Supabase Auth memberships

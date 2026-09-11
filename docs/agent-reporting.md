@@ -14,7 +14,7 @@ The key identifies an agent principal. The function scopes every query to that p
 - `supabase/config.toml` sets `verify_jwt=false` only for this custom-key function and keeps `verify_jwt=true` for `reporting-query`.
 - Never expose `x-agent-key` in browser/frontend code.
 - Missing, expired, or invalid keys return `401`.
-- A valid key without report or sensitive permission returns `403`.
+- A valid key whose explicit per-key report allowlist excludes a report, or whose matching `AGENT_ALLOW_SENSITIVE...` control is set to `false`, returns `403`. All `AGENT_API_KEY` / `AGENT_API_KEY_<number>` principals otherwise have full read access to the six approved reports and their explicit sensitive-field allowlists.
 
 ## Discover before querying
 
@@ -33,7 +33,7 @@ Explicit reports reject:
 - blank filter values, nonnumeric numeric identifiers, and `temporal_driver` values other than `Yes` or `No`;
 - missing required history/financial anchors;
 - caller-supplied `organization_id`;
-- unauthorized `include_sensitive=true`.
+- unauthorized `include_sensitive=true` for a key explicitly restricted by `AGENT_ALLOW_SENSITIVE_<n>=false`.
 
 Global data parameters are `report`, `limit` (1–1000), `offset` (0–100000), and `include_sensitive` (`true`/`false`). Metadata requests accept only `report` and `metadata=true`.
 

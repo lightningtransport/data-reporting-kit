@@ -52,7 +52,9 @@ const agentPrincipals = Object.entries(Deno.env.toObject())
       organizationId: Deno.env.get(`AGENT_ORGANIZATION_ID${suffix}`) ?? Deno.env.get("AGENT_ORGANIZATION_ID"),
       role: Deno.env.get(`AGENT_ROLE${suffix}`) ?? "agent",
       allowedReports: reportList ? new Set(reportList) : null,
-      allowSensitive: Deno.env.get(`AGENT_ALLOW_SENSITIVE${suffix}`) === "true",
+      // Approved AGENT_API_KEY principals have full read access by default. Set the
+      // matching control to false only when a specific agent must not receive PII.
+      allowSensitive: Deno.env.get(`AGENT_ALLOW_SENSITIVE${suffix}`) !== "false",
       expiresAt: Deno.env.get(`AGENT_EXPIRES_AT${suffix}`),
     };
   });
@@ -183,7 +185,7 @@ function catalogResponse(principal: { id: string; allowSensitive: boolean; allow
       metadata: { type: "boolean", use: "Set true with a report to retrieve its full schema and rules without data filters." },
       limit: { type: "integer", default: 100, minimum: 1, maximum: 1000 },
       offset: { type: "integer", default: 0, minimum: 0, maximum: 100000 },
-      include_sensitive: { type: "boolean", default: false, note: "Requires explicit permission on the authenticated agent key; fields are always selected from an explicit allowlist." },
+      include_sensitive: { type: "boolean", default: false, note: "All approved AGENT_API_KEY and AGENT_API_KEY_<number> principals may request the explicit sensitive-field allowlist by default. Set the matching AGENT_ALLOW_SENSITIVE control to false only to restrict one key." },
     },
     response_contract: {
       count: "Legacy alias of page_count for explicit reports; never interpret it as the full total.",

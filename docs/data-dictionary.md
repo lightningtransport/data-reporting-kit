@@ -95,7 +95,7 @@ Use `Out Date` alone for departures and `Return Date` alone for returns. For ove
 | `CDL` | text | yes | Sensitive CDL number. |
 | `State` | text | yes | CDL issuing state. |
 | `CDL Expiration` | text | yes | Sensitive expiration value stored as text; validate format before date arithmetic. |
-| `Gender` | text | yes | Sensitive gender value as stored; omitted unless sensitive access is explicitly authorized and requested. |
+| `Gender` | text | yes | Sensitive gender value as stored; returned when `include_sensitive=true`. All agent API keys are allowed by default unless their matching `AGENT_ALLOW_SENSITIVE_<n>` control is set to `false`. |
 | `Insurance` | text | yes | Driver-associated insurance/category code; code expansion is not established. |
 | `Ninox_ID` | numeric | yes | Unique DriversDB source ID; preferred join key. |
 | `ID` | bigint | no | Supabase identity primary key. |

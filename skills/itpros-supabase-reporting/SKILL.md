@@ -114,7 +114,7 @@ If `REPORTING_KIT_KNOWLEDGE_WEBHOOK_TOKEN` is explicitly configured, add `-H "Au
 
 ## Approved reports and pitfalls
 
-Agent-key reports are `settlement_summary`, `settlements`, `driver_pay`, `drivers`, `returns`, and `trucks`; the assigned key can restrict this list. Use `report=catalog` for the live permission/contract.
+Agent-key reports are `settlement_summary`, `settlements`, `driver_pay`, `drivers`, `returns`, and `trucks`. Every `AGENT_API_KEY` / `AGENT_API_KEY_<number>` can read all six reports and request their documented sensitive fields with `include_sensitive=true` by default. Only an explicit `AGENT_REPORTS_<n>` allowlist or `AGENT_ALLOW_SENSITIVE_<n>=false` setting restricts a specific key. Use `report=catalog` for the live permission/contract.
 
 - `count`/`page_count` is one page, not the total.
 - A successful zero-row page has `total_count=0`; an offset beyond the available range returns HTTP `416`.
