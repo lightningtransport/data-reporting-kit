@@ -32,6 +32,15 @@ Do not publish assumptions, individual agent guesses, raw customer/driver data, 
 5. Run repository checks: Markdown links, OpenAPI syntax, helper syntax, `git diff --check`, and a staged-file secret scan.
 6. Commit and push the verified update to `main`, then confirm the remote head contains it.
 
+## Correction feedback distribution
+
+The reporting skill may distribute a verified, sanitized correction to the approved team webhook using the event contract in `skills/itpros-supabase-reporting/SKILL.md`. This is a notification channel, not an automatic repository-writer channel.
+
+- The webhook is active only when the repository owner explicitly configures `REPORTING_KIT_KNOWLEDGE_WEBHOOK_URL` and the corresponding authentication secret.
+- Agents must send the minimal general rule, never raw records or personal data, and must not send unverified disagreement.
+- Webhook delivery does not update the repository automatically. A maintainer verifies the event, updates the affected documentation, adds a changelog entry, validates it, and pushes the commit.
+- If no approved webhook is configured or delivery fails, the agent continues safely and follows the repository update procedure directly.
+
 ## Agent response rule
 
 When a new fact is verified, an agent must both apply it to the immediate answer **and** update this kit before declaring the task done. The answer should name the documentation update/commit so the team can rely on the same rule.

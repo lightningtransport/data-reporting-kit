@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1 — 2026-09-10
+
+- Added a conditional, privacy-safe correction-feedback webhook instruction to the reporting skill. It distributes only verified, sanitized knowledge; it never writes to the repository automatically.
+
 ## 0.2.2 — 2026-09-10
 
 - Established and documented the GitHub access policy: public read access is allowed, while only the `lightningtransport` repository owner may retain write/admin access; all other collaborators are read-only.
