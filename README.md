@@ -1,48 +1,43 @@
 # Lightning Transportation Data Reporting Kit
 
-Versioned, agent-readable instructions for answering business questions from Lightning Transportation's Supabase data.
+Versioned, agent-readable instructions and source for the active Lightning Supabase reporting interfaces.
 
 ## Start here
 
-All human and AI users must read [`AGENTS.md`](AGENTS.md) first. It points to the canonical routing rules, metric definitions, complete data dictionary, and API contract.
+Every agent must read [`AGENTS.md`](AGENTS.md). The runtime contract is available from the authenticated `agent-reporting` catalog route.
 
 ## What this kit provides
 
-- A mandatory agent rulebook for source selection, aggregation, dates, confidentiality, and answer evidence.
-- A live-schema-verified, column-by-column data dictionary for every current public table.
-- Metric definitions, time windows, joins, cardinality, and double-counting guardrails.
-- A Hermes skill and a portable HTTP API contract for other agent systems.
-- Onboarding and offboarding procedures.
+- Complete 96-column data dictionary for DriverPay, drivers, returns, settlements, and trucks.
+- Question routing, metric definitions, Ninox mappings, joins, date windows, allocation-bucket rules, and double-counting guardrails.
+- Source and OpenAPI contract for the custom-key `agent-reporting` Edge Function.
+- Source for the separate membership/JWT `reporting-query` Edge Function.
+- A portable Hermes reporting skill, correction-feedback contract, and access lifecycle guidance.
 
-## Security model
+## Active interfaces
 
-- Each team member has an individual Supabase Auth account and a `user_memberships` record.
-- Team members use the authenticated `reporting-query` Edge Function; they do **not** receive database passwords or service-role keys.
-- The function checks active membership on every request, limits reports by role, and writes an audit record.
-- Raw base tables remain protected by RLS. Removing a membership immediately stops API access, even if a JWT has not yet expired.
-- Individual Supabase Auth provisioning is currently paused until the company Auth subdomain/SMTP setup is complete; do not use shared credentials as a temporary workaround.
-- This is a public knowledge-only repository for testing. It contains no database data or secrets. Never commit `.env`, Supabase access tokens, database passwords, JWTs, refresh tokens, or service-role keys.
+### `agent-reporting` — approved AI service accounts
 
-## Roles
+- `GET https://aaqquwhdglueqlnbifvn.supabase.co/functions/v1/agent-reporting`
+- Custom `x-agent-key` authentication; never place the key in a URL, browser, prompt, log, or repository.
+- Server-enforced organization scope, optional per-key report allowlist/expiry/sensitive permission, explicit column selection, strict filters, stable pagination, and request audit.
+- Discover with `?report=catalog`; see `docs/agent-reporting.md` and `api/openapi.yaml`.
 
-| Role | Intended use |
-|---|---|
-| `viewer` | Operational reports: fleet status, current returns, driver assignments without contact/license data. |
-| `finance` | `viewer` reports plus settlement financial summaries. |
-| `owner` | Direct read access to all company data for organization members. |
-| `admin` | Direct read access to all company data and authorized provisioning work. |
+### `reporting-query` — individual Supabase Auth memberships
 
-## Quick start
+- JWT-verified, membership/role-scoped reporting.
+- Individual onboarding remains paused until approved company Auth email/SMTP delivery is ready. Do not use shared credentials as a workaround.
 
-1. Read [`AGENTS.md`](AGENTS.md), then the routing guide and metric definitions it requires.
-2. During the public knowledge-test phase, use the repository to understand the reporting contract only. Individual Supabase Auth provisioning and live team API access are intentionally paused pending company Auth email/SMTP setup.
-3. Once provisioned, obtain a personal Supabase Auth session and call `https://aaqquwhdglueqlnbifvn.supabase.co/functions/v1/reporting-query` with your own JWT, following `api/openapi.yaml`.
-4. For Hermes, install the reporting skill and authenticate with the local password prompt; see `skills/itpros-supabase-reporting/SKILL.md`.
+## Data safety
 
-## Repository maintenance
+Raw public tables remain protected by RLS. This public knowledge repository contains no business rows, passwords, API keys, JWTs, refresh tokens, database credentials, or service-role/secret keys.
 
-- Follow [`docs/knowledge-maintenance.md`](docs/knowledge-maintenance.md): verified learning that changes an answer must be documented, validated, added to the changelog, and pushed in the same work cycle.
-- Update definitions through pull requests; do not change business rules silently.
-- Review schema changes and reporting behavior together.
-- Add a dated entry to `CHANGELOG.md` for every change that affects answers.
-- Revoke access by following `docs/offboarding.md`.
+## Maintenance
+
+- Follow [`docs/knowledge-maintenance.md`](docs/knowledge-maintenance.md); user corrections use the versioned sanitized event contract and are not approved rules until verified.
+- Installed agents keep one twice-daily `data-reporting-kit-sync` job so updated rules reach local skill bundles.
+- Change definitions through reviewed commits; do not change business rules silently.
+- Inspect live schemas and deployed function source together.
+- Add a dated changelog entry for every answer-affecting change.
+- Run contract/security tests before deployment and verify the deployed source afterward.
+- Follow `docs/offboarding.md` to revoke access.

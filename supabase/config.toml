@@ -1,0 +1,5 @@
+[functions.agent-reporting]
+verify_jwt = false
+
+[functions.reporting-query]
+verify_jwt = true

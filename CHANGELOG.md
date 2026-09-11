@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.0 — 2026-09-11
+
+- Added the live `agent-reporting` source and strict, authenticated catalog/metadata contract for all five reporting tables and all 96 physical columns.
+- Fixed malformed quoted settlement filters, overwritten range bounds, `solo=false` null handling, silent unknown/duplicate/blank filters, invalid date/number/boolean/enum handling, unstable ordering, and page counts that could be mistaken for totals.
+- Added server-enforced organization scoping, per-key report/expiry/sensitive controls, explicit sensitive projections, fail-closed request auditing with distinct principal identity/role details, and a transition path to a Supabase secret key.
+- Added deterministic pagination with required exact `total_count`, `has_more`, and `next_offset`, explicit HTTP 416 past-end behavior, and configurable helper reconciliation while preserving the authorized omitted-report legacy `{count,data}` success shape.
+- Enriched runtime and repository guidance from the Ninox knowledge catalog: field meanings, source mappings, cast-safe/left joins, date rules, stored-value precedence, allocation buckets 1/2/3, and unsupported Schedule_Teams/in-yard questions.
+- Corrected Returns `Return Date` to nullable PostgreSQL `date` and clarified that `returns.Ninox_ID` is not a driver ID.
+- Added the agent-key helper, updated OpenAPI/access lifecycle, and added executable 96-column metadata coverage tests.
+
 ## 0.5.0 — 2026-09-11
 
 - Added a packaged, revision-aware GitHub synchronization script and a required twice-daily `data-reporting-kit-sync` cron contract at 10:00 AM and 2:00 PM local time for every installed reporting agent.

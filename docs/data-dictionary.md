@@ -1,182 +1,157 @@
 # Data dictionary
 
-**Live-schema verification:** 2026-09-10 against Supabase project `aaqquwhdglueqlnbifvn`. This inventory covers all eight current `public` tables and all 113 live columns. No PostgreSQL column comments exist in the live database, so definitions below are the reporting contract; fields explicitly marked **not established** must not be used for a business conclusion until their source-system owner defines them.
+Schema verified against Supabase project `aaqquwhdglueqlnbifvn` on **2026-09-11**. The five reporting sources contain **96 physical columns**: `DriverPay` 27, `drivers` 17, `returns` 8, `settlements` 28, and `trucks` 16. All five use `organization_id` for tenant scoping and have RLS enabled. PostgreSQL column comments are currently absent; business semantics below come from the local Ninox field catalog, verified live schema/data, and confirmed business rules.
 
-## Global conventions
+The authenticated `agent-reporting` metadata routes are the runtime contract. Call `?report=catalog` for the complete catalog or `?report=<name>&metadata=true` for one report.
 
-- `ID` is the database surrogate key (`bigint` identity) for its own table. It is not a business truck number or Ninox ID.
-- `organization_id` is the tenant key (`uuid`) to `organizations.id`. Every operational table is scoped by it.
-- Current operational data is not historical data. Use the table whose grain and time model matches the question.
-- Fields with spaces, punctuation, or capitalization must be quoted exactly in SQL/API field expressions.
-- **PII** means the field is restricted and must not be returned in ordinary agent answers.
+## Shared rules
 
-## `trucks` — current fleet master
+- Supabase identity `ID` columns are generated import-row keys, not Ninox record IDs.
+- `organization_id` is a UUID applied server-side by `agent-reporting`; callers cannot select another tenant.
+- `as_of` is request time, not source-sync time. These source tables do not expose a reliable sync timestamp.
+- Historical text truck keys must be normalized before comparing them to numeric `trucks.truck_number`. Use a **left join** from history because retired/historical truck numbers may not exist in the current master.
+- `DriverPay.DriversDB_ID` is text and joins to `drivers.Ninox_ID::text`.
+- `returns.Ninox_ID` is a Returns source-record ID, not a driver ID.
 
-**Grain:** one current row per physical vehicle. **Use for:** current fleet identity, current assignment, location, Samsara/connectivity, and mechanic state. **Do not use for:** historical ownership/dispatch or settlement attribution.
+## `trucks` — current fleet master and allocation buckets
 
-| Column (type) | Meaning / agent use |
-|---|---|
-| `ID` (bigint) | Database row identifier. |
-| `truck_number` (numeric, unique) | Canonical physical-vehicle identifier; use to identify a current truck. Do not treat settlement accounting buckets `1`, `2`, or `3` as fleet vehicles. |
-| `dispatcher` (text) | Current dispatcher/group assignment. |
-| `insurance` (text) | Current truck insurance entity/label; not necessarily a monetary expense. |
-| `vin` (text) | Vehicle Identification Number; sensitive vehicle identity. |
-| `make` (text) | Vehicle manufacturer/make. |
-| `model_year` (numeric) | Vehicle model year. |
-| `license_plate` (text) | Current plate identifier; sensitive vehicle identity. |
-| `odometer_miles` (numeric) | Current recorded odometer reading, not settlement-period driven miles. |
-| `owner` (text) | Current owner assignment. |
-| `last_known_address` (text) | Latest stored location/address; operationally sensitive. |
-| `yard_location` (text) | Yard/location label for the current fleet record. |
-| `samsara_last_connected_at` (timestamptz) | Timestamp of the last recorded Samsara connection. |
-| `samsara_vehicle_id` (text) | Samsara vehicle-system identifier; use only after validating the source-system mapping. |
-| `mechanic_status` (text) | Current mechanic/shop status. |
-| `organization_id` (uuid) | Tenant/organization scope; foreign key to `organizations.id`. |
+**Grain:** one current master/allocation row per unique `truck_number`. `ID` is the primary key; `truck_number` has a unique constraint. Use this table for current facts only.
 
-## `DriverPay` — driver assignment and pay-term history
+Truck numbers **1, 2, and 3 are synthetic owner-assignment buckets**, not physical trucks: 1=Carlos, 2=Jorge, 3=CDT. Exclude them from physical-fleet counts and rankings. `Out Of Services` is a dispatcher value, but it is not equivalent to the exact Ninox in-yard/off-duty formula because Supabase lacks `days_in_yard_` and numeric insurance-choice fields.
 
-**Grain:** one row per driver assignment, not one row per truck. A team commonly has two rows for the same `Truck_Number`. **Use for:** driver-to-truck history, departure/return events, and signed pay terms. **Sensitive:** contains PII; standard agent reporting returns only a selected non-contact subset.
+| Column | Type | Null? | Meaning / safe use |
+|---|---|---:|---|
+| `truck_number` | numeric | no | Unique physical truck number or synthetic bucket. Ninox `E.A / truck_`. |
+| `dispatcher` | text | yes | Current group/dispatcher. Current values include Group 1, Group 2, CDT, Solo, Out Of Services. Ninox `E.YF`. |
+| `insurance` | text | yes | Current truck insurance/provider category. Use exact stored values. Ninox `E.Y4`. |
+| `vin` | text | yes | Sensitive VIN. Ninox `E.CG`. |
+| `make` | text | yes | Truck make/model display value. Ninox `E.DG`. |
+| `odometer_miles` | numeric | yes | Current recorded odometer in miles. Ninox `E.OF`. |
+| `owner` | text | yes | Current owner/entity; never use for historical settlement attribution. Ninox `E.VF`. |
+| `last_known_address` | text | yes | Sensitive Samsara-derived last known address. Ninox `E.PF`. |
+| `model_year` | numeric | yes | Vehicle model year. Ninox `E.IJ`. |
+| `license_plate` | text | yes | Sensitive plate value. Ninox `E.HJ`. |
+| `yard_location` | text | yes | Current selected/derived location such as 301 Yard or a service vendor. Ninox `E.X1`. |
+| `samsara_last_connected_at` | timestamptz | yes | Last Samsara connection/report timestamp. Ninox `E.SF`. |
+| `samsara_vehicle_id` | text | yes | Sensitive Samsara vehicle ID. Ninox `E.BM`. |
+| `mechanic_status` | text | yes | Literal current shop status; blank/null means none stored. Ninox `E.TA`. |
+| `ID` | bigint | no | Supabase identity primary key. |
+| `organization_id` | uuid | no | Tenant key. |
 
-| Column (type) | Meaning / agent use |
-|---|---|
-| `ID` (bigint) | Database row identifier. |
-| `Truck_Number` (text) | Assigned truck identifier for this driver-assignment row. |
-| `DriversDB_ID` (text) | Source driver identifier; match to `drivers.Ninox_ID` only after compatible type/value validation. |
-| `Out Date` (date) | Assignment departure/out date; the sole date filter for “which trucks/drivers left?” |
-| `Return Date` (date) | Assignment return date; the sole date filter for historical returns. |
-| `Transfer` (text) | Source-system transfer indicator/status. Its value vocabulary is not established; do not infer a transfer event from a nonblank value alone. |
-| `Transfer Date` (date) | Date recorded for a transfer event. |
-| `Transfer Truck` (text) | Truck recorded as the transfer destination/source by the source system; direction is not established—do not infer it. |
-| `Termination` (text) | Source-system termination indicator/status; value vocabulary is not established. |
-| `Termination Date` (date) | Date recorded for a termination event. |
-| `Solo_Driver_if_1` (numeric) | `1` identifies a solo assignment; other/null values do not establish team composition without checking companion rows. |
-| `MoneyPerWeekSigned` (numeric) | Signed weekly pay amount for this assignment. |
-| `MoneyPerDaysigned` (numeric) | Signed daily pay amount for this assignment. |
-| `CPM` (numeric) | Signed cents/dollars-per-mile rate used only with the documented CPM threshold rule. |
-| `Pay CPM after Miles` (numeric) | Driven-mile threshold above which CPM is added for the corresponding settlement week. |
-| `Driver Name` (text) | Driver display name; PII. |
-| `First Name` (text) | Driver given name; PII. |
-| `Last Name` (text) | Driver family name; PII. |
-| `E-mail` (text) | Driver email; PII, never return. |
-| `Phone Number` (text) | Driver phone; PII, never return. |
-| `CDL` (text) | Driver commercial-license value; sensitive, never return. |
-| `State` (text) | State associated with the driver/license record; sensitive. |
-| `owner` (text) | Historical owner context captured with this assignment record. |
-| `Dispatch_Name_` (text) | Historical dispatch context captured with this assignment record. |
-| `Samsara_ID` (text) | Source-system Samsara identifier; relationship target is not established, so do not use as a join key without validation. |
-| `Temporal_Driver` (text) | Source-system temporary-driver marker/label; its semantics and value vocabulary are not established. |
-| `organization_id` (uuid) | Tenant/organization scope. |
+## `DriverPay` — historical driver assignment/pay ledger
 
-## `drivers` — driver master
+**Grain:** one driver assignment/pay record. Team trucks normally produce two rows, one per driver; a solo normally produces one row with `Solo_Driver_if_1 = 1`. Count distinct `Truck_Number` for truck totals.
 
-**Grain:** one current driver profile row. **Use for:** owner/admin-only profile lookup and validated linkage from `DriverPay`. **Do not use for:** ordinary reporting; it is heavily PII-restricted.
+Use `Out Date` alone for departures and `Return Date` alone for returns. For overlap with a settlement week: `Out Date <= settlements.To` and (`Return Date` is null or `Return Date >= settlements.From`), then inspect transfers/terminations inside that period.
 
-| Column (type) | Meaning / agent use |
-|---|---|
-| `ID` (bigint) | Database row identifier. |
-| `Ninox_ID` (numeric) | Legacy/source driver identifier; validated linkage candidate for `DriverPay.DriversDB_ID`. |
-| `FullName` (text) | Full driver display name; PII. |
-| `First Name` / `Middle Name` / `Last Name` (text) | Driver name components; PII. |
-| `E-mail` (text) | Driver email; PII. |
-| `Phone Number` (text) | Driver phone; PII. |
-| `Years Of Experience` (numeric) | Reported driver experience in years. |
-| `DOB` (date) | Date of birth; highly sensitive PII. |
-| `Company Name (This is NOT the Insurance)` (text) | Company-name value from the driver source record; explicitly not an insurance field. |
-| `CDL` (text) | Commercial driver license value; sensitive. |
-| `State` (text) | State associated with the profile/license record. |
-| `CDL Expiration` (text) | Source CDL-expiration value. It is stored as text, so do not perform date arithmetic until normalized/validated. |
-| `Gender` (text) | Sensitive personal profile attribute. |
-| `Insurance` (text) | Insurance label/value associated with the driver profile. |
-| `organization_id` (uuid) | Tenant/organization scope. |
+| Column | Type | Null? | Meaning / safe use |
+|---|---|---:|---|
+| `Truck_Number` | text | yes | Actual truck number from Ninox `WD.IA / TruckNumber_`. |
+| `Out Date` | date | yes | Actual work departure date; use alone for departure questions. Ninox `WD.O`. |
+| `Return Date` | date | yes | Historical return/rest/yard date; use alone for return questions. Ninox `WD.R`. |
+| `Transfer` | text | yes | Transfer direction: To Other Truck or From Other Truck. Ninox `WD.I9`. |
+| `DriversDB_ID` | text | yes | DriversDB ID; join to `drivers.Ninox_ID::text`. |
+| `Termination` | text | yes | Early assignment-ending reason. Live values include Driver Changed/Fired; catalog also defines Early Broke Contract. Ninox `WD.LA`. |
+| `Termination Date` | date | yes | Date this assignment ended for the termination reason. |
+| `Transfer Date` | date | yes | Date of transfer. |
+| `Transfer Truck` | text | yes | Destination for transfer-to; origin for transfer-from. |
+| `Solo_Driver_if_1` | numeric | yes | `1` means solo. Null/other is not proof of exactly two rows; deduplicate trucks. Ninox `WD.PC`. |
+| `MoneyPerWeekSigned` | numeric | yes | Fixed weekly salary. Ninox `WD.H6`. |
+| `MoneyPerDaysigned` | numeric | yes | Stored daily rate; verified as weekly/7 in live rows. Ninox `WD.G6`. |
+| `CPM` | numeric | yes | Per-mile rate above threshold. Ninox `WD.DA`. |
+| `Pay CPM after Miles` | numeric | yes | Weekly mileage threshold. Ninox `WD.EA`. |
+| `Driver Name` | text | yes | Driver display-name snapshot. |
+| `First Name` | text | yes | First-name snapshot. |
+| `Last Name` | text | yes | Last-name snapshot. |
+| `E-mail` | text | yes | Sensitive email snapshot. |
+| `Phone Number` | text | yes | Sensitive phone snapshot. |
+| `CDL` | text | yes | Sensitive CDL snapshot. |
+| `State` | text | yes | CDL issuing-state snapshot. |
+| `owner` | text | yes | Historical assignment owner/entity. Ninox `WD.KB`. |
+| `Samsara_ID` | text | yes | Sensitive Samsara vehicle ID. Ninox `WD.FB`. |
+| `Dispatch_Name_` | text | yes | Historical assignment dispatch; history includes group labels and legacy names. Ninox `WD.ZA`. |
+| `Temporal_Driver` | text | yes | Temporary-CDL indicator stored as Yes/No/null. Ninox `WD.UJ`. |
+| `ID` | bigint | no | Supabase identity primary key; not Ninox DriverPay record ID. |
+| `organization_id` | uuid | no | Tenant key. |
 
-## `returns` — current return-status list
+**Driver-pay calculation:** per driver assignment, `MoneyPerWeekSigned + CPM × max(Driven_miles − Pay CPM after Miles, 0)` for the matching settlement week. Do not divide team pay unless explicitly instructed.
 
-**Grain:** current operational driver/team row; a team can have two rows for one `Truck`. **Use for:** current return/yard-status activity. **Do not use for:** historical return-event counts (use `DriverPay.Return Date`).
+## `drivers` — current driver master
 
-| Column (type) | Meaning / agent use |
-|---|---|
-| `ID` (bigint) | Database row identifier. |
-| `Ninox_ID` (numeric) | Legacy/source record identifier; not established as a cross-table key. |
-| `Insurance` (text) | Insurance label recorded on the return entry. |
-| `Truck` (text) | Truck identifier on this return-status row. |
-| `Driver Name` (text) | Driver display name; PII. |
-| `Phone Number` (text) | Driver phone; PII, never return. |
-| `Return Date` (text) | Free-text return date/status/note. Parse only recognized date prefixes for date-range filtering; preserve non-date statuses and blanks as status data. |
-| `organization_id` (uuid) | Tenant/organization scope. |
+**Grain:** one current profile. `ID` is the Supabase primary key; `Ninox_ID` is the unique source/business key. The local Ninox catalog has no field-level DriversDB/Z definitions, so label-based meanings below must not be expanded beyond what is established.
 
-## `settlements` — weekly truck financial records
+| Column | Type | Null? | Meaning / safe use |
+|---|---|---:|---|
+| `FullName` | text | yes | Current full display name. |
+| `First Name` | text | yes | Current first name. |
+| `Middle Name` | text | yes | Current middle name. |
+| `Last Name` | text | yes | Current last name. |
+| `E-mail` | text | yes | Sensitive current email. |
+| `Phone Number` | text | yes | Sensitive current phone. |
+| `Years Of Experience` | numeric | yes | Ninox-calculated experience; use stored value unless asked to recalculate. |
+| `DOB` | date | yes | Sensitive date of birth; validate anomalies before compliance use. |
+| `Company Name (This is NOT the Insurance)` | text | yes | Employer/company; explicitly not insurance. |
+| `CDL` | text | yes | Sensitive CDL number. |
+| `State` | text | yes | CDL issuing state. |
+| `CDL Expiration` | text | yes | Sensitive expiration value stored as text; validate format before date arithmetic. |
+| `Gender` | text | yes | Sensitive gender value as stored; omitted unless sensitive access is explicitly authorized and requested. |
+| `Insurance` | text | yes | Driver-associated insurance/category code; code expansion is not established. |
+| `Ninox_ID` | numeric | yes | Unique DriversDB source ID; preferred join key. |
+| `ID` | bigint | no | Supabase identity primary key. |
+| `organization_id` | uuid | no | Tenant key. |
 
-**Grain:** one row per truck per Tuesday–Monday settlement period. **Use for:** period-specific gross, expenses, net, miles, driver pay, and expense categories. **Critical:** historical `Owner` and `Dispatch` belong to this settlement row; never replace them with current `trucks` values.
+## `returns` — current expected-return list
 
-| Column (type) | Meaning / agent use |
-|---|---|
-| `ID` (bigint) | Database row identifier. |
-| `Truck` (text) | Settlement truck/accounting-bucket identifier for this period. |
-| `truck_insurance` (text) | Truck-insurance label captured with this settlement row; not a monetary expense column. |
-| `Dispatch` (text) | Dispatch/group attribution for this period. |
-| `Owner` (text) | Owner attribution for this period. |
-| `From` (date) | Settlement-period Tuesday start. |
-| `To` (date) | Settlement-period Monday end. |
-| `Gross` (numeric) | Total settlement income before company percentage and expenses. |
-| `tonu` (numeric) | Tonnage income already included in `Gross`; never add it to Gross. |
-| `%AppliedSaved` (numeric) | Applied company-percentage value for the row; do not assume its scale (for example, 0.15 vs 15) without a validated calculation context. |
-| `Gross_with_%_deduction_All` (numeric) | Gross after the applicable company percentage; distinct from Gross and Net. |
-| `Total Expenses` (numeric) | Full settlement expense total; do not add component expense columns to it again. |
-| `Net` (numeric) | Stored net, defined as `Gross_with_%_deduction_All − Total Expenses`. |
-| `Driven_miles` (numeric) | Miles driven in this settlement period; use for documented CPM calculation. |
-| `Total Driver Pay` (numeric) | Total driver-pay expense for this settlement row. |
-| `Fuel Expenses` (numeric) | Fuel component of settlement expenses; do not add it to `Total Expenses`. |
-| `truck_loans` (numeric) | Truck-loan expense component; do not add it to `Total Expenses`. Apply the documented owner-assignment bucket rule when required. |
-| `Otro` (numeric) | “Other” expense component; do not add it to `Total Expenses`. |
-| `LTR Invoices` (numeric) | LTR-invoice expense component; do not add it to `Total Expenses`. |
-| `Tolls` (numeric) | Toll expense component; do not add it to `Total Expenses`. |
-| `BestPass` (numeric) | BestPass expense component; do not add it to `Total Expenses`. |
-| `Insurance` (numeric) | Insurance expense component; do not add it to `Total Expenses`. Apply the documented owner-assignment bucket rule when required. |
-| `CabCards` (numeric) | Cab-card expense component; do not add it to `Total Expenses`. |
-| `Trailer Rentals` (numeric) | Trailer-rental expense component; do not add it to `Total Expenses`. |
-| `samsara` (numeric) | Samsara expense component; do not add it to `Total Expenses`. |
-| `PrePass` (numeric) | PrePass expense component; do not add it to `Total Expenses`. |
-| `To Report` (text) | Current-cycle inclusion flag. Use only for current-cycle reporting; the API recognizes `Yes`, `true`, and `TRUE` when no settlement period is supplied. |
-| `organization_id` (uuid) | Tenant/organization scope. |
+**Grain:** one returning driver/truck row. Team trucks normally have two rows. Count distinct `Truck` for truck totals. This is volatile current operational data; use DriverPay for history.
 
-## `organizations` — tenant master
+`Return Date` is a nullable PostgreSQL `date`, not a free-text status field. Filter with inclusive ISO dates. Supabase omits Ninox Returns fields `Solo`, `DriverDB_Id_saved`, and `Driver_id_Pay_`.
 
-**Grain:** one row per organization/tenant. This database currently has one organization.
+| Column | Type | Null? | Meaning / safe use |
+|---|---|---:|---|
+| `Insurance` | text | yes | Insurance category/code; use literal value. |
+| `Truck` | text | yes | Returning truck number. Ninox `S.A`. |
+| `Driver Name` | text | yes | Driver display name. Ninox `S.B`. |
+| `Phone Number` | text | yes | Sensitive phone. Ninox `S.E`. |
+| `Return Date` | date | yes | Expected return date; null means no date stored. Ninox `S.H`. |
+| `ID` | bigint | no | Supabase identity primary key. |
+| `Ninox_ID` | numeric | yes | Returns source-record ID; **not** a driver ID. |
+| `organization_id` | uuid | no | Tenant key. |
 
-| Column (type) | Meaning / agent use |
-|---|---|
-| `id` (uuid) | Canonical organization identifier; target of every operational `organization_id` foreign key. |
-| `name` (text, unique) | Organization display/name value. |
-| `created_at` (timestamptz) | Organization-record creation timestamp. |
+## `settlements` — weekly financial ledger
 
-## `user_memberships` — reporting authorization
+**Grain:** one truck identifier or owner bucket per Tuesday–Monday period. `(Truck, From, To)` is unique in verified live data. Attribute history using this row's `Owner` and `Dispatch`, never current truck-master values.
 
-**Grain:** one role assignment per `(user_id, organization_id)` pair. This is the immediate reporting-access revocation point.
+**Owner buckets:** `Truck` 1=Carlos, 2=Jorge, 3=CDT. Include these rows in the respective owner's general settlement totals because loan and insurance amounts from real trucks without dedicated rows can be aggregated there. Exclude them from physical-truck counts/rankings.
 
-| Column (type) | Meaning / agent use |
-|---|---|
-| `user_id` (uuid) | Supabase Auth user UUID; part of the composite primary key. |
-| `organization_id` (uuid) | Organization UUID; part of the composite primary key. |
-| `role` (text) | Approved role: `viewer`, `finance`, `owner`, or `admin`. Determines reporting authorization. |
-| `created_at` (timestamptz) | Membership-record creation timestamp. |
+| Column | Type | Null? | Meaning / safe use |
+|---|---|---:|---|
+| `Truck` | text | yes | Physical truck number or synthetic owner bucket. Ninox `DE.K`. |
+| `truck_insurance` | text | yes | Period-specific truck insurance category/code. |
+| `Dispatch` | text | yes | Historical dispatch value for this period. Ninox `DE.X3`. |
+| `Owner` | text | yes | Historical owner/entity for this period. |
+| `Gross` | numeric | yes | Stored total gross before percentage/expenses. Ninox `DE.L4`. |
+| `tonu` | numeric | yes | Imported physical name for additional/Compass income already included in Gross; do not treat as tonnage quantity or add again. Related Ninox concept `DE.M1 / Facturado Compass`. |
+| `Total Expenses` | numeric | yes | Stored full expense total; components and driver pay are already included. Ninox `DE.Z4`. |
+| `Net` | numeric | yes | Stored authoritative net. Intended subtraction has rare live exceptions. Ninox `DE.A5`. |
+| `From` | date | yes | Tuesday period start. Ninox `DE.L`. |
+| `To` | date | yes | Following Monday period end. |
+| `truck_loans` | numeric | yes | Truck loan/dealer-payment expense; some amounts are in owner buckets. Ninox `DE.Q3`. |
+| `Otro` | numeric | yes | Uncategorized expense component. |
+| `LTR Invoices` | numeric | yes | Internal Lightning Trucks Repairs invoice expense. |
+| `Tolls` | numeric | yes | Toll expense component. |
+| `BestPass` | numeric | yes | BestPass expense component. |
+| `Insurance` | numeric | yes | Insurance expense component; some amounts are in owner buckets. |
+| `CabCards` | numeric | yes | Cab-card expense component. |
+| `Trailer Rentals` | numeric | yes | Trailer-rental expense component. |
+| `samsara` | numeric | yes | Samsara expense component. |
+| `PrePass` | numeric | yes | PrePass expense component. |
+| `Total Driver Pay` | numeric | yes | Total driver-pay expense for the truck/week. Ninox `DE.L3`. |
+| `Fuel Expenses` | numeric | yes | Fuel expense component. |
+| `To Report` | text | yes | Mixed historical import flag. Do not infer current period from this field alone. |
+| `%AppliedSaved` | numeric | yes | Company percentage applied to Gross. Ninox `DE.T2`. |
+| `Gross_with_%_deduction_All` | numeric | yes | Gross after percentage; verified formula `Gross × (%AppliedSaved/100)` for eligible live rows. Ninox `DE.G8`. |
+| `Driven_miles` | numeric | yes | Miles driven in the period. Ninox `DE.S5`. |
+| `ID` | bigint | no | Supabase identity primary key. |
+| `organization_id` | uuid | no | Tenant key. |
 
-## `agent_query_audit` — reporting request audit log
-
-**Grain:** one reporting API request attempt. This table is private; client roles cannot read it. **Do not use it for business reporting.**
-
-| Column (type) | Meaning / agent use |
-|---|---|
-| `id` (bigint) | Immutable database identity generated for the audit row. |
-| `request_id` (uuid) | Correlation ID returned by the reporting API for this request. |
-| `user_id` (uuid, nullable) | Authenticated caller UUID when available. |
-| `organization_id` (uuid, nullable) | Caller organization UUID when membership was resolved. |
-| `role` (text, nullable) | Caller role when membership was resolved. |
-| `report_name` (text) | Requested allowlisted report name. |
-| `filters` (jsonb) | Request filter object as received by the endpoint. |
-| `row_count` (integer, nullable) | Number of rows returned for a successful request. |
-| `outcome` (text) | `success`, `denied`, or `invalid` request outcome. |
-| `created_at` (timestamptz) | Audit-event timestamp. |
-
-## Approved API projections
-
-The API does **not** expose every physical column. `fleet_status` returns selected current truck fields; `current_returns` excludes phone numbers; `driver_assignments` excludes contact/license fields; `settlement_summary` returns the core settlement fields. See `api/openapi.yaml` for accepted filters and `docs/question-routing.md` for when to use each report.
+Use stored `Gross`, `Total Expenses`, and `Net`. Do not add `tonu` to Gross or expense components to Total Expenses. Require an explicit period; historical `To Report=Yes` rows make the flag unsafe as a current-cycle selector.

@@ -1,36 +1,57 @@
 # Agent operating instructions — Lightning Transportation reporting
 
-This repository is the canonical **reporting contract** for Lightning Transportation. It defines how to interpret the live Supabase data without copying operational records into this repository.
+This repository is the canonical reporting contract for Lightning Transportation. It contains no operational records or credentials.
 
 ## Read in this order
 
-1. `docs/agent-rules.md` — non-negotiable answer, date, access, and aggregation rules.
-2. `docs/question-routing.md` — select the minimum approved report and its filters.
-3. `docs/metric-definitions.md` — calculate the requested metric exactly once.
-4. `docs/data-dictionary.md` — table grain, column-by-column definitions, joins, and sensitivity.
-5. `api/openapi.yaml` — actual reporting API request contract.
+1. `AGENTS.md`
+2. `docs/agent-rules.md`
+3. `docs/question-routing.md`
+4. `docs/metric-definitions.md`
+5. `docs/data-dictionary.md`
+6. `api/openapi.yaml`
+7. Authenticated runtime catalog: `GET /functions/v1/agent-reporting?report=catalog`
 
-`docs/data-dictionary.md` is a live-schema snapshot verified on **2026-09-10**. Do not invent a column, reinterpret a similar-looking column, or assume a field is populated merely because it exists.
+The five reporting-source schemas and 96 physical columns were verified on **2026-09-11**. The deployed catalog is the runtime contract. If it conflicts with the repository, stop and report the contradiction instead of guessing.
 
-## Mandatory behavior
+## Approved interfaces
 
-- Use only the approved `reporting-query` API for routine reporting. Do not bypass it with direct database access, shared sessions, passwords, or service-role credentials.
-- Treat report rows as evidence, not as a complete answer. Apply the table grain, filters, date rules, cardinality rules, and metric definition before answering.
-- State the source report/table, exact filters, exact date range, row count or distinct count as applicable, `as_of` freshness, and material caveats.
-- Never expose driver contact details, CDL data, date of birth, or credentials.
-- If a requested field, definition, period, or data coverage is ambiguous, say what is missing and ask for clarification. Do not guess.
-- For a question requiring a grouping, aggregate returned rows locally only after checking the documented grain. Never join current `trucks` attributes onto historical `settlements` to attribute a historical owner or dispatcher.
+- Approved AI service accounts use the read-only `agent-reporting` Edge Function with their assigned `x-agent-key`.
+- The separate JWT-based `reporting-query` endpoint is for approved personal Supabase memberships; onboarding remains paused until company Auth email/SMTP is ready.
+- Never bypass either gateway with a database password, service-role/secret key, arbitrary SQL, shared employee session, or direct raw-table access.
+- Never put an agent key in a URL, browser client, prompt, log, screenshot, repository, or answer.
+
+## Mandatory query behavior
+
+- Choose the smallest report and load its current metadata when meaning, filters, joins, grain, or calculations are not already known.
+- Use exact documented filter names and exact stored values. Unknown/duplicate parameters are errors.
+- Supply required anchors: settlement reports need `period_from` or truck; DriverPay needs truck, driver, `out_from`, or `return_from`.
+- Follow `next_offset` until `has_more=false` when all rows are needed. `count`/`page_count` is one page; `total_count` is the filtered total.
+- Request sensitive fields only for an explicit user need and only when the assigned key permits them. Minimize and redact output.
+- Treat a denied/empty response as evidence only about that request, not proof that the business fact is false or that upstream data is current.
+
+## Non-negotiable analysis rules
+
+- Settlements run Tuesday through Monday. Use an explicit period; never infer the current cycle from `To Report` alone.
+- Stored `Gross`, `Total Expenses`, and `Net` are authoritative. `tonu` is an additional/Compass income component already included in Gross; expense components are already included in Total Expenses.
+- Settlement Truck 1, 2, and 3 are owner-allocation buckets for Carlos, Jorge, and CDT—not physical trucks. Include them in the matching owner's general settlement totals; exclude them from physical-truck counts/rankings.
+- `DriverPay` and `returns` are driver-row sources; count distinct truck identifiers for truck totals.
+- Departures use only `DriverPay.Out Date`; historical returns use only `DriverPay.Return Date`. Intersect both only for an explicitly requested assignment-overlap analysis.
+- Historical owner/dispatch comes from the historical row, not current `trucks`.
+- `DriverPay.DriversDB_ID` joins to `drivers.Ninox_ID` after type normalization. `returns.Ninox_ID` is not a driver ID.
+- Left-join history to current trucks; missing current-master matches do not invalidate history.
+- Planned Schedule_Teams and exact Ninox in-yard/on-road metrics are not available from these Supabase tables. State the limitation; do not approximate from similar fields.
+
+## Required answer evidence
+
+State source report/table, normalized filters, exact period, result and row/distinct count, pagination completeness, `as_of`, source-sync freshness limitation, and material grain/null/bucket/join/sensitivity caveats. Never present a truncated page or incomplete financial period as a complete total.
 
 ## User-correction feedback
 
-When a user corrects a reporting agent, send a sanitized `reporting_agent_correction` event using the exact versioned contract in [`schemas/correction-feedback-event.schema.json`](schemas/correction-feedback-event.schema.json). This applies to every agent system using this repository, not only Hermes. The Make destination is a runtime-only environment variable (`REPORTING_KIT_KNOWLEDGE_WEBHOOK_URL`) and must never be committed here. Send the user question/task and correction in the required fields, then send the verified/rejected status update under the same event ID after evidence review. The full privacy and delivery rules are in the reporting skill and `docs/knowledge-maintenance.md`.
+On every user correction, send a sanitized `reporting_agent_correction` event using the byte-identical contracts in `schemas/correction-feedback-event.schema.json` and the packaged skill reference. Send the initial event as `unverified`; reuse the same UUID for a later `verified` or `rejected` update. Keep webhook URL/token runtime-only and exclude PII, credentials, sessions, raw rows, and unnecessary identifiers. Follow `docs/knowledge-maintenance.md`; feedback is not an approved business rule until verified.
 
-## Required skill freshness
+## Required freshness and maintenance
 
-Agents that install the reporting skill must schedule the packaged GitHub synchronization script at 10:00 AM and 2:00 PM local time every day. See `skills/itpros-supabase-reporting/SKILL.md` for the exact cron contract. Before answering a reporting request, do not rely on a locally copied instruction when the scheduled sync has reported a failure; disclose the freshness limitation.
+Installed agents must maintain one `data-reporting-kit-sync` job at 10:00 AM and 2:00 PM local time. A failed sync must be disclosed before relying on stale instructions.
 
-## Continuous knowledge rule
-
-Follow [`docs/knowledge-maintenance.md`](docs/knowledge-maintenance.md). When verified knowledge changes how an agent should select, interpret, calculate, aggregate, secure, or explain data, update this kit in the same work cycle before declaring the work complete. Do not publish guesses: mark incomplete semantics as **not established** until verified.
-
-A documentation change that could affect an answer must update `CHANGELOG.md`. A schema or API change must update the data dictionary, routing rules, metric definitions, API contract, and this file when applicable. Verify against the live schema before claiming the kit is current.
+Verified answer-affecting knowledge must update the relevant docs, runtime metadata, OpenAPI, tests, packaged skill, and `CHANGELOG.md` in the same work cycle. Verify the live schema/function, push, and confirm the remote commit before declaring completion.

@@ -1,7 +1,7 @@
 ---
 name: itpros-supabase-reporting
-description: Answer Lightning reports through the approved reporting API.
-version: 0.5.0
+description: Answer Lightning reports through the approved reporting APIs.
+version: 0.6.0
 author: Ibrain Ortega, Hermes Agent
 license: Proprietary
 platforms: [linux, macos, windows]
@@ -13,58 +13,42 @@ metadata:
 
 # Lightning reporting
 
-Answer Lightning Transportation data questions with the authenticated `reporting-query` Edge Function. The helper saves only the caller's refreshable Supabase session in the active Hermes profile with owner-only file permissions. Never use a service-role key, database password, or another employee's token.
+Read repository `AGENTS.md` first. Approved AI service agents use `agent-reporting`; the personal JWT-based `reporting-query` flow remains available only to already-approved Supabase members.
 
-## When to Use
+## Agent-key mode
 
-- Requests about fleet status, returns, driver assignment history, or settlement summaries.
-- Do not use for writes, provisioning, schema changes, or direct access to protected driver PII.
-
-## Authenticate
-
-Use `terminal` to run the installed script. It prompts locally for the caller's Supabase password without printing it:
+The assigned key must be injected at runtime as `LIGHTNING_AGENT_REPORTING_KEY`. Never put it in a command argument, URL, prompt, log, repository, or output.
 
 ```bash
-python "$HERMES_HOME/skills/itpros-supabase-reporting/scripts/reporting.py" login --email YOUR_COMPANY_EMAIL
+python "${HERMES_HOME:-$HOME/.hermes}/skills/itpros-supabase-reporting/scripts/agent_reporting.py" catalog
+python "${HERMES_HOME:-$HOME/.hermes}/skills/itpros-supabase-reporting/scripts/agent_reporting.py" metadata --report settlements
+python "${HERMES_HOME:-$HOME/.hermes}/skills/itpros-supabase-reporting/scripts/agent_reporting.py" query --report settlements --params '{"period_from":"2026-09-01","period_to":"2026-09-01"}'
 ```
 
-For the default profile, substitute `${HERMES_HOME:-$HOME/.hermes}` if `HERMES_HOME` is unset. The script stores the refreshable session at `$HERMES_HOME/reporting/lightning-session.json`, mode `0600`.
+The query helper follows pagination by default, verifies that integer `total_count` stays stable, and marks a result complete only when the final fetched count equals it. It returns `fetched_count`, `total_count`, normalized filters, timestamps, and combined data. Use `--one-page` only when a partial page is explicitly sufficient; set `--max-pages` when the default safety limit of 100 pages is unsuitable.
+
+## Personal membership mode
+
+The legacy `scripts/reporting.py` helper uses the caller's personal Supabase Auth session and `reporting-query`. Do not use it without an approved company membership. Never copy another person's password/session or use a database/service-role key.
 
 ## Required twice-daily skill synchronization
 
-Every Hermes agent that installs this skill must create **one** durable cron job that checks the canonical GitHub `main` branch at **10:00 AM and 2:00 PM every day in that agent's local timezone**. This keeps each installed agent current with shared reporting rules, schema guidance, analysis methods, and newly supported data.
-
-Before creating the job, list existing cron jobs and reuse/update an existing `data-reporting-kit-sync` job rather than creating duplicates. The job must run this packaged script:
+Every installed agent must maintain one `data-reporting-kit-sync` job at 10:00 AM and 2:00 PM local time. List existing jobs first and update the named job instead of creating duplicates.
 
 ```bash
 bash "${HERMES_HOME:-$HOME/.hermes}/skills/itpros-supabase-reporting/scripts/sync-data-reporting-kit.sh"
 ```
 
-The script compares GitHub `main` to its locally recorded revision, installs the current reporting skill only when a change is present, then records the verified revision with owner-only permissions. It updates instructions only; it never modifies Supabase data. A failed check must be reported, not silently treated as current.
-
-For Hermes, create the cron through the native cron tool using this schedule and a self-contained prompt:
-
-```text
-name: data-reporting-kit-sync
-schedule: 0 10,14 * * *
-deliver: local
-prompt: Run bash "${HERMES_HOME:-$HOME/.hermes}/skills/itpros-supabase-reporting/scripts/sync-data-reporting-kit.sh". Report only whether the Data Reporting Kit was updated, already current, or failed. Do not query or modify Supabase data.
-```
-
-For non-Hermes agents, create the equivalent native scheduler entry at `0 10,14 * * *` in the host's intended local timezone and run the same script. Do not schedule a blind reinstall or use a stale copied skill as the source of truth.
+Use schedule `0 10,14 * * *`. The job updates instructions only and must report updated, current, or failed; never silently rely on stale instructions.
 
 ## Procedure
 
-1. Read `docs/question-routing.md` and `docs/data-dictionary.md` from the Data Reporting Kit repository. Completion: the report type, filters, period, and metric are unambiguous.
-2. Run the helper through `terminal` using an allowlisted report and JSON filters. Example:
-
-```bash
-python "$HERMES_HOME/skills/itpros-supabase-reporting/scripts/reporting.py" query --report fleet_status --filters '{"dispatcher":"Group 1"}'
-```
-
-Completion: the response returns `data`, `row_count`, and `as_of`.
-3. Validate date windows, type conversions, and driver/truck cardinality according to the routing guide. Completion: the result uses the stated business definition.
-4. Respond with the source report, filters, exact period, result, freshness, and material caveats. Completion: no raw PII or secret appears in the response.
+1. Read `AGENTS.md`, `docs/agent-rules.md`, `docs/question-routing.md`, `docs/metric-definitions.md`, and `docs/data-dictionary.md`.
+2. Call `catalog`, then report metadata when the current schema/rules are not loaded.
+3. Choose the smallest report and exact filters. Settlement reports require an explicit period or truck; DriverPay requires truck, driver, `out_from`, or `return_from`.
+4. Run the helper and reconcile `fetched_count` with `total_count` when a complete answer is required.
+5. Apply grain, date, join, allocation-bucket, stored-value, and sensitive-output rules.
+6. Answer with source, normalized filters, exact period, result and row/distinct count, pagination completeness, `as_of`, source-freshness limitation, and material caveats.
 
 ## User-correction webhook — required shared feedback event
 
@@ -92,7 +76,7 @@ All agents must use exactly the versioned JSON contract in [`schemas/correction-
   "occurred_at": "2026-09-11T12:36:49Z",
   "source": {
     "agent_name": "itpros-supabase-reporting",
-    "agent_version": "0.3.0",
+    "agent_version": "0.6.0",
     "repository": "lightningtransport/data-reporting-kit"
   },
   "user_question_or_task": "Redacted general form of the user's question or task",
@@ -128,20 +112,20 @@ rm -f /path/to/sanitized-event.json
 
 If `REPORTING_KIT_KNOWLEDGE_WEBHOOK_TOKEN` is explicitly configured, add `-H "Authorization: Bearer ${REPORTING_KIT_KNOWLEDGE_WEBHOOK_TOKEN}"`. Never print the payload or token to logs. Make.com receives a notification only; it never has permission to modify this repository automatically.
 
-## Approved reports
+## Approved reports and pitfalls
 
-- `fleet_status` — all reporting roles.
-- `current_returns` — all reporting roles; no phone numbers.
-- `driver_assignments` — all reporting roles; no contact/license fields.
-- `settlement_summary` — `finance`, `owner`, or `admin` only.
+Agent-key reports are `settlement_summary`, `settlements`, `driver_pay`, `drivers`, `returns`, and `trucks`; the assigned key can restrict this list. Use `report=catalog` for the live permission/contract.
 
-## Pitfalls
-
-- DriverPay and returns may produce two rows per team truck; count distinct trucks only when asked for trucks.
-- Filter departures by `Out Date` only and historical returns by `Return Date` only.
-- Settlement weeks run Tuesday through Monday.
-- A request denied after offboarding is expected. Do not seek a bypass or alternate credential.
+- `count`/`page_count` is one page, not the total.
+- A successful zero-row page has `total_count=0`; an offset beyond the available range returns HTTP `416`.
+- DriverPay and returns can produce two rows per team truck; deduplicate trucks when asked for trucks.
+- Departures use `Out Date` only; historical returns use `Return Date` only.
+- Settlement weeks run Tuesday through Monday and require an explicit period.
+- Settlement Trucks 1/2/3 are Carlos/Jorge/CDT allocation buckets, not physical trucks.
+- Stored Gross, Total Expenses, and Net take precedence; do not add included components again.
+- `returns.Ninox_ID` is not a driver ID.
+- Planned Schedule_Teams and exact Ninox in-yard/on-road metrics are unsupported by these Supabase tables.
 
 ## Verification
 
-Confirm the function response contains the requested report, filters, `as_of` timestamp, and `row_count`. State whether an empty result means no matching records or incomplete data coverage.
+Confirm the server response contains the requested report, normalized filters, `as_of`, `total_count`, and pagination state. For complete answers, reconcile fetched rows with `total_count`. State whether an empty result means no matching rows under the applied filters or whether upstream freshness/coverage cannot be established.

@@ -1,32 +1,51 @@
 # Onboarding and offboarding
 
-## Onboard a team member
+## Approved AI service agent
 
-1. Create or invite the person in Supabase Auth using their company email.
-2. Obtain the Auth user UUID.
-3. Insert one `public.user_memberships` row for the Lightning Transportation organization with the approved role (`viewer`, `finance`, `owner`, or `admin`).
-4. Add the person to the GitHub team that can read this private repository.
-5. Have the person authenticate from their own agent environment. Never copy another employee's session, password, refresh token, or service key.
-6. Test `POST /functions/v1/reporting-query` with `report: fleet_status`; confirm an audit record is created.
+### Onboard
 
-## Offboard a team member
+1. Assign one new sequential `AGENT_API_KEY_<n>` secret; never reuse another agent's value.
+2. Optionally set matching controls: `AGENT_ORGANIZATION_ID_<n>`, `AGENT_REPORTS_<n>`, `AGENT_ROLE_<n>`, `AGENT_EXPIRES_AT_<n>`, and `AGENT_ALLOW_SENSITIVE_<n>`.
+3. Default to no sensitive permission. Grant it only for a documented need.
+4. Give the key once through an approved private channel; never commit or log it.
+5. Test `report=catalog`, one allowed data query, one disallowed/sensitive query, and an invalid key.
+6. Confirm `public.agent_query_audit` contains the authorized data request under the key identifier and no secret value.
 
-1. Delete their `public.user_memberships` row. The reporting function checks membership on every request, so this blocks new requests immediately.
-2. In Supabase Auth, ban/delete the user and revoke their active sessions. Existing access JWTs remain valid only until their configured expiry, but the missing membership also denies the reporting endpoint now.
-3. Remove the person from the GitHub Team/repository.
-4. Revoke any third-party agent integration token they personally configured.
-5. Review `public.agent_query_audit` for recent requests and preserve it under company retention policy.
+### Offboard or rotate
 
-## Provisioning SQL
+1. Remove the exact `AGENT_API_KEY_<n>` secret and its matching control secrets.
+2. Confirm the old key returns `401` and another active key still works.
+3. Review recent `agent_query_audit` entries for that key identifier.
+4. Remove any agent-local copy, scheduler, or integration credential.
+5. Issue a new sequential key rather than restoring the revoked value when rotating.
 
-Run only from an administrator-controlled environment after confirming the user UUID and organization ID.
+## Individual Supabase Auth member
+
+Personal onboarding is paused until approved Auth email/SMTP delivery is configured.
+
+### Onboard when enabled
+
+1. Invite the person in Supabase Auth using their company email.
+2. Insert one `public.user_memberships` row with the approved role (`viewer`, `finance`, `owner`, or `admin`).
+3. Have the person authenticate from their own environment. Never copy another employee's session, password, refresh token, or service key.
+4. Test `POST /functions/v1/reporting-query` and confirm an audit record.
+
+### Offboard
+
+1. Delete the `user_memberships` row to block new reporting requests immediately.
+2. Ban/delete the Auth user and revoke active sessions.
+3. Revoke personally configured integrations.
+4. Review `agent_query_audit` under the retention policy.
+
+## Membership SQL
+
+Run only from an administrator-controlled environment after confirming the user and organization UUIDs.
 
 ```sql
 insert into public.user_memberships (user_id, organization_id, role)
-values ('AUTH_USER_UUID', '00000000-0000-0000-0000-000000000001', 'viewer');
+values ('AUTH_USER_UUID', 'ORGANIZATION_UUID', 'viewer');
 
--- Immediate reporting-access revocation
 delete from public.user_memberships
 where user_id = 'AUTH_USER_UUID'
-  and organization_id = '00000000-0000-0000-0000-000000000001';
+  and organization_id = 'ORGANIZATION_UUID';
 ```

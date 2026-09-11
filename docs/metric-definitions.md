@@ -1,33 +1,47 @@
 # Metric definitions
 
+Read `AGENTS.md` and the report metadata before calculating.
+
 ## Settlement metrics
 
 | Metric | Definition | Source |
 |---|---|---|
-| Gross | Total settlement income before company percentage and expenses. | `settlements.Gross` |
-| Total expenses | Full settlement expense total. Do not add individual categories again. | `settlements.Total Expenses` |
-| Net | `Gross_with_%_deduction_All − Total Expenses`. | `settlements.Net` |
-| Gross after percentage | Gross after `%AppliedSaved` is applied. It is not the same as Gross or Net. | `settlements.Gross_with_%_deduction_All` |
-| Tonnage income | Income included in Gross along with loads. | `settlements.tonu` |
-| Current reporting scope | Latest active cycle only. | `settlements.To Report` = `Yes` / `true` |
+| Gross | Stored total settlement gross before percentage and expenses. Do not add `tonu`. | `settlements.Gross` |
+| Additional/Compass income | Physical import field `tonu`; related Ninox concept is `Facturado Compass`. It is already included in Gross and must not be interpreted as a tonnage quantity. | `settlements.tonu` |
+| Total expenses | Stored full settlement expense total. Do not add category columns or driver pay again. | `settlements.Total Expenses` |
+| Net | Stored authoritative net. The intended formula is gross-after-percentage minus total expenses, but verified live rows contain rare exceptions and null-expense cases. | `settlements.Net` |
+| Gross after percentage | `Gross × (%AppliedSaved / 100)` for eligible verified rows. Not Gross or Net. | `settlements.Gross_with_%_deduction_All` |
+| Driven miles | Period mileage. | `settlements.Driven_miles` |
+| Current reporting cycle | Select by an explicit Tuesday `From` period. `To Report` alone is unsafe because historical rows contain `Yes` and newer rows contain `true`. | `settlements.From` |
 
-For settlement totals, use `From` as the Tuesday beginning of the reporting week and `To` as the following Monday. Attribute a historical settlement by its own `Owner` and `Dispatch` fields, never by current truck-master values.
+Settlement periods run Tuesday through Monday. Attribute historical owner/dispatch using the settlement row.
+
+### Owner-allocation buckets
+
+Settlement `Truck` 1=Carlos, 2=Jorge, and 3=CDT. These are owner-assignment buckets, not physical trucks. Loan and insurance amounts for real trucks without dedicated rows can be aggregated into the corresponding bucket.
+
+- Include bucket rows in the respective owner's general settlement totals.
+- Exclude them from physical-truck counts and rankings.
+- State whether buckets were included.
 
 ## Operational metrics
 
 | Metric | Definition | Source |
 |---|---|---|
-| Trucks leaving | Distinct `DriverPay.Truck_Number` with `Out Date` in range. | `DriverPay` |
-| Trucks returning | Distinct `DriverPay.Truck_Number` with `Return Date` in range. | `DriverPay` |
-| Current returns | Current operational return/status list; dates require parsing. | `returns` |
-| Current fleet assignment | Current owner/dispatcher/mechanic/fleet metadata. | `trucks` |
+| Physical fleet count | Distinct `truck_number` excluding 1, 2, 3. | `trucks` with `physical_only=true` |
+| Trucks leaving | Distinct `Truck_Number` filtered by `Out Date` only. | `DriverPay` |
+| Trucks returning historically | Distinct `Truck_Number` filtered by `Return Date` only. | `DriverPay` |
+| Current expected returns | Current Returns rows by nullable date; deduplicate `Truck` for truck count. | `returns` |
+| Current fleet assignment | Current owner/dispatcher/mechanic metadata, not history. | `trucks` |
+| Planned departures | Not available in these Supabase tables; use approved live Ninox Schedule_Teams source. | external |
+| Exact in-yard/on-road count | Not available because Supabase lacks Ninox `days_in_yard_` and numeric insurance-choice fields. | external |
 
-## Driver pay calculation
+## Driver pay
 
-Start with `MoneyPerWeekSigned`. If `Driven_miles` exceeds `Pay CPM after Miles` in the corresponding settlement week, add:
+For each DriverPay assignment that overlaps the settlement week:
 
 ```text
-CPM × (Driven_miles − Pay CPM after Miles)
+MoneyPerWeekSigned + CPM × max(Driven_miles − Pay CPM after Miles, 0)
 ```
 
-Calculate each driver's assignment separately. Do not divide team pay unless the requester explicitly defines a split.
+Calculate per driver assignment. Do not divide team pay unless the requester explicitly defines a split. Review transfer and termination dates that fall inside the period.

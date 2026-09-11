@@ -1,30 +1,41 @@
 # Question routing and analysis rules
 
-Use the smallest approved report that answers the question. Never substitute a similar-looking metric. `docs/agent-rules.md` is mandatory and overrides an interpretation that conflicts with the rules below.
+Read `AGENTS.md` first. Use the smallest `agent-reporting` report that answers the question, then consult `?report=<name>&metadata=true` for the current runtime contract.
 
-| User question | Report | Required filters / analysis |
+| User question | `agent-reporting` report | Required filters / analysis |
 |---|---|---|
-| “What is the current fleet status?” | `fleet_status` | Optional truck, owner, dispatcher, or mechanic-status filters. Current facts only. |
-| “Who is returning this week?” | `current_returns` | Filter only parseable return dates in the requested range. Report status/blank records separately. Deduplicate trucks only when the question asks for truck count. |
-| “Who is assigned to truck 123?” | `driver_assignments` | Filter `truck_number`; use relevant `out_from`/`out_to` window for historical context. A team has two rows. |
-| “What did we gross/net last settlement week?” | `settlement_summary` | Use Tuesday–Monday. “Last week” means the most recently completed Tuesday–Monday period unless specified. |
-| “Gross or net by owner/dispatch?” | `settlement_summary` | Supply the completed settlement period and group by owner/dispatch in analysis. Do not use current `trucks.owner` for historical settlement attribution. |
-| “Which trucks left?” | `driver_assignments` | Filter `Out Date` only. Count distinct `Truck_Number` when asked for trucks. |
-| “Which trucks returned?” | `driver_assignments` or `current_returns` | Historical answer: `Return Date` only in `DriverPay`. Current operational list: `returns`. |
+| Current truck facts or fleet list | `trucks` | Use current owner/dispatcher/mechanic fields only. Set `physical_only=true` for physical-fleet counts. |
+| Who/trucks are expected to return? | `returns` | Inclusive `return_from`/`return_to`. Count distinct `Truck` for trucks; rows represent drivers. |
+| Historical assignment for a truck/driver | `driver_pay` | Anchor with `truck_number` or `driver_id`; review dates, transfers, and terminations. |
+| Which trucks left in a period? | `driver_pay` | Filter `out_from`/`out_to` only; count distinct `Truck_Number`. |
+| Which trucks returned historically? | `driver_pay` | Filter `return_from`/`return_to` only; count distinct `Truck_Number`. |
+| Weekly headline gross/expense/net | `settlement_summary` | Supply `period_from` (and normally the same Tuesday in `period_to`) or a truck. |
+| Full weekly expenses/components | `settlements` | Supply `period_from` or truck; use explicit period for owner/dispatch totals. |
+| Current driver profile | `drivers` | Prefer exact `driver_id`; use name only for discovery. Sensitive fields require explicit user need and authorized key. |
+| Planned teams/departures | unsupported | Requires live Ninox Schedule_Teams; do not substitute DriverPay history. |
+| Exact trucks in yard/off duty/on road | unsupported | Supabase lacks `days_in_yard_` and numeric insurance-choice fields required by the Ninox definition. |
 
 ## Date rules
 
-- Settlement reporting: Tuesday through the following Monday.
-- Departure and return weekly reporting: Monday through Sunday unless the requester specifies another interval.
-- Do not call a settlement period complete merely because rows exist. Financial fields must be populated.
+- Settlements: Tuesday `From` through the following Monday `To`. Use an exact Tuesday period anchor. Do not infer current cycle from `To Report` alone.
+- DriverPay departures: use only `Out Date` unless another date is explicitly requested.
+- DriverPay historical returns: use only `Return Date` unless another date is explicitly requested.
+- Current expected returns: use nullable `returns.Return Date` directly as an ISO date.
+- A populated row does not prove financial completion; check the requested metric for null values.
 
-## Cardinality rules
+## Cardinality and join rules
 
-- `DriverPay` is driver-level. A two-driver team creates two rows for one truck.
-- `returns` can also contain two driver rows for one team truck.
-- `settlements` is truck-week level; filter by both truck and period for a single settlement.
-- Prefer IDs over names for joins. Names are display values and may be duplicated.
+- `DriverPay` and `returns` are driver-row sources. Deduplicate truck identifiers for truck counts.
+- `settlements` is truck-or-bucket/week grain. Filter by `Truck` plus period for one row.
+- Settlement Trucks 1, 2, and 3 are Carlos/Jorge/CDT allocation buckets. Include them in owner general totals; exclude them from physical-truck rankings.
+- Normalize `DriverPay.DriversDB_ID` text against `drivers.Ninox_ID` numeric.
+- `returns.Ninox_ID` is not a driver join key.
+- Left-join historical rows to current `trucks`; history can contain retired/missing current-master numbers.
+
+## Pagination
+
+For complete totals or lists, follow `next_offset` until `has_more=false`. `count` and `page_count` are the current page; `total_count` is the filtered total.
 
 ## Answer format
 
-Every answer must name: source report/table, filters, exact period, total/row count as applicable, data freshness, and material caveats.
+State source report/table, normalized filters, exact period, result and row/distinct count, `as_of`, source-freshness limitation, and material grain/null/bucket/join caveats.

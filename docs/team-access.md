@@ -1,44 +1,34 @@
-# Team access — public knowledge-test phase
+# Team access
 
-## Current test scope: instructions only
+## Repository scope
 
-This public repository lets any Hermes or other agent system read the same data dictionary, metric definitions, approved filters, and reporting guardrails. It contains **no Supabase business records, secrets, access tokens, or service-role credentials**.
+This is a public, knowledge-only repository. It contains reporting instructions and Edge Function source but no Supabase business rows, API keys, passwords, JWTs, refresh tokens, database credentials, or service-role/secret keys. Public copies of documentation cannot be revoked after cloning.
 
-### GitHub write-access policy
+## Approved AI service agents — active
 
-- Public visibility grants **read access only**. It does not grant permission to change this repository.
-- Only the repository-owning `lightningtransport` GitHub account may hold `admin`, `maintain`, or `write`/push access.
-- Every other collaborator must have the `read` role only. Do not grant `triage`, `maintain`, or `admin` as a workaround.
-- Do not leave pending collaborator invitations or write-capable deploy keys. Re-check direct collaborators, invitations, deploy keys, GitHub App installations, and branch-protection settings whenever access changes.
+Approved agents use `GET /functions/v1/agent-reporting` with an individually assigned `x-agent-key`.
 
-Supabase user provisioning and team API access remain intentionally paused until company Auth email delivery is configured with the approved subdomain/SMTP setup. Do not distribute a shared Supabase password, service-role key, database password, JWT, or refresh token as a workaround.
+- Each key can be bound to an organization, report allowlist, role label, expiry, and sensitive-field permission.
+- The function scopes organization server-side and audits data requests by key identifier without storing the key value.
+- Never share one key between independent agents. Never put a key in a browser, URL, prompt, repository, or log.
+- Provision and test keys only through the approved Supabase secret workflow. Revocation is performed by removing the corresponding Edge Function secret.
+- Agents start at `AGENTS.md`, then call `?report=catalog`.
 
-## Hermes installation
+## Individual employee access — paused
 
-During the current public knowledge-test phase, anyone may read this repository and install the skill. When the repository returns to private, only approved GitHub collaborators/team members may do so.
+Personal Supabase Auth onboarding for `reporting-query` remains paused until approved company Auth email/subdomain/SMTP delivery is configured. Do not distribute a shared password, employee session, database key, or service credential as a workaround.
 
-Use the canonical repository copy rather than the Skills Hub lookup:
+## Hermes knowledge installation
+
+Anyone may read the public knowledge during this phase. An approved Hermes agent can install the skill bundle, but documentation access does not grant data access. Data calls still require an approved agent key or personal Auth membership.
 
 ```bash
-git clone --depth 1 https://github.com/lightningtransport/data-reporting-kit.git /tmp/data-reporting-kit
-bash /tmp/data-reporting-kit/skills/itpros-supabase-reporting/scripts/sync-data-reporting-kit.sh
-rm -rf /tmp/data-reporting-kit
+hermes skills tap add lightningtransport/data-reporting-kit
+hermes skills install lightningtransport/data-reporting-kit/skills/itpros-supabase-reporting --yes
 ```
 
-The synchronization script installs the full skill bundle, including references and helper scripts, under the active `${HERMES_HOME:-$HOME/.hermes}` profile. Then start a new Hermes session so the installed skill is available. The reporting helper will remain unusable until that person has an individual Supabase Auth account and assigned role.
+Start a new session after installation. Follow `AGENTS.md`, `docs/agent-reporting.md`, `docs/data-dictionary.md`, `docs/question-routing.md`, `docs/metric-definitions.md`, and `api/openapi.yaml`.
 
-## Other agent systems
+## Future privacy change
 
-Clone or read the same private repository using the employee's own GitHub account. Use:
-
-- `docs/data-dictionary.md`
-- `docs/question-routing.md`
-- `docs/metric-definitions.md`
-- `api/openapi.yaml` (documentation only until individual Auth is enabled)
-
-## Public test access
-
-Anyone may read and install the knowledge skill during this test phase. Public content cannot be revoked from a person who has already cloned or copied it. Move the repository back to private before adding proprietary definitions or enabling team data access.
-
-- To end public testing, change the repository visibility back to private and remove any previously granted collaborators.
-- When the company moves the repository into a GitHub Organization, use a private repository plus a GitHub Team for centralized onboarding/offboarding.
+Move the repository to a private GitHub organization/team before adding proprietary material that should not remain publicly copyable. Repository visibility and Supabase data authorization are separate controls.
