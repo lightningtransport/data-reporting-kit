@@ -15,14 +15,17 @@ Supabase user provisioning and team API access remain intentionally paused until
 
 ## Hermes installation
 
-During the current public knowledge-test phase, anyone may read this repository and install the skill. When the repository returns to private, only approved GitHub collaborators/team members may do so:
+During the current public knowledge-test phase, anyone may read this repository and install the skill. When the repository returns to private, only approved GitHub collaborators/team members may do so.
+
+Use the canonical repository copy rather than the Skills Hub lookup:
 
 ```bash
-hermes skills tap add lightningtransport/data-reporting-kit
-hermes skills install lightningtransport/data-reporting-kit/skills/itpros-supabase-reporting --yes
+git clone --depth 1 https://github.com/lightningtransport/data-reporting-kit.git /tmp/data-reporting-kit
+bash /tmp/data-reporting-kit/skills/itpros-supabase-reporting/scripts/sync-data-reporting-kit.sh
+rm -rf /tmp/data-reporting-kit
 ```
 
-Then start a new Hermes session so the installed skill is available. The reporting helper will remain unusable until that person has an individual Supabase Auth account and assigned role.
+The synchronization script installs the full skill bundle, including references and helper scripts, under the active `${HERMES_HOME:-$HOME/.hermes}` profile. Then start a new Hermes session so the installed skill is available. The reporting helper will remain unusable until that person has an individual Supabase Auth account and assigned role.
 
 ## Other agent systems
 
