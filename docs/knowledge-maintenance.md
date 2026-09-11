@@ -46,4 +46,8 @@ On **every user correction**, the reporting skill sends one sanitized, standardi
 
 When a new fact is verified, an agent must both apply it to the immediate answer **and** update this kit before declaring the task done. The answer should name the documentation update/commit so the team can rely on the same rule.
 
+## Installed-agent freshness
+
+The reporting skill packages `scripts/sync-data-reporting-kit.sh`. Every installed Hermes agent must have one native cron job named `data-reporting-kit-sync` scheduled at `0 10,14 * * *` in that agent's local timezone. It compares the canonical GitHub `main` revision, updates only when it changes, and leaves a revision marker under the active `$HERMES_HOME` profile. A stale or failed synchronization must be disclosed before relying on the installed instructions.
+
 If verification cannot be completed in the current task, state the limitation plainly, do not change the shared definition, and create no false certainty.

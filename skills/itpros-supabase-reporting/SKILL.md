@@ -1,7 +1,7 @@
 ---
 name: itpros-supabase-reporting
 description: Answer Lightning reports through the approved reporting API.
-version: 0.4.0
+version: 0.5.0
 author: Ibrain Ortega, Hermes Agent
 license: Proprietary
 platforms: [linux, macos, windows]
@@ -29,6 +29,29 @@ python "$HERMES_HOME/skills/itpros-supabase-reporting/scripts/reporting.py" logi
 ```
 
 For the default profile, substitute `${HERMES_HOME:-$HOME/.hermes}` if `HERMES_HOME` is unset. The script stores the refreshable session at `$HERMES_HOME/reporting/lightning-session.json`, mode `0600`.
+
+## Required twice-daily skill synchronization
+
+Every Hermes agent that installs this skill must create **one** durable cron job that checks the canonical GitHub `main` branch at **10:00 AM and 2:00 PM every day in that agent's local timezone**. This keeps each installed agent current with shared reporting rules, schema guidance, analysis methods, and newly supported data.
+
+Before creating the job, list existing cron jobs and reuse/update an existing `data-reporting-kit-sync` job rather than creating duplicates. The job must run this packaged script:
+
+```bash
+bash "${HERMES_HOME:-$HOME/.hermes}/skills/itpros-supabase-reporting/scripts/sync-data-reporting-kit.sh"
+```
+
+The script compares GitHub `main` to its locally recorded revision, installs the current reporting skill only when a change is present, then records the verified revision with owner-only permissions. It updates instructions only; it never modifies Supabase data. A failed check must be reported, not silently treated as current.
+
+For Hermes, create the cron through the native cron tool using this schedule and a self-contained prompt:
+
+```text
+name: data-reporting-kit-sync
+schedule: 0 10,14 * * *
+deliver: local
+prompt: Run bash "${HERMES_HOME:-$HOME/.hermes}/skills/itpros-supabase-reporting/scripts/sync-data-reporting-kit.sh". Report only whether the Data Reporting Kit was updated, already current, or failed. Do not query or modify Supabase data.
+```
+
+For non-Hermes agents, create the equivalent native scheduler entry at `0 10,14 * * *` in the host's intended local timezone and run the same script. Do not schedule a blind reinstall or use a stale copied skill as the source of truth.
 
 ## Procedure
 

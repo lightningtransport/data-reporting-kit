@@ -25,6 +25,10 @@ This repository is the canonical **reporting contract** for Lightning Transporta
 
 When a user corrects a reporting agent, send a sanitized `reporting_agent_correction` event using the exact versioned contract in [`schemas/correction-feedback-event.schema.json`](schemas/correction-feedback-event.schema.json). This applies to every agent system using this repository, not only Hermes. The Make destination is a runtime-only environment variable (`REPORTING_KIT_KNOWLEDGE_WEBHOOK_URL`) and must never be committed here. Send the user question/task and correction in the required fields, then send the verified/rejected status update under the same event ID after evidence review. The full privacy and delivery rules are in the reporting skill and `docs/knowledge-maintenance.md`.
 
+## Required skill freshness
+
+Agents that install the reporting skill must schedule the packaged GitHub synchronization script at 10:00 AM and 2:00 PM local time every day. See `skills/itpros-supabase-reporting/SKILL.md` for the exact cron contract. Before answering a reporting request, do not rely on a locally copied instruction when the scheduled sync has reported a failure; disclose the freshness limitation.
+
 ## Continuous knowledge rule
 
 Follow [`docs/knowledge-maintenance.md`](docs/knowledge-maintenance.md). When verified knowledge changes how an agent should select, interpret, calculate, aggregate, secure, or explain data, update this kit in the same work cycle before declaring the work complete. Do not publish guesses: mark incomplete semantics as **not established** until verified.

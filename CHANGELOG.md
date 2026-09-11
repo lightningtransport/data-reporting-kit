@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.0 — 2026-09-11
+
+- Added a packaged, revision-aware GitHub synchronization script and a required twice-daily `data-reporting-kit-sync` cron contract at 10:00 AM and 2:00 PM local time for every installed reporting agent.
+
 ## 0.4.0 — 2026-09-11
 
 - Standardized all reporting-agent user-correction feedback on a versioned JSON Schema, including a required sanitized question/task, correction, source, UUID, verification status, privacy metadata, and affected domains.
