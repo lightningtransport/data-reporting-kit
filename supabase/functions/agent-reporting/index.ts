@@ -356,6 +356,8 @@ Deno.serve(async (req: Request) => {
     } else if (report === "drivers") {
       const minExperience = parseNumber(params.get("min_experience"), "min_experience");
       const maxExperience = parseNumber(params.get("max_experience"), "max_experience");
+      const hireFrom = params.get("hire_from");
+      const hireTo = params.get("hire_to");
       query = admin.from("drivers").select(tableSelect("drivers", includeSensitive), { count: "exact" }).eq("organization_id", organizationId);
       const driverId = parseNumber(params.get("driver_id"), "driver_id");
       if (driverId !== null) query = query.eq("Ninox_ID", driverId);
@@ -365,6 +367,8 @@ Deno.serve(async (req: Request) => {
       if (params.get("name")) query = query.ilike("FullName", `%${params.get("name")}%`);
       if (minExperience !== null) query = query.gte("Years Of Experience", minExperience);
       if (maxExperience !== null) query = query.lte("Years Of Experience", maxExperience);
+      if (hireFrom) query = query.gte("Date of Hire", hireFrom);
+      if (hireTo) query = query.lte("Date of Hire", hireTo);
       query = query.order("Ninox_ID", { ascending: true, nullsFirst: false }).order("ID", { ascending: true });
       sort = ["Ninox_ID asc nulls last", "ID asc"];
     } else if (report === "returns") {
@@ -386,7 +390,9 @@ Deno.serve(async (req: Request) => {
       const maxModelYear = parseNumber(params.get("max_model_year"), "max_model_year");
       query = admin.from("trucks").select(tableSelect("trucks", includeSensitive), { count: "exact" }).eq("organization_id", organizationId);
       const truckNumber = parseNumber(params.get("truck_number"), "truck_number");
+      const ninoxId = parseNumber(params.get("ninox_id"), "ninox_id");
       if (truckNumber !== null) query = query.eq("truck_number", truckNumber);
+      if (ninoxId !== null) query = query.eq("Ninox_ID", ninoxId);
       for (const column of ["dispatcher", "owner", "insurance", "yard_location", "mechanic_status"]) {
         if (params.get(column)) query = query.eq(column, params.get(column));
       }

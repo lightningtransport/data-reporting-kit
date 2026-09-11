@@ -51,7 +51,7 @@ check(catalog.get("principal", {}).get("sensitive_access") is True, "default age
 checks.append("catalog=all-reports-sensitive-enabled")
 
 status, restricted_catalog = call([("report", "catalog")], RESTRICTED_KEY)
-check(status == 200 and set(restricted_catalog.get("reports", {})) == {"drivers", "trucks"}, "restricted catalog leaked unauthorized reports")
+check(status == 200 and set(restricted_catalog.get("reports", {})) == {"drivers", "returns", "trucks"}, "restricted catalog leaked unauthorized reports")
 check(restricted_catalog.get("principal", {}).get("sensitive_access") is False, "explicit sensitive restriction was not applied")
 status, _ = call([("limit", "1")], RESTRICTED_KEY)
 check(status == 403, "restricted key bypassed settlement authorization through legacy route")
@@ -64,7 +64,10 @@ checks.append("restricted-key-authorization=enforced")
 status, metadata = call([("report", "settlements"), ("metadata", "true")])
 check(status == 200 and len(metadata.get("fields", {})) == 28, "settlement metadata coverage failed")
 check("1 is Carlos" in json.dumps(metadata), "owner bucket metadata missing")
-checks.append("metadata=28-fields")
+for report, field_count in [("drivers", 18), ("returns", 9), ("trucks", 17)]:
+    status, table_metadata = call([("report", report), ("metadata", "true")])
+    check(status == 200 and len(table_metadata.get("fields", {})) == field_count, f"{report} metadata coverage failed")
+checks.append("metadata=all-99-fields")
 
 for label, params in [
     ("unknown-filter", [("report", "trucks"), ("disptach", "Group 1")]),
@@ -74,6 +77,9 @@ for label, params in [
     ("invalid-returns-id", [("report", "returns"), ("ninox_id", "abc")]),
     ("invalid-truck-number", [("report", "trucks"), ("truck_number", "12x")]),
     ("invalid-temporal-driver", [("report", "driver_pay"), ("out_from", "2026-09-01"), ("temporal_driver", "Maybe")]),
+    ("invalid-hire-date", [("report", "drivers"), ("hire_from", "2026-99-99")]),
+    ("reversed-hire-range", [("report", "drivers"), ("hire_from", "2026-09-11"), ("hire_to", "2026-09-10")]),
+    ("unsupported-sensitive-cdl-parameter", [("report", "returns"), ("cdl", "test-sensitive-filter")]),
     ("impossible-date", [("report", "returns"), ("return_from", "2026-99-99")]),
     ("reversed-range", [("report", "returns"), ("return_from", "2026-09-20"), ("return_to", "2026-09-01")]),
 ]:
@@ -82,7 +88,7 @@ for label, params in [
     checks.append(f"{label}=400")
 
 status, sensitive_drivers = call([("report", "drivers"), ("driver_id", "3"), ("include_sensitive", "true")])
-expected_driver_fields = {"FullName", "First Name", "Middle Name", "Last Name", "E-mail", "Phone Number", "Years Of Experience", "DOB", "Company Name (This is NOT the Insurance)", "CDL", "State", "CDL Expiration", "Gender", "Insurance", "Ninox_ID", "ID", "organization_id"}
+expected_driver_fields = {"FullName", "First Name", "Middle Name", "Last Name", "E-mail", "Phone Number", "Years Of Experience", "DOB", "Company Name (This is NOT the Insurance)", "CDL", "State", "CDL Expiration", "Gender", "Insurance", "Ninox_ID", "ID", "organization_id", "Date of Hire"}
 check(status == 200 and sensitive_drivers.get("total_count") == 1 and all(set(row) == expected_driver_fields for row in sensitive_drivers.get("data", [])), "default agent key did not receive the complete drivers projection")
 status, _ = call([("report", "drivers"), ("driver_id", "3"), ("include_sensitive", "true")], RESTRICTED_KEY)
 check(status == 403, "explicit AGENT_ALLOW_SENSITIVE=false restriction was bypassed")
@@ -116,10 +122,19 @@ checks.append("settlement-summary=accepted-exact-projection")
 status, returns = call([("report", "returns"), ("return_from", "2026-09-10"), ("return_to", "2026-12-31"), ("limit", "1000")])
 check(status == 200, "returns date query failed")
 check(all("Phone Number" not in row for row in returns.get("data", [])), "returns default exposed phone")
-checks.append("returns=accepted-no-sensitive")
+status, all_returns = call([("report", "returns"), ("include_sensitive", "true"), ("limit", "1")])
+expected_return_fields = {"Insurance", "Truck", "Driver Name", "Phone Number", "Return Date", "ID", "Ninox_ID", "organization_id", "CDL"}
+check(status == 200 and all_returns.get("total_count", 0) > 0 and bool(all_returns.get("data")) and all(set(row) == expected_return_fields for row in all_returns.get("data", [])), "returns full-column projection failed")
+checks.append("returns=accepted-full-columns")
+
+status, all_trucks = call([("report", "trucks"), ("include_sensitive", "true"), ("limit", "1")])
+expected_truck_fields = {"truck_number", "dispatcher", "insurance", "vin", "make", "odometer_miles", "owner", "last_known_address", "model_year", "license_plate", "yard_location", "samsara_last_connected_at", "samsara_vehicle_id", "mechanic_status", "ID", "organization_id", "Ninox_ID"}
+check(status == 200 and all_trucks.get("total_count", 0) > 0 and bool(all_trucks.get("data")) and all(set(row) == expected_truck_fields for row in all_trucks.get("data", [])), "trucks full-column projection failed")
+checks.append("trucks=accepted-full-columns")
 
 status, drivers = call([("report", "drivers"), ("driver_id", "3")])
 check(status == 200 and drivers.get("total_count") == 1, "drivers exact-ID query failed")
+check(all("Date of Hire" in row for row in drivers.get("data", [])), "drivers default projection omitted Date of Hire")
 check(all(not {"E-mail", "Phone Number", "DOB", "CDL", "CDL Expiration", "Gender"}.intersection(row) for row in drivers.get("data", [])), "drivers default exposed sensitive fields")
 checks.append("drivers=accepted-no-sensitive")
 

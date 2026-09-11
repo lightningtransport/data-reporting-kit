@@ -11,7 +11,7 @@ Read `AGENTS.md` first. Use the smallest `agent-reporting` report that answers t
 | Which trucks returned historically? | `driver_pay` | Filter `return_from`/`return_to` only; count distinct `Truck_Number`. |
 | Weekly headline gross/expense/net | `settlement_summary` | Supply `period_from` (and normally the same Tuesday in `period_to`) or a truck. |
 | Full weekly expenses/components | `settlements` | Supply `period_from` or truck; use explicit period for owner/dispatch totals. |
-| Current driver profile | `drivers` | Prefer exact `driver_id`; use name only for discovery. Any `AGENT_API_KEY` can request the documented sensitive fields with `include_sensitive=true` unless its explicit `AGENT_ALLOW_SENSITIVE_<n>` control is set to `false`. |
+| Current driver profile / hire date | `drivers` | Prefer exact `driver_id`; use `hire_from` / `hire_to` for Date of Hire ranges. Any `AGENT_API_KEY` can request the documented sensitive fields with `include_sensitive=true` unless its explicit `AGENT_ALLOW_SENSITIVE_<n>` control is set to `false`. |
 | Planned teams/departures | unsupported | Requires live Ninox Schedule_Teams; do not substitute DriverPay history. |
 | Exact trucks in yard/off duty/on road | unsupported | Supabase lacks `days_in_yard_` and numeric insurance-choice fields required by the Ninox definition. |
 
@@ -30,9 +30,9 @@ Read `AGENTS.md` first. Use the smallest `agent-reporting` report that answers t
 - Settlement Trucks 1, 2, and 3 are Carlos/Jorge/CDT allocation buckets. Include them in owner general totals; exclude them from physical-truck rankings.
 - If the selected report does not contain a required attribute, retrieve it from related approved-report data before completing the answer. Use CDL as the driver key across `drivers` and `DriverPay`; use the truck-number field variants (`truck_number`, `Truck_Number`, `Truck`, `truck_no`, or `unit_number`) as the vehicle key after documented type/format normalization.
 - Left-join historical rows to current `trucks`; history can contain retired/missing current-master numbers. Never use a name, Supabase `ID`, or `returns.Ninox_ID` as a surrogate key.
-- `returns` does not expose CDL or another documented driver key. Only associate a return with a driver through a related record carrying a verified matching CDL; otherwise state that the driver-level association cannot be resolved.
+- `returns.CDL` is a sensitive exact driver key. Only associate a return with a driver when this CDL matches a verified CDL in related approved data; never use names, Supabase IDs, or `returns.Ninox_ID` as a substitute.
 
-*Evidence: approved business rule confirmed 2026-09-11; current `returns` key limitation verified from the reporting data dictionary on 2026-09-11.*
+*Evidence: approved business rule confirmed 2026-09-11; `returns.CDL` physical column verified on 2026-09-11.*
 
 ## Pagination
 

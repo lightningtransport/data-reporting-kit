@@ -122,10 +122,18 @@ paths:
         - name: max_experience
           in: query
           schema: {type: number}
+        - name: hire_from
+          in: query
+          schema: {$ref: '#/components/schemas/IsoDate'}
+          description: Inclusive Date of Hire lower bound for drivers.
+        - name: hire_to
+          in: query
+          schema: {$ref: '#/components/schemas/IsoDate'}
+          description: Inclusive Date of Hire upper bound for drivers.
         - name: ninox_id
           in: query
-          schema: {type: string}
-          description: Returns source-record ID; not a driver ID.
+          schema: {type: number}
+          description: Exact numeric source-record ID for returns or trucks; it is not a driver ID.
         - name: driver_name
           in: query
           schema: {type: string}

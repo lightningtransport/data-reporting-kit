@@ -2,6 +2,7 @@ import {
   buildAuditFilters,
   isReportAuthorized,
   normalizedFilters,
+  reportFilters,
   requireExactCount,
   resolveRequestedReport,
   settlementSummarySelect,
@@ -81,11 +82,18 @@ Deno.test("numeric identifiers and temporal_driver enum are validated", () => {
   for (
     const [report, query, expected] of [
       ["drivers", "report=drivers&driver_id=abc", "driver_id must be numeric"],
+      ["drivers", "report=drivers&hire_from=2026-99-99", "hire_from must be a real date"],
+      ["drivers", "report=drivers&hire_from=2026-09-11&hire_to=2026-09-10", "hire_from cannot be after hire_to"],
       ["returns", "report=returns&ninox_id=nope", "ninox_id must be numeric"],
       [
         "trucks",
         "report=trucks&truck_number=12x",
         "truck_number must be numeric",
+      ],
+      [
+        "trucks",
+        "report=trucks&ninox_id=12x",
+        "ninox_id must be numeric",
       ],
       [
         "driver_pay",
@@ -132,6 +140,24 @@ Deno.test("audit payload distinguishes principal identity and role from outcome"
     value.applied_filters.period_from === "2026-09-01",
     "applied filters missing",
   );
+});
+
+Deno.test("sensitive CDL filters are redacted in audit metadata", () => {
+  const value = buildAuditFilters(
+    { id: "AGENT_API_KEY_7", role: "agent" },
+    { cdl: "sensitive-license-value", truck: "123" },
+    true,
+    10,
+    0,
+  );
+  assert(value.applied_filters.cdl === "[redacted-sensitive-filter]", "CDL was retained in audit filters");
+  assert(value.applied_filters.truck === "123", "non-sensitive filter was changed");
+});
+
+Deno.test("CDL is response-only and is never accepted as a GET filter", () => {
+  assert(!reportFilters.returns.has("cdl"), "returns CDL remained a GET filter");
+  const params = new URLSearchParams("report=returns&cdl=sensitive-license-value");
+  assertThrows(() => validateStrictParameters(params, "returns", false), "Unsupported parameter");
 });
 
 Deno.test("missing or invalid exact counts fail instead of using page count", () => {

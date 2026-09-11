@@ -1,6 +1,6 @@
 # Data dictionary
 
-Schema verified against Supabase project `aaqquwhdglueqlnbifvn` on **2026-09-11**. The five reporting sources contain **96 physical columns**: `DriverPay` 27, `drivers` 17, `returns` 8, `settlements` 28, and `trucks` 16. All five use `organization_id` for tenant scoping and have RLS enabled. PostgreSQL column comments are currently absent; business semantics below come from the local Ninox field catalog, verified live schema/data, and confirmed business rules.
+Schema verified against Supabase project `aaqquwhdglueqlnbifvn` on **2026-09-11**. The five reporting sources contain **99 physical columns**: `DriverPay` 27, `drivers` 18, `returns` 9, `settlements` 28, and `trucks` 17. All five use `organization_id` for tenant scoping and have RLS enabled. PostgreSQL column comments are currently absent; business semantics below come from the local Ninox field catalog, verified live schema/data, and confirmed business rules.
 
 The authenticated `agent-reporting` metadata routes are the runtime contract. Call `?report=catalog` for the complete catalog or `?report=<name>&metadata=true` for one report.
 
@@ -12,7 +12,7 @@ The authenticated `agent-reporting` metadata routes are the runtime contract. Ca
 - **Relational fallback rule (approved business rule, 2026-09-11):** If a report needs an attribute not carried by its primary record, search the related approved-report sources by their designated business key before finalizing. CDL is the unique driver key for matching `drivers` and `DriverPay`; truck number is the vehicle key for matching field variants such as `truck_number`, `Truck_Number`, `Truck`, `truck_no`, and `unit_number`.
 - Historical text truck keys must be normalized before comparing them to numeric `trucks.truck_number`. Use a **left join** from history because retired/historical truck numbers may not exist in the current master. Do not replace an absent CDL or truck key with a name or a Supabase `ID`.
 - `DriverPay.DriversDB_ID` is text and joins to `drivers.Ninox_ID::text`; it remains available for legacy source linkage but CDL is the designated driver key for fallback lookups.
-- `returns.Ninox_ID` is a Returns source-record ID, not a driver ID. The current `returns` schema has no CDL or other documented driver key, so a driver lookup from this table is unsupported unless a related record supplies a verified CDL match.
+- `returns.Ninox_ID` is a Returns source-record ID, not a driver ID. `returns.CDL` is now available as a sensitive exact driver key; use it only when it matches a related approved record's verified CDL.
 
 ## `trucks` — current fleet master and allocation buckets
 
@@ -38,6 +38,7 @@ Truck numbers **1, 2, and 3 are synthetic owner-assignment buckets**, not physic
 | `mechanic_status` | text | yes | Literal current shop status; blank/null means none stored. Ninox `E.TA`. |
 | `ID` | bigint | no | Supabase identity primary key. |
 | `organization_id` | uuid | no | Tenant key. |
+| `Ninox_ID` | numeric | yes | Ninox TrucksDB source-record ID; it is not the canonical `truck_number`, and its broader business semantics are not established. |
 
 ## `DriverPay` — historical driver assignment/pay ledger
 
@@ -100,6 +101,7 @@ Use `Out Date` alone for departures and `Return Date` alone for returns. For ove
 | `Ninox_ID` | numeric | yes | Unique DriversDB source ID; preferred join key. |
 | `ID` | bigint | no | Supabase identity primary key. |
 | `organization_id` | uuid | no | Tenant key. |
+| `Date of Hire` | date | yes | Current driver hire date. Physical type/column verified; source-field mapping and any employment-policy semantics are not established. |
 
 ## `returns` — current expected-return list
 
@@ -117,6 +119,7 @@ Use `Out Date` alone for departures and `Return Date` alone for returns. For ove
 | `ID` | bigint | no | Supabase identity primary key. |
 | `Ninox_ID` | numeric | yes | Returns source-record ID; **not** a driver ID. |
 | `organization_id` | uuid | no | Tenant key. |
+| `CDL` | text | yes | Sensitive commercial driver-license value. Use as an exact driver link only after confirming the same CDL in a related approved record. |
 
 ## `settlements` — weekly financial ledger
 

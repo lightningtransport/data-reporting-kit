@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.3 — 2026-09-11
+
+- Added newly verified live columns to the agent-reporting contract: `drivers."Date of Hire"` (date), `returns.CDL` (sensitive text), and `trucks.Ninox_ID` (numeric), raising coverage from 96 to 99 physical columns.
+- Added Date of Hire range filters (`hire_from` / `hire_to`) and trucks Ninox ID filtering. `returns.CDL` is returned only through the explicit sensitive-field projection (`include_sensitive=true`), not accepted as a GET filter, so its value never enters request URLs. All agent keys can read these fields.
+
 ## 0.6.2 — 2026-09-11
 
 - Restored full read access for every `AGENT_API_KEY` and `AGENT_API_KEY_<number>` principal across all six approved reports and their documented sensitive-field allowlists when requested with `include_sensitive=true`.
@@ -8,8 +13,8 @@
 
 ## 0.6.1 — 2026-09-11
 
-- Added an approved CDL-based driver lookup and truck-number-based vehicle lookup rule for relational report fallbacks. Agents must resolve absent required attributes from related approved-report sources before finalizing, while preserving left joins for historical vehicle data.
-- Prohibited surrogate joins using names, Supabase identity IDs, or `returns.Ninox_ID`. Documented that the current `returns` schema has no CDL or other verified driver key, so driver-level return matching remains unavailable without a related verified CDL record.
+- Added an approved CDL-based driver lookup and truck-number-based vehicle lookup rule for relational report fallbacks. Agents must resolve absent required attributes from related approved-report sources before finalizing, while preserving left joins for historical vehicle data. `returns.CDL` was subsequently added to the live schema and is documented in 0.6.3 as the exact driver key for that table.
+- Prohibited surrogate joins using names, Supabase identity IDs, or `returns.Ninox_ID`. The earlier no-CDL limitation is superseded by 0.6.3, which documents the newly verified `returns.CDL` field and its exact-match rule.
 
 ## 0.6.0 — 2026-09-11
 

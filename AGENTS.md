@@ -12,7 +12,7 @@ This repository is the canonical reporting contract for Lightning Transportation
 6. `api/openapi.yaml`
 7. Authenticated runtime catalog: `GET /functions/v1/agent-reporting?report=catalog`
 
-The five reporting-source schemas and 96 physical columns were verified on **2026-09-11**. The deployed catalog is the runtime contract. If it conflicts with the repository, stop and report the contradiction instead of guessing.
+The five reporting-source schemas and 99 physical columns were verified on **2026-09-11**. The deployed catalog is the runtime contract. If it conflicts with the repository, stop and report the contradiction instead of guessing.
 
 ## Approved interfaces
 
@@ -40,9 +40,9 @@ The five reporting-source schemas and 96 physical columns were verified on **202
 - Historical owner/dispatch comes from the historical row, not current `trucks`.
 - **Relational fallback:** When a requested report field is absent from its primary record, look for it in related approved-report data before finalizing. CDL is the unique driver key across `drivers` and `DriverPay`; use it to resolve driver attributes. Truck number is the unique vehicle key; compare the documented field variants (such as `truck_number`, `Truck_Number`, `Truck`, `truck_no`, or `unit_number`) after safe type/format normalization.
 - Use a left join from historical records to the current `trucks` master; missing current-master matches do not invalidate history. Never substitute a name, Supabase `ID`, or `returns.Ninox_ID` for a missing CDL or truck key.
-- `returns` currently exposes neither CDL nor a documented driver key: do not infer a driver join from `returns.Ninox_ID` or name. If a return must be tied to a driver, resolve it only through a related record with a verified CDL match; otherwise state that the driver link is unavailable.
+- `returns.CDL` is a sensitive exact driver key: use it to resolve a return only when it matches a verified CDL in related approved data. Never use a name, Supabase `ID`, or `returns.Ninox_ID` as a substitute.
 
-*Evidence: approved business rule confirmed 2026-09-11; current `returns` key limitation verified from the reporting data dictionary on 2026-09-11.*
+*Evidence: approved business rule confirmed 2026-09-11; `returns.CDL` and `drivers.Date of Hire` physical columns verified on 2026-09-11.*
 - Planned Schedule_Teams and exact Ninox in-yard/on-road metrics are not available from these Supabase tables. State the limitation; do not approximate from similar fields.
 
 ## Required answer evidence

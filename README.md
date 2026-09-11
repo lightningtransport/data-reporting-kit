@@ -8,7 +8,7 @@ Every agent must read [`AGENTS.md`](AGENTS.md). The runtime contract is availabl
 
 ## What this kit provides
 
-- Complete 96-column data dictionary for DriverPay, drivers, returns, settlements, and trucks.
+- Complete 99-column data dictionary for DriverPay, drivers, returns, settlements, and trucks.
 - Question routing, metric definitions, Ninox mappings, joins, date windows, allocation-bucket rules, and double-counting guardrails.
 - Source and OpenAPI contract for the custom-key `agent-reporting` Edge Function.
 - Source for the separate membership/JWT `reporting-query` Edge Function.

@@ -45,6 +45,8 @@ export const reportFilters: Record<SupportedReport, Set<string>> = {
     "company",
     "min_experience",
     "max_experience",
+    "hire_from",
+    "hire_to",
   ]),
   returns: new Set([
     "truck",
@@ -56,6 +58,7 @@ export const reportFilters: Record<SupportedReport, Set<string>> = {
   ]),
   trucks: new Set([
     "truck_number",
+    "ninox_id",
     "dispatcher",
     "owner",
     "insurance",
@@ -243,6 +246,7 @@ export function validateReportValues(
     }
   } else if (report === "drivers") {
     parseNumber(params.get("driver_id"), "driver_id");
+    validateDateRange(params, "hire_from", "hire_to");
     const minimum = parseNumber(params.get("min_experience"), "min_experience");
     const maximum = parseNumber(params.get("max_experience"), "max_experience");
     if (minimum !== null && maximum !== null && minimum > maximum) {
@@ -253,6 +257,7 @@ export function validateReportValues(
     parseNumber(params.get("ninox_id"), "ninox_id");
   } else {
     parseNumber(params.get("truck_number"), "truck_number");
+    parseNumber(params.get("ninox_id"), "ninox_id");
     const minimumOdometer = parseNumber(
       params.get("min_odometer"),
       "min_odometer",
@@ -332,10 +337,15 @@ export function buildAuditFilters(
   limit: number,
   offset: number,
 ) {
+  const auditFilters = Object.fromEntries(
+    Object.entries(appliedFilters).map(([name, value]) =>
+      [name, name === "cdl" ? "[redacted-sensitive-filter]" : value]
+    ),
+  );
   return {
     principal_id: principal.id,
     principal_role: principal.role,
-    applied_filters: appliedFilters,
+    applied_filters: auditFilters,
     include_sensitive: includeSensitive,
     limit,
     offset,
