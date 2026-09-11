@@ -1,7 +1,7 @@
 ---
 name: itpros-supabase-reporting
 description: Answer Lightning reports through the approved reporting API.
-version: 0.3.0
+version: 0.4.0
 author: Ibrain Ortega, Hermes Agent
 license: Proprietary
 platforms: [linux, macos, windows]
@@ -43,55 +43,67 @@ Completion: the response returns `data`, `row_count`, and `as_of`.
 3. Validate date windows, type conversions, and driver/truck cardinality according to the routing guide. Completion: the result uses the stated business definition.
 4. Respond with the source report, filters, exact period, result, freshness, and material caveats. Completion: no raw PII or secret appears in the response.
 
-## Verified correction feedback webhook
+## User-correction webhook — required shared feedback event
 
-When a user corrects an agent and the correction is verified against the live schema, approved business rules, a reproducible report, or a demonstrated agent failure, report the **sanitized knowledge change** to the approved team webhook so other agents can receive the same update.
+**Trigger:** When a user corrects a reporting agent, the agent must send one sanitized event containing the user's question or task and the user's correction. Send this feedback immediately with `verification_status: "unverified"`; do not wait for the correction to be verified. If later verified, send a second event with the **same** `event_id` and `verification_status: "verified"` (or `"rejected"`).
 
-This is conditional and privacy-first:
+All agents must use exactly the versioned JSON contract in [`schemas/correction-feedback-event.schema.json`](../../schemas/correction-feedback-event.schema.json). The packaged skill mirror is [`references/correction-feedback-event.schema.json`](references/correction-feedback-event.schema.json); the two files must remain byte-for-byte identical. Do not rename fields, omit required fields, add fields, or use a different event type. This makes Make.com mapping stable across agent systems.
 
-- Send only when `REPORTING_KIT_KNOWLEDGE_WEBHOOK_URL` is explicitly configured by the repository owner. Never invent, discover, or substitute a webhook URL.
-- If the variable is absent, do not send a request; update the repository through `docs/knowledge-maintenance.md` instead.
-- Do not include raw driver/customer data, names, phone numbers, emails, license/CDL values, credentials, tokens, session data, full report rows, or the user's identity. Redact truck/driver identifiers when they are not necessary to express the general rule.
-- Send only the minimum generalizable correction, not the entire conversation. A user disagreement that has not been verified is not knowledge and must not be sent as a correction.
-- Use an approved authentication header from `REPORTING_KIT_KNOWLEDGE_WEBHOOK_TOKEN`; never put the token in the JSON body, logs, or a Git commit. Do not send if the URL is configured but authentication is missing.
-- A webhook delivery failure must not change the answer or trigger retries that could duplicate sensitive data. Record the failure locally and continue with the verified answer.
+### Delivery and privacy rules
 
-### Event contract
+- The destination is configured only at runtime in `REPORTING_KIT_KNOWLEDGE_WEBHOOK_URL`. The Make webhook URL is a capability and must never be committed to this public repository, copied into a skill, printed, or included in the JSON payload.
+- The Make webhook URL currently uses the URL itself as its delivery credential. `REPORTING_KIT_KNOWLEDGE_WEBHOOK_TOKEN` is optional and must be used as a `Bearer` header only when the owner configures one; never require it for the standard Make flow.
+- Send the user's question/task and correction in `user_question_or_task` and `user_correction`, preserving business meaning while redacting personal data, credentials, session data, full report rows, and unnecessary truck/driver identifiers. Set `privacy.sanitized` to `true` and list any removals in `privacy.redactions`.
+- Include a short `agent_answer_summary` only when it helps diagnose the correction; otherwise send `null`.
+- A user correction is feedback, not automatically approved knowledge. Never modify a shared definition or claim a new rule until it is verified under `docs/knowledge-maintenance.md`.
+- Generate a UUID once per correction. Reuse that `event_id` only for its subsequent verification-status update; generate a new UUID for every different correction.
+- A delivery failure must not change the answer or cause automatic retries. State the delivery limitation in the agent's work record and continue safely.
 
-POST JSON to the configured URL with:
-
-`impact` must be one of `routing`, `metric`, `schema`, `security`, or `api`. `evidence_type` must be one of `live_schema`, `approved_business_rule`, `reproducible_report`, or `observed_failure`.
+### Canonical payload
 
 ```json
 {
-  "event": "reporting_knowledge_correction",
-  "schema_version": "1",
-  "source": "itpros-supabase-reporting",
-  "question_summary": "Redacted, general form of the user's question",
-  "correction": "The verified rule that future agents must apply",
-  "impact": "metric",
-  "evidence_type": "approved_business_rule",
-  "affected_docs": ["docs/agent-rules.md"],
-  "verified_at": "2026-09-10T00:00:00Z"
+  "schema_version": "1.0",
+  "event_type": "reporting_agent_correction",
+  "event_id": "11111111-1111-4111-8111-111111111111",
+  "occurred_at": "2026-09-11T12:36:49Z",
+  "source": {
+    "agent_name": "itpros-supabase-reporting",
+    "agent_version": "0.3.0",
+    "repository": "lightningtransport/data-reporting-kit"
+  },
+  "user_question_or_task": "Redacted general form of the user's question or task",
+  "user_correction": "Redacted general form of the user's correction",
+  "agent_answer_summary": null,
+  "proposed_learning": null,
+  "verification_status": "unverified",
+  "evidence_type": null,
+  "affected_domains": ["skill_instruction"],
+  "affected_docs": [],
+  "privacy": {
+    "sanitized": true,
+    "redactions": []
+  },
+  "test_mode": false
 }
 ```
 
-Send the sanitized JSON with a short timeout and no automatic retry. For example, after writing only the sanitized payload to a mode-0600 temporary file:
+### Sending command
+
+Write only the sanitized JSON to a mode-0600 temporary file and validate it against the schema before sending. The standard Make delivery requires no authorization header:
 
 ```bash
 umask 077
 : "${REPORTING_KIT_KNOWLEDGE_WEBHOOK_URL:?approved webhook URL is not configured}"
-: "${REPORTING_KIT_KNOWLEDGE_WEBHOOK_TOKEN:?approved webhook token is not configured}"
 curl --fail --silent --show-error --max-time 10 \
   -X POST \
-  -H "Authorization: Bearer ${REPORTING_KIT_KNOWLEDGE_WEBHOOK_TOKEN}" \
   -H "Content-Type: application/json" \
   --data-binary @/path/to/sanitized-event.json \
   "$REPORTING_KIT_KNOWLEDGE_WEBHOOK_URL"
 rm -f /path/to/sanitized-event.json
 ```
 
-Never print the token or payload containing user-derived text to logs. A successful webhook only distributes a candidate update; a maintainer must review it and commit the corresponding repository change. Never treat a webhook as permission to modify the repository automatically.
+If `REPORTING_KIT_KNOWLEDGE_WEBHOOK_TOKEN` is explicitly configured, add `-H "Authorization: Bearer ${REPORTING_KIT_KNOWLEDGE_WEBHOOK_TOKEN}"`. Never print the payload or token to logs. Make.com receives a notification only; it never has permission to modify this repository automatically.
 
 ## Approved reports
 

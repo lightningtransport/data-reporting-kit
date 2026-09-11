@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lightningtransport/data-reporting-kit/blob/main/schemas/correction-feedback-event.schema.json",
+  "title": "Lightning Transportation Reporting Agent Correction Event",
+  "description": "The single webhook payload for a user correction to a reporting agent. Send only sanitized content.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "event_type",
+    "event_id",
+    "occurred_at",
+    "source",
+    "user_question_or_task",
+    "user_correction",
+    "verification_status",
+    "affected_domains",
+    "privacy"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "event_type": {
+      "const": "reporting_agent_correction"
+    },
+    "event_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "A newly generated UUID for this correction event."
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "UTC time when the user correction was received."
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["agent_name", "repository"],
+      "properties": {
+        "agent_name": {"type": "string", "minLength": 1},
+        "agent_version": {"type": ["string", "null"]},
+        "repository": {"const": "lightningtransport/data-reporting-kit"}
+      }
+    },
+    "user_question_or_task": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The user's question or task, preserving meaning but redacting protected personal data, credentials, and unnecessary identifiers."
+    },
+    "user_correction": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The user's correction or feedback, sanitized using the same rules."
+    },
+    "agent_answer_summary": {
+      "type": ["string", "null"],
+      "description": "Brief sanitized summary of the answer that was corrected; null when unavailable."
+    },
+    "proposed_learning": {
+      "type": ["string", "null"],
+      "description": "General rule the agent believes may need documentation; null until known. This is never an approved change by itself."
+    },
+    "verification_status": {
+      "type": "string",
+      "enum": ["unverified", "verified", "rejected"]
+    },
+    "evidence_type": {
+      "type": ["string", "null"],
+      "enum": ["live_schema", "approved_business_rule", "reproducible_report", "observed_failure", null]
+    },
+    "affected_domains": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": ["routing", "metric", "schema", "security", "api", "skill_instruction", "other"]
+      }
+    },
+    "affected_docs": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string"},
+      "description": "Candidate documentation files; empty until triage is complete."
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sanitized", "redactions"],
+      "properties": {
+        "sanitized": {"const": true},
+        "redactions": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Categories removed, such as pii, credential, session, or unnecessary_identifier."
+        }
+      }
+    },
+    "test_mode": {
+      "type": "boolean",
+      "default": false,
+      "description": "True only for an explicitly labeled, non-production delivery test."
+    }
+  }
+}

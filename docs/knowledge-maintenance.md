@@ -29,16 +29,17 @@ Do not publish assumptions, individual agent guesses, raw customer/driver data, 
    - `api/openapi.yaml` and the reporting skill when API behavior changes.
 3. Add a dated `CHANGELOG.md` entry explaining the answer-impacting change.
 4. Validate the changed artifact against its evidence source. For schema/API changes, re-query the live schema/API; for calculations, run a reproducible test or reconciliation.
-5. Run repository checks: Markdown links, OpenAPI syntax, helper syntax, `git diff --check`, and a staged-file secret scan.
+5. Run repository checks: Markdown links, OpenAPI syntax, helper syntax, `git diff --check`, a staged-file secret scan, and byte-for-byte equality between `schemas/correction-feedback-event.schema.json` and the packaged skill copy when the correction schema changes.
 6. Commit and push the verified update to `main`, then confirm the remote head contains it.
 
 ## Correction feedback distribution
 
-The reporting skill may distribute a verified, sanitized correction to the approved team webhook using the event contract in `skills/itpros-supabase-reporting/SKILL.md`. This is a notification channel, not an automatic repository-writer channel.
+On **every user correction**, the reporting skill sends one sanitized, standardized `reporting_agent_correction` webhook event under the contract in `schemas/correction-feedback-event.schema.json`, initially with `verification_status: "unverified"`. The event must include the sanitized user question/task and correction so Make.com can map the same fields from every agent.
 
-- The webhook is active only when the repository owner explicitly configures `REPORTING_KIT_KNOWLEDGE_WEBHOOK_URL` and the corresponding authentication secret.
-- Agents must send the minimal general rule, never raw records or personal data, and must not send unverified disagreement.
-- Webhook delivery does not update the repository automatically. A maintainer verifies the event, updates the affected documentation, adds a changelog entry, validates it, and pushes the commit.
+- The webhook is active only when the repository owner explicitly configures `REPORTING_KIT_KNOWLEDGE_WEBHOOK_URL`; the URL is a runtime-only capability and must never be committed to this public repository.
+- A later verification must send a status update using the same event ID with `verification_status: "verified"` or `"rejected"`, evidence metadata, and candidate affected documents.
+- Agents must send the minimal generalizable feedback, never raw records or personal data, and must not treat a user correction as an approved rule until it is verified.
+- Webhook delivery does not update the repository automatically. A maintainer verifies a candidate update, changes affected documentation, adds a changelog entry, validates it, and pushes the commit.
 - If no approved webhook is configured or delivery fails, the agent continues safely and follows the repository update procedure directly.
 
 ## Agent response rule
