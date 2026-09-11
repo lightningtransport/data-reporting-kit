@@ -22,8 +22,11 @@ These rules govern every Lightning Transportation answer.
 - `trucks` is current state and includes synthetic allocation rows 1/2/3.
 - `settlements` is one truck-or-bucket/week row.
 - `DriverPay` and `returns` can have two driver rows per team truck. Deduplicate truck identifiers for truck counts.
-- Normalize DriverPay text driver IDs to numeric `drivers.Ninox_ID`; never join `returns.Ninox_ID` to drivers.
-- Use left joins from historical data to current trucks.
+- When an attribute needed for a report is missing from the primary record, perform an approved-report relational fallback before finalizing: use CDL as the unique driver key across `drivers` and `DriverPay`, and use truck number across documented vehicle-field variants (for example, `truck_number`, `Truck_Number`, `Truck`, `truck_no`, and `unit_number`). Normalize only the key's documented type/format; do not alter its business value.
+- Use left joins from historical data to current `trucks`. A missing current-master match does not invalidate history.
+- Never substitute a driver or vehicle name, a Supabase `ID`, or `returns.Ninox_ID` for the designated key. `returns` has neither CDL nor a documented driver key; a driver link from a return is valid only when a related record provides a verified CDL match. Otherwise, report the link as unavailable.
+
+*Evidence: approved business rule confirmed 2026-09-11; current `returns` key limitation verified from the reporting data dictionary on 2026-09-11.*
 
 ## 4. Financial controls
 

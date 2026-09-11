@@ -9,9 +9,10 @@ The authenticated `agent-reporting` metadata routes are the runtime contract. Ca
 - Supabase identity `ID` columns are generated import-row keys, not Ninox record IDs.
 - `organization_id` is a UUID applied server-side by `agent-reporting`; callers cannot select another tenant.
 - `as_of` is request time, not source-sync time. These source tables do not expose a reliable sync timestamp.
-- Historical text truck keys must be normalized before comparing them to numeric `trucks.truck_number`. Use a **left join** from history because retired/historical truck numbers may not exist in the current master.
-- `DriverPay.DriversDB_ID` is text and joins to `drivers.Ninox_ID::text`.
-- `returns.Ninox_ID` is a Returns source-record ID, not a driver ID.
+- **Relational fallback rule (approved business rule, 2026-09-11):** If a report needs an attribute not carried by its primary record, search the related approved-report sources by their designated business key before finalizing. CDL is the unique driver key for matching `drivers` and `DriverPay`; truck number is the vehicle key for matching field variants such as `truck_number`, `Truck_Number`, `Truck`, `truck_no`, and `unit_number`.
+- Historical text truck keys must be normalized before comparing them to numeric `trucks.truck_number`. Use a **left join** from history because retired/historical truck numbers may not exist in the current master. Do not replace an absent CDL or truck key with a name or a Supabase `ID`.
+- `DriverPay.DriversDB_ID` is text and joins to `drivers.Ninox_ID::text`; it remains available for legacy source linkage but CDL is the designated driver key for fallback lookups.
+- `returns.Ninox_ID` is a Returns source-record ID, not a driver ID. The current `returns` schema has no CDL or other documented driver key, so a driver lookup from this table is unsupported unless a related record supplies a verified CDL match.
 
 ## `trucks` — current fleet master and allocation buckets
 

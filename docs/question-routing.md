@@ -28,9 +28,11 @@ Read `AGENTS.md` first. Use the smallest `agent-reporting` report that answers t
 - `DriverPay` and `returns` are driver-row sources. Deduplicate truck identifiers for truck counts.
 - `settlements` is truck-or-bucket/week grain. Filter by `Truck` plus period for one row.
 - Settlement Trucks 1, 2, and 3 are Carlos/Jorge/CDT allocation buckets. Include them in owner general totals; exclude them from physical-truck rankings.
-- Normalize `DriverPay.DriversDB_ID` text against `drivers.Ninox_ID` numeric.
-- `returns.Ninox_ID` is not a driver join key.
-- Left-join historical rows to current `trucks`; history can contain retired/missing current-master numbers.
+- If the selected report does not contain a required attribute, retrieve it from related approved-report data before completing the answer. Use CDL as the driver key across `drivers` and `DriverPay`; use the truck-number field variants (`truck_number`, `Truck_Number`, `Truck`, `truck_no`, or `unit_number`) as the vehicle key after documented type/format normalization.
+- Left-join historical rows to current `trucks`; history can contain retired/missing current-master numbers. Never use a name, Supabase `ID`, or `returns.Ninox_ID` as a surrogate key.
+- `returns` does not expose CDL or another documented driver key. Only associate a return with a driver through a related record carrying a verified matching CDL; otherwise state that the driver-level association cannot be resolved.
+
+*Evidence: approved business rule confirmed 2026-09-11; current `returns` key limitation verified from the reporting data dictionary on 2026-09-11.*
 
 ## Pagination
 

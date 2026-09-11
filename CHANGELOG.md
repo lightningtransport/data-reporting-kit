@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.1 — 2026-09-11
+
+- Added an approved CDL-based driver lookup and truck-number-based vehicle lookup rule for relational report fallbacks. Agents must resolve absent required attributes from related approved-report sources before finalizing, while preserving left joins for historical vehicle data.
+- Prohibited surrogate joins using names, Supabase identity IDs, or `returns.Ninox_ID`. Documented that the current `returns` schema has no CDL or other verified driver key, so driver-level return matching remains unavailable without a related verified CDL record.
+
 ## 0.6.0 — 2026-09-11
 
 - Added the live `agent-reporting` source and strict, authenticated catalog/metadata contract for all five reporting tables and all 96 physical columns.

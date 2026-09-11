@@ -38,8 +38,11 @@ The five reporting-source schemas and 96 physical columns were verified on **202
 - `DriverPay` and `returns` are driver-row sources; count distinct truck identifiers for truck totals.
 - Departures use only `DriverPay.Out Date`; historical returns use only `DriverPay.Return Date`. Intersect both only for an explicitly requested assignment-overlap analysis.
 - Historical owner/dispatch comes from the historical row, not current `trucks`.
-- `DriverPay.DriversDB_ID` joins to `drivers.Ninox_ID` after type normalization. `returns.Ninox_ID` is not a driver ID.
-- Left-join history to current trucks; missing current-master matches do not invalidate history.
+- **Relational fallback:** When a requested report field is absent from its primary record, look for it in related approved-report data before finalizing. CDL is the unique driver key across `drivers` and `DriverPay`; use it to resolve driver attributes. Truck number is the unique vehicle key; compare the documented field variants (such as `truck_number`, `Truck_Number`, `Truck`, `truck_no`, or `unit_number`) after safe type/format normalization.
+- Use a left join from historical records to the current `trucks` master; missing current-master matches do not invalidate history. Never substitute a name, Supabase `ID`, or `returns.Ninox_ID` for a missing CDL or truck key.
+- `returns` currently exposes neither CDL nor a documented driver key: do not infer a driver join from `returns.Ninox_ID` or name. If a return must be tied to a driver, resolve it only through a related record with a verified CDL match; otherwise state that the driver link is unavailable.
+
+*Evidence: approved business rule confirmed 2026-09-11; current `returns` key limitation verified from the reporting data dictionary on 2026-09-11.*
 - Planned Schedule_Teams and exact Ninox in-yard/on-road metrics are not available from these Supabase tables. State the limitation; do not approximate from similar fields.
 
 ## Required answer evidence

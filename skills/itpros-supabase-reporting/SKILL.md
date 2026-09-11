@@ -47,7 +47,7 @@ Use schedule `0 10,14 * * *`. The job updates instructions only and must report 
 2. Call `catalog`, then report metadata when the current schema/rules are not loaded.
 3. Choose the smallest report and exact filters. Settlement reports require an explicit period or truck; DriverPay requires truck, driver, `out_from`, or `return_from`.
 4. Run the helper and reconcile `fetched_count` with `total_count` when a complete answer is required.
-5. Apply grain, date, join, allocation-bucket, stored-value, and sensitive-output rules.
+5. Apply grain, date, join, allocation-bucket, stored-value, and sensitive-output rules. When a needed field is absent from the selected record, use approved-report relational fallback before finalizing: CDL is the unique driver key across `drivers` and `DriverPay`; truck number is the vehicle key across documented field variants. Never substitute names, Supabase IDs, or `returns.Ninox_ID`; `returns` has no direct CDL/driver key, so report an unresolved driver link unless a related record provides a verified CDL match.
 6. Answer with source, normalized filters, exact period, result and row/distinct count, pagination completeness, `as_of`, source-freshness limitation, and material caveats.
 
 ## User-correction webhook — required shared feedback event
