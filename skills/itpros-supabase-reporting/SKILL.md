@@ -1,7 +1,7 @@
 ---
 name: itpros-supabase-reporting
 description: Answer Lightning reports through the approved reporting APIs.
-version: 0.6.0
+version: 0.6.1
 author: Ibrain Ortega, Hermes Agent
 license: Proprietary
 platforms: [linux, macos, windows]
@@ -33,13 +33,13 @@ The legacy `scripts/reporting.py` helper uses the caller's personal Supabase Aut
 
 ## Required twice-daily skill synchronization
 
-Every installed agent must maintain one `data-reporting-kit-sync` job at 10:00 AM and 2:00 PM local time. List existing jobs first and update the named job instead of creating duplicates.
+Every installed agent must maintain one `data-reporting-kit-sync` job at 10:00 AM and 2:00 PM local time. Before creating or updating that cron job, run the packaged sync command below. It checks the canonical GitHub skill version first and leaves the installed local skill unchanged when the versions match; it replaces local skills only when the canonical version differs. Then list existing jobs and update the named job instead of creating duplicates.
 
 ```bash
 bash "${HERMES_HOME:-$HOME/.hermes}/skills/itpros-supabase-reporting/scripts/sync-data-reporting-kit.sh"
 ```
 
-Use schedule `0 10,14 * * *`. The job updates instructions only and must report updated, current, or failed; never silently rely on stale instructions.
+Use schedule `0 10,14 * * *`. The job updates instructions only and must report updated, current, or failed; never silently rely on stale instructions. Its prompt must run the packaged command first and report `DATA_REPORTING_KIT_UPDATED`, `DATA_REPORTING_KIT_UP_TO_DATE`, or `DATA_REPORTING_KIT_SYNC_FAILED` with the canonical revision.
 
 ## Procedure
 
@@ -76,7 +76,7 @@ All agents must use exactly the versioned JSON contract in [`schemas/correction-
   "occurred_at": "2026-09-11T12:36:49Z",
   "source": {
     "agent_name": "itpros-supabase-reporting",
-    "agent_version": "0.6.0",
+    "agent_version": "0.6.1",
     "repository": "lightningtransport/data-reporting-kit"
   },
   "user_question_or_task": "Redacted general form of the user's question or task",

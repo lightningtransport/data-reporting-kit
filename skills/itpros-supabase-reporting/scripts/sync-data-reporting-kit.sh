@@ -33,8 +33,20 @@ if [ ! -f "$SOURCE_DIR/SKILL.md" ]; then
   exit 1
 fi
 
-if [ -f "$STATE_FILE" ] && [ "$(tr -d '[:space:]' < "$STATE_FILE")" = "$REMOTE_SHA" ] && [ -f "$TARGET_DIR/SKILL.md" ]; then
-  echo "DATA_REPORTING_KIT_UP_TO_DATE: $REMOTE_SHA"
+# The published skill version is the synchronization boundary. A GitHub commit
+# can contain unrelated changes, so retain the installed skill when its version
+# already matches the canonical version.
+remote_version="$(awk '$1 == "version:" {print $2; exit}' "$SOURCE_DIR/SKILL.md")"
+local_version=""
+if [ -f "$TARGET_DIR/SKILL.md" ]; then
+  local_version="$(awk '$1 == "version:" {print $2; exit}' "$TARGET_DIR/SKILL.md")"
+fi
+if [ -z "$remote_version" ]; then
+  echo "DATA_REPORTING_KIT_SYNC_FAILED: canonical skill version missing at revision $REMOTE_SHA"
+  exit 1
+fi
+if [ -n "$local_version" ] && [ "$local_version" = "$remote_version" ]; then
+  echo "DATA_REPORTING_KIT_UP_TO_DATE: $REMOTE_SHA (version $remote_version)"
   exit 0
 fi
 
