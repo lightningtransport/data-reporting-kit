@@ -1,7 +1,7 @@
 ---
 name: itpros-supabase-reporting
 description: Answer Lightning reports through the approved reporting APIs.
-version: 0.6.1
+version: 0.7.0
 author: Ibrain Ortega, Hermes Agent
 license: Proprietary
 platforms: [linux, macos, windows]
@@ -45,7 +45,7 @@ Use schedule `0 10,14 * * *`. The job updates instructions only and must report 
 
 1. Read `AGENTS.md`, `docs/agent-rules.md`, `docs/question-routing.md`, `docs/metric-definitions.md`, and `docs/data-dictionary.md`.
 2. Call `catalog`, then report metadata when the current schema/rules are not loaded.
-3. Choose the smallest report and exact filters. Settlement reports require an explicit period or truck; DriverPay requires truck, driver, `out_from`, or `return_from`.
+3. Choose the smallest report and exact filters. Settlement reports require an explicit period or truck; DriverPay requires truck, driver, `out_from`, or `return_from`; fuel requires `truck_number`, `store_from`, or `ninox_id`.
 4. Run the helper and reconcile `fetched_count` with `total_count` when a complete answer is required.
 5. Apply grain, date, join, allocation-bucket, stored-value, and sensitive-output rules. When a needed field is absent from the selected record, use approved-report relational fallback before finalizing: CDL is the unique driver key across `drivers` and `DriverPay`; truck number is the vehicle key across documented field variants. Never substitute names, Supabase IDs, or `returns.Ninox_ID`; `returns` has no direct CDL/driver key, so report an unresolved driver link unless a related record provides a verified CDL match.
 6. Answer with source, normalized filters, exact period, result and row/distinct count, pagination completeness, `as_of`, source-freshness limitation, and material caveats.
@@ -114,7 +114,7 @@ If `REPORTING_KIT_KNOWLEDGE_WEBHOOK_TOKEN` is explicitly configured, add `-H "Au
 
 ## Approved reports and pitfalls
 
-Agent-key reports are `settlement_summary`, `settlements`, `driver_pay`, `drivers`, `returns`, and `trucks`. Every `AGENT_API_KEY` / `AGENT_API_KEY_<number>` can read all six reports and request their documented sensitive fields with `include_sensitive=true` by default. Only an explicit `AGENT_REPORTS_<n>` allowlist or `AGENT_ALLOW_SENSITIVE_<n>=false` setting restricts a specific key. Use `report=catalog` for the live permission/contract.
+Agent-key reports are `settlement_summary`, `settlements`, `driver_pay`, `drivers`, `returns`, `trucks`, and `fuel`. Every `AGENT_API_KEY` / `AGENT_API_KEY_<number>` can read all seven reports and request their documented sensitive fields with `include_sensitive=true` by default. Only an explicit `AGENT_REPORTS_<n>` allowlist or `AGENT_ALLOW_SENSITIVE_<n>=false` setting restricts a specific key. Use `report=catalog` for the live permission/contract.
 
 - `count`/`page_count` is one page, not the total.
 - A successful zero-row page has `total_count=0`; an offset beyond the available range returns HTTP `416`.
@@ -123,6 +123,7 @@ Agent-key reports are `settlement_summary`, `settlements`, `driver_pay`, `driver
 - Settlement weeks run Tuesday through Monday and require an explicit period.
 - Only in `settlements` and settlement-derived reports, Trucks 1/2/3 are Carlos/Jorge/CDT non-physical owner-expense allocation buckets. Each holds that owner's total `truck_loans` and `Insurance` amounts not assigned to a specific physical truck; include it in the owner's general settlement total, label it as non-physical, and exclude it from physical-truck counts/rankings. Do not apply this rule to `trucks`, DriverPay, or returns.
 - Stored Gross, Total Expenses, and Net take precedence; do not add included components again.
+- Fuel is transaction-grain history: filter by `truck_number`, `store_from`, or `ninox_id`; use populated `Adjusted SubTotal` for adjusted-spend totals and calculate aggregate price per gallon as applicable spend divided by gallons.
 - `returns.Ninox_ID` is not a driver ID.
 - Planned Schedule_Teams and exact Ninox in-yard/on-road metrics are unsupported by these Supabase tables.
 

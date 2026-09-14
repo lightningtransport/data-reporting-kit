@@ -8,7 +8,7 @@ Every agent must read [`AGENTS.md`](AGENTS.md). The runtime contract is availabl
 
 ## What this kit provides
 
-- Complete 99-column data dictionary for DriverPay, drivers, returns, settlements, and trucks.
+- Complete 107-column data dictionary for DriverPay, drivers, returns, settlements, trucks, and fuel.
 - Question routing, metric definitions, Ninox mappings, joins, date windows, allocation-bucket rules, and double-counting guardrails.
 - Source and OpenAPI contract for the custom-key `agent-reporting` Edge Function.
 - Source for the separate membership/JWT `reporting-query` Edge Function.
@@ -21,7 +21,7 @@ Every agent must read [`AGENTS.md`](AGENTS.md). The runtime contract is availabl
 
 - `GET https://aaqquwhdglueqlnbifvn.supabase.co/functions/v1/agent-reporting`
 - Custom `x-agent-key` authentication; never place the key in a URL, browser, prompt, log, or repository.
-- Single-organization access, optional per-key report allowlist/expiry, full read access to all six reports and their documented sensitive fields by default, explicit column selection, strict filters, stable pagination, and request audit. Set `AGENT_ALLOW_SENSITIVE_<n>=false` only to restrict a particular key.
+- Single-organization access, optional per-key report allowlist/expiry, full read access to all seven reports and their documented sensitive fields by default, explicit column selection, strict filters, stable pagination, and request audit. Set `AGENT_ALLOW_SENSITIVE_<n>=false` only to restrict a particular key.
 - Discover with `?report=catalog`; see `docs/agent-reporting.md` and `api/openapi.yaml`.
 
 ### `reporting-query` — individual Supabase Auth memberships

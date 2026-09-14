@@ -6,20 +6,21 @@ const expected: Record<keyof typeof TABLES, string[]> = {
   returns: ["Insurance", "Truck", "Driver Name", "Phone Number", "Return Date", "ID", "Ninox_ID", "CDL"],
   settlements: ["Truck", "truck_insurance", "Dispatch", "Owner", "Gross", "tonu", "Total Expenses", "Net", "From", "To", "truck_loans", "Otro", "LTR Invoices", "Tolls", "BestPass", "Insurance", "CabCards", "Trailer Rentals", "samsara", "PrePass", "Total Driver Pay", "Fuel Expenses", "To Report", "%AppliedSaved", "Gross_with_%_deduction_All", "Driven_miles", "ID"],
   trucks: ["truck_number", "dispatcher", "insurance", "vin", "make", "odometer_miles", "owner", "last_known_address", "model_year", "license_plate", "yard_location", "samsara_last_connected_at", "samsara_vehicle_id", "mechanic_status", "ID", "Ninox_ID"],
+  fuel: ["id", "created_at", "Unit", "Store Date", "Product", "SubTotal", "Adjusted SubTotal", "Gallons", "City", "State", "Price_Per_Gallon", "owner", "Ninox_ID"],
 };
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
 }
 
-Deno.test("metadata covers all 94 live reporting columns exactly", () => {
+Deno.test("metadata covers all 107 live reporting columns exactly", () => {
   let count = 0;
   for (const [table, columns] of Object.entries(expected) as [keyof typeof TABLES, string[]][]) {
     const actual = Object.keys(TABLES[table].fields);
     assert(JSON.stringify(actual) === JSON.stringify(columns), `${table} columns differ`);
     count += actual.length;
   }
-  assert(count === 94, `expected 94 fields, got ${count}`);
+  assert(count === 107, `expected 107 fields, got ${count}`);
 });
 
 Deno.test("every field has a physical type, nullability, and meaning", () => {

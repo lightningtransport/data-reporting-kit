@@ -36,6 +36,15 @@ Only in `settlements` and settlement-derived reports, `Truck` 1=Carlos, 2=Jorge,
 | Planned departures | Not available in these Supabase tables; use approved live Ninox Schedule_Teams source. | external |
 | Exact in-yard/on-road count | Not available because Supabase lacks Ninox `days_in_yard_` and numeric insurance-choice fields. | external |
 
+## Fuel metrics
+
+| Metric | Definition | Source |
+|---|---|---|
+| Fuel transaction count | Count fuel rows after the requested truck/date/product filters; each row is one historic transaction. | `fuel` |
+| Adjusted fuel spend | Sum populated `Adjusted SubTotal` values for the explicit filtered transactions. Do not silently substitute `SubTotal` for null adjustments. | `fuel.Adjusted SubTotal` |
+| Gallons | Sum `Gallons` for the explicit filtered transactions, reporting null/missing values where material. | `fuel.Gallons` |
+| Aggregate price per gallon | Applicable aggregated spend ÷ aggregated gallons; do not average `Price_Per_Gallon` transaction values. | `fuel` |
+
 ## Driver pay
 
 For each DriverPay assignment that overlaps the settlement week:

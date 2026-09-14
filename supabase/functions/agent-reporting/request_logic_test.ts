@@ -95,6 +95,8 @@ Deno.test("numeric identifiers and temporal_driver enum are validated", () => {
         "report=trucks&ninox_id=12x",
         "ninox_id must be numeric",
       ],
+      ["fuel", "report=fuel&truck_number=12x", "truck_number must be numeric"],
+      ["fuel", "report=fuel&store_from=2026-99-99", "store_from must be a real date"],
       [
         "driver_pay",
         "report=driver_pay&out_from=2026-09-01&temporal_driver=Maybe",
@@ -119,6 +121,12 @@ Deno.test("normalized filters contain only validated report filters", () => {
       '{"return_from":"2026-09-01"}',
     "normalization included non-filter parameters",
   );
+});
+
+Deno.test("fuel requires a bounded lookup anchor", () => {
+  const params = new URLSearchParams("report=fuel&product=Diesel");
+  validateStrictParameters(params, "fuel", false);
+  assertThrows(() => validateReportValues(params, "fuel"), "fuel requires truck_number, store_from, or ninox_id");
 });
 
 Deno.test("audit payload distinguishes principal identity and role from outcome", () => {

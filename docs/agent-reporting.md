@@ -14,14 +14,14 @@ The key identifies an agent principal. The function is single-organization and a
 - `supabase/config.toml` sets `verify_jwt=false` only for this custom-key function and keeps `verify_jwt=true` for `reporting-query`.
 - Never expose `x-agent-key` in browser/frontend code.
 - Missing, expired, or invalid keys return `401`.
-- A valid key whose explicit per-key report allowlist excludes a report, or whose matching `AGENT_ALLOW_SENSITIVE...` control is set to `false`, returns `403`. All `AGENT_API_KEY` / `AGENT_API_KEY_<number>` principals otherwise have full read access to the six approved reports and their explicit sensitive-field allowlists.
+- A valid key whose explicit per-key report allowlist excludes a report, or whose matching `AGENT_ALLOW_SENSITIVE...` control is set to `false`, returns `403`. All `AGENT_API_KEY` / `AGENT_API_KEY_<number>` principals otherwise have full read access to the seven approved reports and their explicit sensitive-field allowlists.
 
 ## Discover before querying
 
 - `?report=catalog` returns all reports allowed for the key, global parameters, response semantics, business rules, and examples.
 - `?report=<report>&metadata=true` returns exact physical fields, types, nullability, sensitive flags, Ninox mappings, filters, grain, joins, and calculations.
 
-Supported data reports: `settlement_summary`, `settlements`, `driver_pay`, `drivers`, `returns`, and `trucks`.
+Supported data reports: `settlement_summary`, `settlements`, `driver_pay`, `drivers`, `returns`, `trucks`, and `fuel`.
 
 ## Strict request behavior
 
@@ -32,6 +32,7 @@ Explicit reports reject:
 - invalid numbers, booleans, limits, and offsets;
 - blank filter values, nonnumeric numeric identifiers, and `temporal_driver` values other than `Yes` or `No`;
 - missing required history/financial anchors;
+- fuel queries without `truck_number`, `store_from`, or `ninox_id`;
 
 - unauthorized `include_sensitive=true` for a key explicitly restricted by `AGENT_ALLOW_SENSITIVE_<n>=false`.
 

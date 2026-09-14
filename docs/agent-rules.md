@@ -22,6 +22,7 @@ These rules govern every Lightning Transportation answer.
 - `trucks` is current state. The settlement-only 1/2/3 allocation-bucket rule must not be applied to this table.
 - `settlements` is one truck-or-bucket/week row.
 - `DriverPay` and `returns` can have two driver rows per team truck. Deduplicate truck identifiers for truck counts.
+- `fuel` is one historic transaction per row. Do not count rows as trucks or use transaction subtotals as a replacement for weekly settlement totals.
 - When an attribute needed for a report is missing from the primary record, perform an approved-report relational fallback before finalizing: use CDL as the unique driver key across `drivers` and `DriverPay`, and use truck number across documented vehicle-field variants (for example, `truck_number`, `Truck_Number`, `Truck`, `truck_no`, and `unit_number`). Normalize only the key's documented type/format; do not alter its business value.
 - Use left joins from historical data to current `trucks`. A missing current-master match does not invalidate history.
 - Never substitute a driver or vehicle name, a Supabase `ID`, or `returns.Ninox_ID` for the designated key. `returns.CDL` is a sensitive exact driver key; use it only when it matches a verified CDL in a related approved record.
@@ -34,6 +35,7 @@ These rules govern every Lightning Transportation answer.
 - Use stored `Total Expenses`; do not add expense components or driver pay again.
 - Use stored `Net`. Treat `Gross_with_%_deduction_All − Total Expenses` as the intended formula, not a universal replacement for stored Net.
 - Attribute historical owner/dispatch from settlements, not current trucks.
+- For fuel analysis, use `Adjusted SubTotal` only when it is populated; report nulls rather than silently substituting `SubTotal`. Aggregate price per gallon is applicable spend divided by gallons, not an average of transaction rates.
 - Only in `settlements` and settlement-derived reports, Truck 1=Carlos, 2=Jorge, 3=CDT are non-physical owner-expense allocation buckets. Each holds its owner's total `truck_loans` and `Insurance` that are not assigned to a specific physical truck. Include it in that owner's general settlement total, label it as a non-physical owner-expense allocation bucket, and exclude it from physical-truck counts/rankings. Do not apply this rule to `trucks`, DriverPay, or returns.
 
 ## 5. Pagination and completeness

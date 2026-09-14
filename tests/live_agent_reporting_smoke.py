@@ -45,8 +45,8 @@ check("organization" not in json.dumps(body).lower(), "server error leaked organ
 checks.append("server-error=sanitized-500")
 
 status, catalog = call([("report", "catalog")])
-check(status == 200 and catalog.get("schema_version") == "3.1.0", "catalog contract failed")
-check(set(catalog.get("reports", {})) == {"settlement_summary", "settlements", "driver_pay", "drivers", "returns", "trucks"}, "catalog reports differ")
+check(status == 200 and catalog.get("schema_version") == "3.2.0", "catalog contract failed")
+check(set(catalog.get("reports", {})) == {"settlement_summary", "settlements", "driver_pay", "drivers", "returns", "trucks", "fuel"}, "catalog reports differ")
 check(catalog.get("principal", {}).get("sensitive_access") is True, "default agent key should have sensitive access")
 checks.append("catalog=all-reports-sensitive-enabled")
 
@@ -62,13 +62,22 @@ check(status == 200, "restricted key could not access its allowed report")
 checks.append("restricted-key-authorization=enforced")
 
 status, metadata = call([("report", "settlements"), ("metadata", "true")])
-check(status == 200 and len(metadata.get("fields", {})) == 28, "settlement metadata coverage failed")
+check(status == 200 and len(metadata.get("fields", {})) == 27, "settlement metadata coverage failed")
 metadata_text = json.dumps(metadata)
 check("1 is Carlos" in metadata_text and "total truck_loans and Insurance" in metadata_text and "Do not apply this classification to trucks" in metadata_text, "owner bucket metadata missing or incorrectly scoped")
-for report, field_count in [("drivers", 18), ("returns", 9), ("trucks", 17)]:
+for report, field_count in [("drivers", 17), ("returns", 8), ("trucks", 16), ("fuel", 13)]:
     status, table_metadata = call([("report", report), ("metadata", "true")])
     check(status == 200 and len(table_metadata.get("fields", {})) == field_count, f"{report} metadata coverage failed")
-checks.append("metadata=all-99-fields")
+checks.append("metadata=all-107-fields")
+
+status, fuel = call([("report", "fuel"), ("store_from", "2026-09-01"), ("store_to", "2026-09-07"), ("limit", "2")])
+expected_fuel_fields = {"id", "created_at", "Unit", "Store Date", "Product", "SubTotal", "Adjusted SubTotal", "Gallons", "City", "State", "Price_Per_Gallon", "owner", "Ninox_ID"}
+check(status == 200 and fuel.get("source") == "public.fuel" and fuel.get("page_count") == 2 and fuel.get("total_count", 0) >= 2, "fuel query failed")
+check(all(set(row) == expected_fuel_fields for row in fuel.get("data", [])), "fuel projection differs from contract")
+check(all("2026-09-01" <= row.get("Store Date", "") <= "2026-09-07" for row in fuel.get("data", [])), "fuel date range filter not applied")
+status, _ = call([("report", "fuel"), ("product", "Diesel")])
+check(status == 400, "unanchored fuel query must return 400")
+checks.append("fuel=authorized-filtered-full-projection")
 
 for label, params in [
     ("unknown-filter", [("report", "trucks"), ("disptach", "Group 1")]),

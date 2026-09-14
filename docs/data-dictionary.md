@@ -1,6 +1,6 @@
 # Data dictionary
 
-Schema verified against Supabase project `aaqquwhdglueqlnbifvn` on **2026-09-14**. The five reporting sources contain **94 physical columns**: `DriverPay` 26, `drivers` 17, `returns` 8, `settlements` 27, and `trucks` 16. The reporting system is single-organization; these source tables have RLS enabled. PostgreSQL column comments are currently absent; business semantics below come from the local Ninox field catalog, verified live schema/data, and confirmed business rules.
+Schema verified against Supabase project `aaqquwhdglueqlnbifvn` on **2026-09-14**. The six reporting sources contain **107 physical columns**: `DriverPay` 26, `drivers` 17, `returns` 8, `settlements` 27, `trucks` 16, and `fuel` 13. The reporting system is single-organization; these source tables have RLS enabled. PostgreSQL column comments are currently absent; business semantics below come from the local Ninox field catalog, verified live schema/data, and confirmed business rules.
 
 The authenticated `agent-reporting` metadata routes are the runtime contract. Call `?report=catalog` for the complete catalog or `?report=<name>&metadata=true` for one report.
 
@@ -153,3 +153,25 @@ Use `Out Date` alone for departures and `Return Date` alone for returns. For ove
 | `ID` | bigint | no | Supabase identity primary key. |
 
 Use stored `Gross`, `Total Expenses`, and `Net`. Do not add `tonu` to Gross or expense components to Total Expenses. Require an explicit period; historical `To Report=Yes` rows make the flag unsafe as a current-cycle selector.
+
+## `fuel` — historic fuel transactions
+
+**Grain:** one fuel transaction row. Multiple rows can exist per truck and `Store Date`; do not count these rows as trucks or substitute their subtotals for weekly settlement totals.
+
+Use `Unit` as the numeric historic truck identifier. For a current-truck lookup, normalize only numeric representation and left-join to `trucks.truck_number`; historical fuel can exist without a current-master truck. `created_at` is a Supabase row timestamp, not proof of Ninox source freshness.
+
+| Column | Type | Null? | Meaning / safe use |
+|---|---|---:|---|
+| `id` | bigint | no | Supabase identity primary key for this transaction. |
+| `created_at` | timestamptz | no | Supabase row-creation timestamp; not a source-sync timestamp. |
+| `Unit` | numeric | yes | Historic fuel transaction truck number. |
+| `Store Date` | date | yes | Transaction store date. Use inclusive `store_from` / `store_to` filters. |
+| `Product` | text | yes | Stored product description. |
+| `SubTotal` | numeric | yes | Stored pre-adjustment transaction subtotal. |
+| `Adjusted SubTotal` | numeric | yes | Stored adjusted transaction subtotal. Use it for adjusted-spend totals only when populated; otherwise report the null rather than silently substituting `SubTotal`. |
+| `Gallons` | numeric | yes | Gallons purchased in this transaction. |
+| `City` | text | yes | Transaction city. |
+| `State` | text | yes | Transaction state/province as stored. |
+| `Price_Per_Gallon` | numeric | yes | Stored transaction price per gallon. For aggregates, divide applicable total spend by total gallons instead of averaging this field. |
+| `owner` | text | yes | Historical owner/entity stored on this transaction; not necessarily current truck ownership. |
+| `Ninox_ID` | numeric | yes | Fuel source-record identifier when populated; not a driver ID. |

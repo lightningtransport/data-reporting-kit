@@ -12,7 +12,7 @@ This repository is the canonical reporting contract for Lightning Transportation
 6. `api/openapi.yaml`
 7. Authenticated runtime catalog: `GET /functions/v1/agent-reporting?report=catalog`
 
-The five reporting-source schemas and 99 physical columns were verified on **2026-09-11**. The deployed catalog is the runtime contract. If it conflicts with the repository, stop and report the contradiction instead of guessing.
+The six reporting-source schemas and 107 physical columns were verified on **2026-09-14**. The deployed catalog is the runtime contract. If it conflicts with the repository, stop and report the contradiction instead of guessing.
 
 ## Approved interfaces
 
@@ -25,7 +25,7 @@ The five reporting-source schemas and 99 physical columns were verified on **202
 
 - Choose the smallest report and load its current metadata when meaning, filters, joins, grain, or calculations are not already known.
 - Use exact documented filter names and exact stored values. Unknown/duplicate parameters are errors.
-- Supply required anchors: settlement reports need `period_from` or truck; DriverPay needs truck, driver, `out_from`, or `return_from`.
+- Supply required anchors: settlement reports need `period_from` or truck; DriverPay needs truck, driver, `out_from`, or `return_from`; fuel needs `truck_number`, `store_from`, or `ninox_id`.
 - Follow `next_offset` until `has_more=false` when all rows are needed. `count`/`page_count` is one page; `total_count` is the filtered total.
 - Request sensitive fields only for an explicit user need. Every `AGENT_API_KEY` / `AGENT_API_KEY_<number>` is permitted to request the explicit sensitive-field allowlists by default; `AGENT_ALLOW_SENSITIVE_<n>=false` is the opt-out restriction for a specific key. Minimize and redact output.
 - Treat a denied/empty response as evidence only about that request, not proof that the business fact is false or that upstream data is current.

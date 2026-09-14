@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.2.0 - 2026-09-14
+
+- Added the approved `fuel` report to the custom-key `agent-reporting` gateway, with all 13 verified `public.fuel` fields, strict bounded filters, stable transaction ordering, catalog/metadata discovery, and exact pagination.
+- Extended the OpenAPI contract, routing, data dictionary, metrics, access guidance, packaged reporting skill, and tests so every default `AGENT_API_KEY` / `AGENT_API_KEY_<number>` principal learns that it can read the seven approved reports, including `fuel`, unless its explicit `AGENT_REPORTS_<n>` allowlist excludes it.
+
 ## 2026-09-14
 
 - Clarified that settlement Trucks 1/2/3 are Carlos/Jorge/CDT non-physical owner-expense allocation buckets only in `settlements` and settlement-derived reports. Each represents its owner's total unassigned `truck_loans` and `Insurance`; reports must label them as non-physical, include them in the matching owner total, and exclude them from physical-truck counts/rankings.

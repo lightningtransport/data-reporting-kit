@@ -174,6 +174,7 @@ function catalogResponse(principal: { id: string; allowSensitive: boolean; allow
       "?report=driver_pay&out_from=2026-09-01&out_to=2026-09-07",
       "?report=settlements&period_from=2026-09-01&period_to=2026-09-01",
       "?report=returns&return_from=2026-09-14&return_to=2026-09-20",
+      "?report=fuel&store_from=2026-09-01&store_to=2026-09-07",
       "?report=settlements&metadata=true",
     ],
     guidance: GLOBAL_GUIDANCE,
@@ -349,6 +350,20 @@ Deno.serve(async (req: Request) => {
       if (params.get("return_to")) query = query.lte("Return Date", params.get("return_to"));
       query = query.order("Return Date", { ascending: true, nullsFirst: false }).order("ID", { ascending: true });
       sort = ["Return Date asc nulls last", "ID asc"];
+    } else if (report === "fuel") {
+      const truckNumber = parseNumber(params.get("truck_number"), "truck_number");
+      const ninoxId = parseNumber(params.get("ninox_id"), "ninox_id");
+      query = admin.from("fuel").select(tableSelect("fuel", includeSensitive), { count: "exact" });
+      if (truckNumber !== null) query = query.eq("Unit", truckNumber);
+      if (ninoxId !== null) query = query.eq("Ninox_ID", ninoxId);
+      for (const [parameter, column] of [["product", "Product"], ["state", "State"], ["owner", "owner"]]) {
+        if (params.get(parameter)) query = query.eq(column, params.get(parameter));
+      }
+      if (params.get("city")) query = query.ilike("City", `%${params.get("city")}%`);
+      if (params.get("store_from")) query = query.gte("Store Date", params.get("store_from"));
+      if (params.get("store_to")) query = query.lte("Store Date", params.get("store_to"));
+      query = query.order("Store Date", { ascending: true, nullsFirst: false }).order("id", { ascending: true });
+      sort = ["Store Date asc nulls last", "id asc"];
     } else {
       const minOdometer = parseNumber(params.get("min_odometer"), "min_odometer");
       const maxOdometer = parseNumber(params.get("max_odometer"), "max_odometer");

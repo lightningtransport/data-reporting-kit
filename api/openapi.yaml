@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Lightning Reporting APIs
-  version: 2.0.0
+  version: 3.2.0
   license:
     name: Proprietary
     identifier: LicenseRef-Proprietary
@@ -26,7 +26,7 @@ paths:
           in: query
           schema:
             type: string
-            enum: [catalog, settlement_summary, settlements, driver_pay, drivers, returns, trucks]
+            enum: [catalog, settlement_summary, settlements, driver_pay, drivers, returns, trucks, fuel]
           description: Required for the strict contract. Use catalog for discovery.
         - name: metadata
           in: query
@@ -49,7 +49,7 @@ paths:
         - name: truck_number
           in: query
           schema: {type: string}
-          description: Exact DriverPay truck, or numeric current-trucks lookup according to report metadata.
+          description: Exact DriverPay truck, or numeric current-trucks/fuel lookup according to report metadata.
         - name: driver_id
           in: query
           schema: {type: string}
@@ -133,7 +133,7 @@ paths:
         - name: ninox_id
           in: query
           schema: {type: number}
-          description: Exact numeric source-record ID for returns or trucks; it is not a driver ID.
+          description: Exact numeric source-record ID for returns, trucks, or fuel; it is not a driver ID.
         - name: driver_name
           in: query
           schema: {type: string}
@@ -158,6 +158,18 @@ paths:
         - name: max_model_year
           in: query
           schema: {type: number}
+        - name: store_from
+          in: query
+          schema: {$ref: '#/components/schemas/IsoDate'}
+        - name: store_to
+          in: query
+          schema: {$ref: '#/components/schemas/IsoDate'}
+        - name: product
+          in: query
+          schema: {type: string}
+        - name: city
+          in: query
+          schema: {type: string}
 
       responses:
         '200':
@@ -274,7 +286,7 @@ components:
       properties:
         schema_version: {type: string}
         schema_verified_at: {type: string, format: date-time}
-        report: {type: string, enum: [settlement_summary, settlements, driver_pay, drivers, returns, trucks]}
+        report: {type: string, enum: [settlement_summary, settlements, driver_pay, drivers, returns, trucks, fuel]}
         guidance: {type: object, additionalProperties: true}
         source: {type: string}
     Error:

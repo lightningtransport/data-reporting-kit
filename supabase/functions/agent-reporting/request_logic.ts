@@ -7,6 +7,7 @@ export const supportedReports = [
   "drivers",
   "returns",
   "trucks",
+  "fuel",
 ] as const;
 export type SupportedReport = typeof supportedReports[number];
 
@@ -69,6 +70,16 @@ export const reportFilters: Record<SupportedReport, Set<string>> = {
     "max_odometer",
     "min_model_year",
     "max_model_year",
+  ]),
+  fuel: new Set([
+    "truck_number",
+    "store_from",
+    "store_to",
+    "product",
+    "city",
+    "state",
+    "owner",
+    "ninox_id",
   ]),
 };
 
@@ -254,6 +265,13 @@ export function validateReportValues(
   } else if (report === "returns") {
     validateDateRange(params, "return_from", "return_to");
     parseNumber(params.get("ninox_id"), "ninox_id");
+  } else if (report === "fuel") {
+    validateDateRange(params, "store_from", "store_to");
+    parseNumber(params.get("truck_number"), "truck_number");
+    parseNumber(params.get("ninox_id"), "ninox_id");
+    if (!params.get("truck_number") && !params.get("store_from") && !params.get("ninox_id")) {
+      invalid("fuel requires truck_number, store_from, or ninox_id");
+    }
   } else {
     parseNumber(params.get("truck_number"), "truck_number");
     parseNumber(params.get("ninox_id"), "ninox_id");

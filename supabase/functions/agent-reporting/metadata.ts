@@ -1,5 +1,5 @@
-export const SCHEMA_VERSION = "3.1.0";
-export const SCHEMA_VERIFIED_AT = "2026-09-14T15:13:19Z";
+export const SCHEMA_VERSION = "3.2.0";
+export const SCHEMA_VERIFIED_AT = "2026-09-14T18:32:46Z";
 
 const field = (
   type: string,
@@ -215,6 +215,35 @@ export const TABLES = {
       Ninox_ID: field("numeric", true, "Ninox TrucksDB source record ID. The physical column and type are verified; it is not the canonical truck number and its broader business semantics are not established."),
     },
   },
+  fuel: {
+    report: "fuel",
+    source: "public.fuel",
+    ninox_source: "Historic fuel transactions import",
+    row_grain: "One fuel transaction row. Multiple rows can exist for one truck and Store Date; sum monetary and gallon fields only when the requested filters and transaction grain are explicit.",
+    primary_key: "id (Supabase identity primary key); Ninox_ID is the source-record identifier when present",
+    use_for: ["historic fuel transaction detail", "fuel spending and gallon totals with explicit date/truck filters", "fuel-price analysis"],
+    do_not_use_for: ["settlement total replacement", "current truck ownership", "inferring source-sync freshness"],
+    calculation_rules: [
+      "Use Adjusted SubTotal for adjusted fuel-spend totals when it is populated; report nulls rather than substituting SubTotal without an explicit instruction.",
+      "Use Price_Per_Gallon as the stored transaction rate. For aggregate price-per-gallon, calculate total applicable spend divided by total gallons rather than averaging row rates.",
+      "Unit is a numeric truck identifier. Normalize only its numeric representation before joining to current trucks.truck_number; use a left join because historical fuel can refer to absent current trucks.",
+    ],
+    fields: {
+      id: field("bigint", false, "Supabase identity primary key for this imported fuel transaction."),
+      created_at: field("timestamptz", false, "Timestamp the fuel transaction row was created in Supabase; it is not a Ninox source-sync timestamp."),
+      Unit: field("numeric", true, "Truck number associated with the fuel transaction."),
+      "Store Date": field("date", true, "Transaction store date. Use inclusive store_from/store_to ISO date filters for fuel date ranges."),
+      Product: field("text", true, "Stored purchased product description. Filter exact values."),
+      SubTotal: field("numeric", true, "Stored pre-adjustment transaction subtotal."),
+      "Adjusted SubTotal": field("numeric", true, "Stored adjusted transaction subtotal."),
+      Gallons: field("numeric", true, "Gallons purchased in this transaction."),
+      City: field("text", true, "Fuel transaction city."),
+      State: field("text", true, "Fuel transaction state/province code or value as stored."),
+      Price_Per_Gallon: field("numeric", true, "Stored price per gallon for this transaction."),
+      owner: field("text", true, "Owner/entity value stored with this fuel transaction; it is historical transaction attribution, not necessarily current truck ownership."),
+      Ninox_ID: field("numeric", true, "Ninox source-record identifier for this fuel transaction when populated; it is not a driver ID."),
+    },
+  },
 } as const;
 
 export const REPORTS = {
@@ -311,5 +340,20 @@ export const REPORTS = {
 
     },
     sort: ["truck_number asc", "ID asc"],
+  },
+  fuel: {
+    ...TABLES.fuel,
+    filters: {
+      truck_number: "exact numeric fuel Unit/truck number",
+      store_from: "inclusive Store Date lower bound, YYYY-MM-DD",
+      store_to: "inclusive Store Date upper bound, YYYY-MM-DD",
+      product: "exact Product",
+      city: "case-insensitive partial City discovery search",
+      state: "exact State",
+      owner: "exact historical fuel owner",
+      ninox_id: "exact numeric fuel source-record Ninox_ID",
+    },
+    required_anchor: "truck_number, store_from, or ninox_id",
+    sort: ["Store Date asc nulls last", "id asc"],
   },
 } as const;
