@@ -18,17 +18,17 @@ Settlement periods run Tuesday through Monday. Attribute historical owner/dispat
 
 ### Owner-allocation buckets
 
-Settlement `Truck` 1=Carlos, 2=Jorge, and 3=CDT. These are owner-assignment buckets, not physical trucks. Loan and insurance amounts for real trucks without dedicated rows can be aggregated into the corresponding bucket.
+Only in `settlements` and settlement-derived reports, `Truck` 1=Carlos, 2=Jorge, and 3=CDT. These are non-physical owner-expense allocation buckets. Each bucket holds that owner's total `truck_loans` and `Insurance` amounts that are not applied to a specific physical truck.
 
 - Include bucket rows in the respective owner's general settlement totals.
 - Exclude them from physical-truck counts and rankings.
-- State whether buckets were included.
+- Display them as non-physical owner-expense allocation buckets and state whether they were included.
 
 ## Operational metrics
 
 | Metric | Definition | Source |
 |---|---|---|
-| Physical fleet count | Distinct `truck_number` excluding 1, 2, 3. | `trucks` with `physical_only=true` |
+| Fleet count | Distinct `truck_number`; do not use the settlement-only 1/2/3 allocation-bucket rule to filter `trucks`. | `trucks` |
 | Trucks leaving | Distinct `Truck_Number` filtered by `Out Date` only. | `DriverPay` |
 | Trucks returning historically | Distinct `Truck_Number` filtered by `Return Date` only. | `DriverPay` |
 | Current expected returns | Current Returns rows by nullable date; deduplicate `Truck` for truck count. | `returns` |

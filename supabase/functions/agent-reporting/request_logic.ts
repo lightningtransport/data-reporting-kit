@@ -69,7 +69,6 @@ export const reportFilters: Record<SupportedReport, Set<string>> = {
     "max_odometer",
     "min_model_year",
     "max_model_year",
-    "physical_only",
   ]),
 };
 
@@ -282,7 +281,7 @@ export function validateReportValues(
       minimumModelYear !== null && maximumModelYear !== null &&
       minimumModelYear > maximumModelYear
     ) invalid("min_model_year cannot be greater than max_model_year");
-    parseBoolean(params.get("physical_only"), "physical_only");
+
   }
 }
 

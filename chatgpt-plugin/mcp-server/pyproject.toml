@@ -1,0 +1,9 @@
+[project]
+name = "lightning-reporting-mcp"
+version = "0.1.0"
+description = "Read-only ChatGPT MCP connector for Lightning Transportation reporting"
+requires-python = ">=3.11"
+dependencies = ["fastmcp>=2.0,<3.0"]
+
+[tool.uv]
+package = false

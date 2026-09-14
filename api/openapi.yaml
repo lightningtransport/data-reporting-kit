@@ -45,7 +45,7 @@ paths:
         - name: truck
           in: query
           schema: {type: string}
-          description: Exact settlements/returns truck or allocation-bucket identifier.
+          description: Exact settlements/returns truck identifier. In settlement reports only, 1/2/3 identify documented non-physical owner-expense allocation buckets.
         - name: truck_number
           in: query
           schema: {type: string}
@@ -158,10 +158,7 @@ paths:
         - name: max_model_year
           in: query
           schema: {type: number}
-        - name: physical_only
-          in: query
-          schema: {type: boolean}
-          description: On trucks, true excludes allocation buckets 1, 2, and 3.
+
       responses:
         '200':
           description: Catalog, metadata, explicit paginated data, or legacy data response.

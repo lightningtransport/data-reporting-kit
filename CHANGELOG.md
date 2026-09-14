@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-09-14
+
+- Clarified that settlement Trucks 1/2/3 are Carlos/Jorge/CDT non-physical owner-expense allocation buckets only in `settlements` and settlement-derived reports. Each represents its owner's total unassigned `truck_loans` and `Insurance`; reports must label them as non-physical, include them in the matching owner total, and exclude them from physical-truck counts/rankings.
+- Removed the incorrect application of that settlement-only rule from the current `trucks` report and its `physical_only` API filter.
+
 ## 3.0.0 - 2026-09-14
 
 - Removed the retired `organization_id` scope from reporting tables, the settlement summary view, query functions, metadata, tests, and documentation.

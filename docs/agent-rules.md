@@ -19,7 +19,7 @@ These rules govern every Lightning Transportation answer.
 
 ## 3. Grain, counting, and joins
 
-- `trucks` is current state and includes synthetic allocation rows 1/2/3.
+- `trucks` is current state. The settlement-only 1/2/3 allocation-bucket rule must not be applied to this table.
 - `settlements` is one truck-or-bucket/week row.
 - `DriverPay` and `returns` can have two driver rows per team truck. Deduplicate truck identifiers for truck counts.
 - When an attribute needed for a report is missing from the primary record, perform an approved-report relational fallback before finalizing: use CDL as the unique driver key across `drivers` and `DriverPay`, and use truck number across documented vehicle-field variants (for example, `truck_number`, `Truck_Number`, `Truck`, `truck_no`, and `unit_number`). Normalize only the key's documented type/format; do not alter its business value.
@@ -34,7 +34,7 @@ These rules govern every Lightning Transportation answer.
 - Use stored `Total Expenses`; do not add expense components or driver pay again.
 - Use stored `Net`. Treat `Gross_with_%_deduction_All − Total Expenses` as the intended formula, not a universal replacement for stored Net.
 - Attribute historical owner/dispatch from settlements, not current trucks.
-- Truck 1=Carlos, 2=Jorge, 3=CDT allocation buckets. Include them in owner general settlement totals and exclude them from physical-fleet metrics.
+- Only in `settlements` and settlement-derived reports, Truck 1=Carlos, 2=Jorge, 3=CDT are non-physical owner-expense allocation buckets. Each holds its owner's total `truck_loans` and `Insurance` that are not assigned to a specific physical truck. Include it in that owner's general settlement total, label it as a non-physical owner-expense allocation bucket, and exclude it from physical-truck counts/rankings. Do not apply this rule to `trucks`, DriverPay, or returns.
 
 ## 5. Pagination and completeness
 

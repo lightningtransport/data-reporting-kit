@@ -43,7 +43,8 @@ Deno.test("critical business rules are present", () => {
   const settlementText = JSON.stringify(TABLES.settlements);
   const returnText = JSON.stringify(TABLES.returns);
   const driverPayText = JSON.stringify(TABLES.driver_pay);
-  assert(settlementText.includes("1 is Carlos") && settlementText.includes("2 is Jorge") && settlementText.includes("3 is CDT"), "owner buckets missing");
+  assert(settlementText.includes("1 is Carlos") && settlementText.includes("2 is Jorge") && settlementText.includes("3 is CDT") && settlementText.includes("total truck_loans and Insurance"), "owner bucket rule missing");
+  assert(!JSON.stringify(TABLES.trucks).includes("owner-assignment bucket"), "settlement-only bucket rule leaked into trucks metadata");
   assert(settlementText.includes("Do not infer current cycle") && settlementText.includes("do not treat as a tonnage"), "settlement safeguards missing");
   assert(returnText.includes("not a driver ID"), "returns ID warning missing");
   assert(driverPayText.includes("Out Date only") && driverPayText.includes("Return Date only"), "DriverPay date rules missing");

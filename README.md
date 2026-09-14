@@ -13,6 +13,7 @@ Every agent must read [`AGENTS.md`](AGENTS.md). The runtime contract is availabl
 - Source and OpenAPI contract for the custom-key `agent-reporting` Edge Function.
 - Source for the separate membership/JWT `reporting-query` Edge Function.
 - A portable Hermes reporting skill, correction-feedback contract, and access lifecycle guidance.
+- A private ChatGPT Plugin package: reusable reporting skill plus remote, read-only MCP connector; see [`docs/chatgpt-plugin.md`](docs/chatgpt-plugin.md).
 
 ## Active interfaces
 

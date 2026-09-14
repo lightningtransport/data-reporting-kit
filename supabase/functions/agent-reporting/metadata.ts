@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = "3.0.0";
+export const SCHEMA_VERSION = "3.1.0";
 export const SCHEMA_VERIFIED_AT = "2026-09-14T15:13:19Z";
 
 const field = (
@@ -141,9 +141,9 @@ export const TABLES = {
       "A period is not financially complete merely because rows exist. Check requested financial fields for nulls before calling it complete.",
     ],
     owner_bucket_rules: [
-      "Truck 1 is Carlos's owner-assignment bucket, Truck 2 is Jorge's, and Truck 3 is CDT's. They are not physical trucks.",
-      "Include bucket rows in the respective owner's general settlement totals because truck_loans and Insurance from real trucks that lack dedicated rows can be aggregated there.",
-      "Exclude Truck 1, 2, and 3 from physical-truck counts, physical-truck rankings, and fleet joins unless the user explicitly asks for allocation buckets.",
+      "Only in settlements and settlement-derived reports, Truck 1 is Carlos's, Truck 2 is Jorge's, and Truck 3 is CDT's non-physical owner-expense allocation bucket.",
+      "Each bucket holds that owner's total truck_loans and Insurance amounts that are not assigned to a specific physical truck. Include it in the respective owner's general settlement total.",
+      "Display Truck 1, 2, and 3 as non-physical owner-expense allocation buckets; exclude them from physical-truck counts/rankings. Do not apply this classification to trucks, DriverPay, returns, or non-settlement fleet joins.",
     ],
     calculation_rules: [
       "Use stored Gross as total gross. The physical field tonu is an additional income component already included in Gross; the Ninox source catalog maps the related source concept to Facturado Compass. Do not interpret it as freight tonnage or add it again.",
@@ -153,7 +153,7 @@ export const TABLES = {
       "Attribute historical totals using settlements.Owner and settlements.Dispatch, never current trucks.owner or trucks.dispatcher.",
     ],
     fields: {
-      Truck: field("text", true, "Truck number or synthetic owner bucket (1=Carlos, 2=Jorge, 3=CDT).", { ninox_field: "DE.K" }),
+      Truck: field("text", true, "Truck number or settlement-only non-physical owner-expense allocation bucket (1=Carlos, 2=Jorge, 3=CDT).", { ninox_field: "DE.K" }),
       truck_insurance: field("text", true, "Truck insurance category/code for this settlement period."),
       Dispatch: field("text", true, "Historical dispatch value for this settlement period. Use exact stored values; history includes group labels and legacy dispatcher names.", { ninox_field: "DE.X3" }),
       Owner: field("text", true, "Historical owner/entity for this settlement period."),
@@ -163,12 +163,12 @@ export const TABLES = {
       Net: field("numeric", true, "Stored settlement net and authoritative net value. The intended subtraction formula has rare live exceptions.", { ninox_field: "DE.A5" }),
       From: field("date", true, "Settlement period start date; Tuesday.", { ninox_field: "DE.L" }),
       To: field("date", true, "Settlement period end date; Monday, six days after From."),
-      truck_loans: field("numeric", true, "Truck loan/dealer payment expense. Some real-truck amounts are represented in owner bucket rows 1/2/3.", { ninox_field: "DE.Q3" }),
+      truck_loans: field("numeric", true, "Truck loan/dealer payment expense. In settlement bucket rows 1/2/3, this is part of the owner's total unassigned truck-loan amount.", { ninox_field: "DE.Q3" }),
       Otro: field("numeric", true, "Expense without a more specific category."),
       "LTR Invoices": field("numeric", true, "Lightning Trucks Repairs internal shop/mechanics invoice expense."),
       Tolls: field("numeric", true, "Toll expense component."),
       BestPass: field("numeric", true, "BestPass expense component."),
-      Insurance: field("numeric", true, "Insurance expense component. Some real-truck amounts are represented in owner bucket rows 1/2/3."),
+      Insurance: field("numeric", true, "Insurance expense component. In settlement bucket rows 1/2/3, this is part of the owner's total unassigned insurance amount."),
       CabCards: field("numeric", true, "Cab-card expense component."),
       "Trailer Rentals": field("numeric", true, "Trailer-rental expense component."),
       samsara: field("numeric", true, "Samsara expense component."),
@@ -186,18 +186,18 @@ export const TABLES = {
     report: "trucks",
     source: "public.trucks",
     ninox_source: "TrucksDB (E)",
-    row_grain: "One current truck-master or synthetic owner-bucket row per unique truck_number. ID is the primary key; truck_number has a unique constraint.",
+    row_grain: "One current truck-master row per unique truck_number. ID is the primary key; truck_number has a unique constraint.",
     primary_key: "ID; truck_number is the unique business key",
     use_for: ["current fleet identity", "current owner and dispatcher", "current vehicle/operational metadata"],
-    do_not_use_for: ["historical owner/dispatch attribution", "historical financial totals", "treating allocation buckets 1/2/3 as physical trucks"],
+    do_not_use_for: ["historical owner/dispatch attribution", "historical financial totals"],
     rules: [
-      "truck_number 1, 2, and 3 are owner-assignment buckets (Carlos, Jorge, CDT), not physical trucks. Exclude them from physical-fleet counts.",
+      "The settlement-only 1/2/3 owner-expense allocation-bucket rule does not classify or filter current trucks rows.",
       "dispatcher and owner are current values. Use DriverPay or settlements fields for historical attribution.",
       "Out Of Services is a current dispatcher value, but it is not equivalent to the exact Ninox in-yard/off-duty formula, which uses unavailable days_in_yard_ and insurance-choice fields.",
       "Use literal stored mechanic_status values. Current values include Work in Progress, Heavy Work No ETA, Ready for Q.C., and Ready To Go; blank/null means no status is stored.",
     ],
     fields: {
-      truck_number: field("numeric", false, "Unique current truck number or synthetic owner bucket. Use as the business lookup key.", { ninox_field: "E.A" }),
+      truck_number: field("numeric", false, "Unique current truck-master number. Use as the business lookup key.", { ninox_field: "E.A" }),
       dispatcher: field("text", true, "Current dispatcher/group. Verified current values include Group 1, Group 2, CDT, Solo, and Out Of Services.", { ninox_field: "E.YF" }),
       insurance: field("text", true, "Current truck insurance provider/category. Verified current values include CTC, CDT, LTL, and Need Ins.; value sets can change.", { ninox_field: "E.Y4" }),
       vin: field("text", true, "Sensitive unique vehicle identification number.", { sensitive: true, ninox_field: "E.CG" }),
@@ -296,7 +296,7 @@ export const REPORTS = {
   trucks: {
     ...TABLES.trucks,
     filters: {
-      truck_number: "exact numeric truck/bucket number",
+      truck_number: "exact numeric current truck-master number",
       ninox_id: "exact numeric TrucksDB source-record Ninox_ID",
       dispatcher: "exact current dispatcher",
       owner: "exact current owner",
@@ -308,7 +308,7 @@ export const REPORTS = {
       max_odometer: "inclusive numeric upper bound",
       min_model_year: "inclusive numeric lower bound",
       max_model_year: "inclusive numeric upper bound",
-      physical_only: "true excludes synthetic owner buckets 1, 2, and 3; false includes all rows",
+
     },
     sort: ["truck_number asc", "ID asc"],
   },

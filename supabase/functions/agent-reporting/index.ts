@@ -170,7 +170,7 @@ function catalogResponse(principal: { id: string; allowSensitive: boolean; allow
       as_of: "API request time, not source-sync time.",
     },
     examples: [
-      "?report=trucks&physical_only=true&dispatcher=Group%201",
+      "?report=trucks&dispatcher=Group%201",
       "?report=driver_pay&out_from=2026-09-01&out_to=2026-09-07",
       "?report=settlements&period_from=2026-09-01&period_to=2026-09-01",
       "?report=returns&return_from=2026-09-14&return_to=2026-09-20",
@@ -367,7 +367,7 @@ Deno.serve(async (req: Request) => {
       if (maxOdometer !== null) query = query.lte("odometer_miles", maxOdometer);
       if (minModelYear !== null) query = query.gte("model_year", minModelYear);
       if (maxModelYear !== null) query = query.lte("model_year", maxModelYear);
-      if (params.get("physical_only") === "true") query = query.not("truck_number", "in", "(1,2,3)");
+
       query = query.order("truck_number", { ascending: true }).order("ID", { ascending: true });
       sort = ["truck_number asc", "ID asc"];
     }

@@ -4,7 +4,7 @@ Read `AGENTS.md` first. Use the smallest `agent-reporting` report that answers t
 
 | User question | `agent-reporting` report | Required filters / analysis |
 |---|---|---|
-| Current truck facts or fleet list | `trucks` | Use current owner/dispatcher/mechanic fields only. Set `physical_only=true` for physical-fleet counts. |
+| Current truck facts or fleet list | `trucks` | Use current owner/dispatcher/mechanic fields only. The settlement-only 1/2/3 allocation rule does not filter or classify this source. |
 | Who/trucks are expected to return? | `returns` | Inclusive `return_from`/`return_to`. Count distinct `Truck` for trucks; rows represent drivers. |
 | Historical assignment for a truck/driver | `driver_pay` | Anchor with `truck_number` or `driver_id`; review dates, transfers, and terminations. |
 | Which trucks left in a period? | `driver_pay` | Filter `out_from`/`out_to` only; count distinct `Truck_Number`. |
@@ -27,7 +27,7 @@ Read `AGENTS.md` first. Use the smallest `agent-reporting` report that answers t
 
 - `DriverPay` and `returns` are driver-row sources. Deduplicate truck identifiers for truck counts.
 - `settlements` is truck-or-bucket/week grain. Filter by `Truck` plus period for one row.
-- Settlement Trucks 1, 2, and 3 are Carlos/Jorge/CDT allocation buckets. Include them in owner general totals; exclude them from physical-truck rankings.
+- Only in `settlements` and `settlement_summary`, Truck 1, 2, and 3 are non-physical owner-expense allocation buckets for Carlos, Jorge, and CDT. Each represents that owner's total `truck_loans` and `Insurance` not assigned to a specific physical truck. Include them in owner general totals, label them as non-physical, and exclude them from physical-truck counts/rankings.
 - If the selected report does not contain a required attribute, retrieve it from related approved-report data before completing the answer. Use CDL as the driver key across `drivers` and `DriverPay`; use the truck-number field variants (`truck_number`, `Truck_Number`, `Truck`, `truck_no`, or `unit_number`) as the vehicle key after documented type/format normalization.
 - Left-join historical rows to current `trucks`; history can contain retired/missing current-master numbers. Never use a name, Supabase `ID`, or `returns.Ninox_ID` as a surrogate key.
 - `returns.CDL` is a sensitive exact driver key. Only associate a return with a driver when this CDL matches a verified CDL in related approved data; never use names, Supabase IDs, or `returns.Ninox_ID` as a substitute.

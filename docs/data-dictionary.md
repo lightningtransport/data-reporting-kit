@@ -13,15 +13,15 @@ The authenticated `agent-reporting` metadata routes are the runtime contract. Ca
 - `DriverPay.DriversDB_ID` is text and joins to `drivers.Ninox_ID::text`; it remains available for legacy source linkage but CDL is the designated driver key for fallback lookups.
 - `returns.Ninox_ID` is a Returns source-record ID, not a driver ID. `returns.CDL` is now available as a sensitive exact driver key; use it only when it matches a related approved record's verified CDL.
 
-## `trucks` — current fleet master and allocation buckets
+## `trucks` — current fleet master
 
-**Grain:** one current master/allocation row per unique `truck_number`. `ID` is the primary key; `truck_number` has a unique constraint. Use this table for current facts only.
+**Grain:** one current master row per unique `truck_number`. `ID` is the primary key; `truck_number` has a unique constraint. Use this table for current facts only.
 
-Truck numbers **1, 2, and 3 are synthetic owner-assignment buckets**, not physical trucks: 1=Carlos, 2=Jorge, 3=CDT. Exclude them from physical-fleet counts and rankings. `Out Of Services` is a dispatcher value, but it is not equivalent to the exact Ninox in-yard/off-duty formula because Supabase lacks `days_in_yard_` and numeric insurance-choice fields.
+The settlement-only Truck 1/2/3 owner-expense allocation rule does not apply to this table. `Out Of Services` is a dispatcher value, but it is not equivalent to the exact Ninox in-yard/off-duty formula because Supabase lacks `days_in_yard_` and numeric insurance-choice fields.
 
 | Column | Type | Null? | Meaning / safe use |
 |---|---|---:|---|
-| `truck_number` | numeric | no | Unique physical truck number or synthetic bucket. Ninox `E.A / truck_`. |
+| `truck_number` | numeric | no | Unique current truck-master number. Ninox `E.A / truck_`. |
 | `dispatcher` | text | yes | Current group/dispatcher. Current values include Group 1, Group 2, CDT, Solo, Out Of Services. Ninox `E.YF`. |
 | `insurance` | text | yes | Current truck insurance/provider category. Use exact stored values. Ninox `E.Y4`. |
 | `vin` | text | yes | Sensitive VIN. Ninox `E.CG`. |
@@ -120,11 +120,11 @@ Use `Out Date` alone for departures and `Return Date` alone for returns. For ove
 
 **Grain:** one truck identifier or owner bucket per Tuesday–Monday period. `(Truck, From, To)` is unique in verified live data. Attribute history using this row's `Owner` and `Dispatch`, never current truck-master values.
 
-**Owner buckets:** `Truck` 1=Carlos, 2=Jorge, 3=CDT. Include these rows in the respective owner's general settlement totals because loan and insurance amounts from real trucks without dedicated rows can be aggregated there. Exclude them from physical-truck counts/rankings.
+**Owner-expense allocation buckets (settlements only):** `Truck` 1=Carlos, 2=Jorge, 3=CDT. They are non-physical trucks. Each bucket holds its owner's total `truck_loans` and `Insurance` amounts that are not applied to a specific physical truck. Include these rows in the respective owner's general settlement totals, display them as non-physical owner-expense allocation buckets, and exclude them from physical-truck counts/rankings. Do not apply this classification to `trucks`, DriverPay, or returns.
 
 | Column | Type | Null? | Meaning / safe use |
 |---|---|---:|---|
-| `Truck` | text | yes | Physical truck number or synthetic owner bucket. Ninox `DE.K`. |
+| `Truck` | text | yes | Physical truck number or settlement-only non-physical owner-expense allocation bucket. Ninox `DE.K`. |
 | `truck_insurance` | text | yes | Period-specific truck insurance category/code. |
 | `Dispatch` | text | yes | Historical dispatch value for this period. Ninox `DE.X3`. |
 | `Owner` | text | yes | Historical owner/entity for this period. |
@@ -134,12 +134,12 @@ Use `Out Date` alone for departures and `Return Date` alone for returns. For ove
 | `Net` | numeric | yes | Stored authoritative net. Intended subtraction has rare live exceptions. Ninox `DE.A5`. |
 | `From` | date | yes | Tuesday period start. Ninox `DE.L`. |
 | `To` | date | yes | Following Monday period end. |
-| `truck_loans` | numeric | yes | Truck loan/dealer-payment expense; some amounts are in owner buckets. Ninox `DE.Q3`. |
+| `truck_loans` | numeric | yes | Truck loan/dealer-payment expense. For settlement buckets 1/2/3, this is part of the owner's total unassigned truck-loan amount. Ninox `DE.Q3`. |
 | `Otro` | numeric | yes | Uncategorized expense component. |
 | `LTR Invoices` | numeric | yes | Internal Lightning Trucks Repairs invoice expense. |
 | `Tolls` | numeric | yes | Toll expense component. |
 | `BestPass` | numeric | yes | BestPass expense component. |
-| `Insurance` | numeric | yes | Insurance expense component; some amounts are in owner buckets. |
+| `Insurance` | numeric | yes | Insurance expense component. For settlement buckets 1/2/3, this is part of the owner's total unassigned insurance amount. |
 | `CabCards` | numeric | yes | Cab-card expense component. |
 | `Trailer Rentals` | numeric | yes | Trailer-rental expense component. |
 | `samsara` | numeric | yes | Samsara expense component. |

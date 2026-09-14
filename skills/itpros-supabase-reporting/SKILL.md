@@ -121,7 +121,7 @@ Agent-key reports are `settlement_summary`, `settlements`, `driver_pay`, `driver
 - DriverPay and returns can produce two rows per team truck; deduplicate trucks when asked for trucks.
 - Departures use `Out Date` only; historical returns use `Return Date` only.
 - Settlement weeks run Tuesday through Monday and require an explicit period.
-- Settlement Trucks 1/2/3 are Carlos/Jorge/CDT allocation buckets, not physical trucks.
+- Only in `settlements` and settlement-derived reports, Trucks 1/2/3 are Carlos/Jorge/CDT non-physical owner-expense allocation buckets. Each holds that owner's total `truck_loans` and `Insurance` amounts not assigned to a specific physical truck; include it in the owner's general settlement total, label it as non-physical, and exclude it from physical-truck counts/rankings. Do not apply this rule to `trucks`, DriverPay, or returns.
 - Stored Gross, Total Expenses, and Net take precedence; do not add included components again.
 - `returns.Ninox_ID` is not a driver ID.
 - Planned Schedule_Teams and exact Ninox in-yard/on-road metrics are unsupported by these Supabase tables.
