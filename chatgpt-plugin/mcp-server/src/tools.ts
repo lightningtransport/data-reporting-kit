@@ -4,7 +4,7 @@ import { ReportingClient, ReportName, ReportingRow, ReportingResponse } from "./
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD.");
 const limit = z.number().int().min(1).max(100).default(20);
-const output = z.record(z.string(), z.unknown());
+const output = z.object({}).passthrough();
 
 export function registerTools(server: any, client: ReportingClient, documents: Map<string, string>) {
   server.registerTool("search", {
