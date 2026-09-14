@@ -77,11 +77,19 @@ async function authenticate(request: IncomingMessage): Promise<{ ok: boolean; me
     return { ok: false, message: "Authentication required." };
   }
   try {
-    await jwtVerify(value.slice("Bearer ".length), jwks, {
+    const verified = await jwtVerify(value.slice("Bearer ".length), jwks, {
       issuer: config.OAUTH_ISSUER,
       audience: config.OAUTH_AUDIENCE,
       requiredClaims: ["sub"],
     });
+    const scopes = typeof verified.payload.scope === "string"
+      ? verified.payload.scope.split(/\s+/)
+      : Array.isArray(verified.payload.scp)
+        ? verified.payload.scp.map(String)
+        : [];
+    if (!scopes.includes(config.OAUTH_SCOPE)) {
+      return { ok: false, message: "Required reporting scope is missing." };
+    }
     return { ok: true };
   } catch {
     return { ok: false, message: "Authentication failed." };
