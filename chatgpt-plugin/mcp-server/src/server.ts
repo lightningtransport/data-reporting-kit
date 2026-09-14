@@ -28,6 +28,11 @@ export function createMcpServer(): McpServer {
 
 const httpServer = createHttpServer(async (request: IncomingMessage, response: ServerResponse) => {
   try {
+    if (request.method === "OPTIONS") {
+      response.writeHead(204, corsHeaders());
+      response.end();
+      return;
+    }
     if (request.url === "/health" && request.method === "GET") {
       return sendJson(response, 200, { status: "ok" });
     }
@@ -106,16 +111,26 @@ function readBody(request: IncomingMessage): Promise<string> {
 }
 
 function sendJson(response: ServerResponse, status: number, body: unknown) {
-  response.writeHead(status, { "content-type": "application/json", "cache-control": "no-store" });
+  response.writeHead(status, { ...corsHeaders(), "content-type": "application/json", "cache-control": "no-store" });
   response.end(JSON.stringify(body));
 }
 
 function sendAuthChallenge(response: ServerResponse, message: string) {
   response.writeHead(401, {
+    ...corsHeaders(),
     "content-type": "application/json",
     "www-authenticate": `Bearer resource_metadata="/.well-known/oauth-protected-resource", error="unauthorized", error_description="${message}"`,
   });
   response.end(JSON.stringify({ error: message }));
+}
+
+function corsHeaders(): Record<string, string> {
+  return {
+    "access-control-allow-origin": "*",
+    "access-control-allow-methods": "POST, GET, DELETE, OPTIONS",
+    "access-control-allow-headers": "content-type, authorization, mcp-session-id",
+    "access-control-expose-headers": "mcp-session-id",
+  };
 }
 
 export { httpServer };
