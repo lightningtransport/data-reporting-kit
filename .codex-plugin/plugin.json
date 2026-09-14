@@ -1,0 +1,22 @@
+{
+  "name": "lightning-transport-reporting",
+  "version": "0.2.0",
+  "description": "Read-only Lightning Transport reporting through governed MCP tools.",
+  "author": {
+    "name": "Lightning Transportation",
+    "url": "https://github.com/lightningtransport/data-reporting-kit"
+  },
+  "repository": "https://github.com/lightningtransport/data-reporting-kit",
+  "license": "Proprietary",
+  "skills": "./chatgpt-plugin/skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Lightning Transport Reporting",
+    "shortDescription": "Read-only fleet and reporting data",
+    "longDescription": "Ask ChatGPT for governed Lightning Transport fleet, assignment, returns, and settlement reporting. Shop work-order metrics are reported unavailable when the approved data contract does not contain them.",
+    "developerName": "Lightning Transportation",
+    "category": "Productivity",
+    "capabilities": ["Read"],
+    "websiteURL": "https://github.com/lightningtransport/data-reporting-kit"
+  }
+}

@@ -1,14 +1,15 @@
-FROM python:3.12-slim
-
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PYTHONPATH=/app/chatgpt-plugin/mcp-server/src
+FROM node:22-alpine
 
 WORKDIR /app
-COPY chatgpt-plugin/mcp-server/pyproject.toml /tmp/pyproject.toml
-RUN pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir 'fastmcp>=2.0,<3.0'
-COPY . /app
+COPY chatgpt-plugin/mcp-server/package*.json ./
+RUN npm ci
+COPY chatgpt-plugin/mcp-server/tsconfig.json ./
+COPY chatgpt-plugin/mcp-server/src ./src
+COPY docs ./docs
+COPY api ./api
+COPY AGENTS.md ./
+RUN npm run build && npm prune --omit=dev
 
-USER 65532:65532
+USER node
 EXPOSE 8000
-CMD ["python", "chatgpt-plugin/mcp-server/src/server.py"]
+CMD ["node", "dist/server.js"]
