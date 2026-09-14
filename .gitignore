@@ -3,6 +3,7 @@
 !.env.example
 .DS_Store
 node_modules/
+dist/
 .venv/
 __pycache__/
 *.pyc
