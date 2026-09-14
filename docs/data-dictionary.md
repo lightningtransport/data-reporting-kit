@@ -1,13 +1,12 @@
 # Data dictionary
 
-Schema verified against Supabase project `aaqquwhdglueqlnbifvn` on **2026-09-11**. The five reporting sources contain **99 physical columns**: `DriverPay` 27, `drivers` 18, `returns` 9, `settlements` 28, and `trucks` 17. All five use `organization_id` for tenant scoping and have RLS enabled. PostgreSQL column comments are currently absent; business semantics below come from the local Ninox field catalog, verified live schema/data, and confirmed business rules.
+Schema verified against Supabase project `aaqquwhdglueqlnbifvn` on **2026-09-14**. The five reporting sources contain **94 physical columns**: `DriverPay` 26, `drivers` 17, `returns` 8, `settlements` 27, and `trucks` 16. The reporting system is single-organization; these source tables have RLS enabled. PostgreSQL column comments are currently absent; business semantics below come from the local Ninox field catalog, verified live schema/data, and confirmed business rules.
 
 The authenticated `agent-reporting` metadata routes are the runtime contract. Call `?report=catalog` for the complete catalog or `?report=<name>&metadata=true` for one report.
 
 ## Shared rules
 
 - Supabase identity `ID` columns are generated import-row keys, not Ninox record IDs.
-- `organization_id` is a UUID applied server-side by `agent-reporting`; callers cannot select another tenant.
 - `as_of` is request time, not source-sync time. These source tables do not expose a reliable sync timestamp.
 - **Relational fallback rule (approved business rule, 2026-09-11):** If a report needs an attribute not carried by its primary record, search the related approved-report sources by their designated business key before finalizing. CDL is the unique driver key for matching `drivers` and `DriverPay`; truck number is the vehicle key for matching field variants such as `truck_number`, `Truck_Number`, `Truck`, `truck_no`, and `unit_number`.
 - Historical text truck keys must be normalized before comparing them to numeric `trucks.truck_number`. Use a **left join** from history because retired/historical truck numbers may not exist in the current master. Do not replace an absent CDL or truck key with a name or a Supabase `ID`.
@@ -37,7 +36,6 @@ Truck numbers **1, 2, and 3 are synthetic owner-assignment buckets**, not physic
 | `samsara_vehicle_id` | text | yes | Sensitive Samsara vehicle ID. Ninox `E.BM`. |
 | `mechanic_status` | text | yes | Literal current shop status; blank/null means none stored. Ninox `E.TA`. |
 | `ID` | bigint | no | Supabase identity primary key. |
-| `organization_id` | uuid | no | Tenant key. |
 | `Ninox_ID` | numeric | yes | Ninox TrucksDB source-record ID; it is not the canonical `truck_number`, and its broader business semantics are not established. |
 
 ## `DriverPay` — historical driver assignment/pay ledger
@@ -74,7 +72,6 @@ Use `Out Date` alone for departures and `Return Date` alone for returns. For ove
 | `Dispatch_Name_` | text | yes | Historical assignment dispatch; history includes group labels and legacy names. Ninox `WD.ZA`. |
 | `Temporal_Driver` | text | yes | Temporary-CDL indicator stored as Yes/No/null. Ninox `WD.UJ`. |
 | `ID` | bigint | no | Supabase identity primary key; not Ninox DriverPay record ID. |
-| `organization_id` | uuid | no | Tenant key. |
 
 **Driver-pay calculation:** per driver assignment, `MoneyPerWeekSigned + CPM × max(Driven_miles − Pay CPM after Miles, 0)` for the matching settlement week. Do not divide team pay unless explicitly instructed.
 
@@ -100,7 +97,6 @@ Use `Out Date` alone for departures and `Return Date` alone for returns. For ove
 | `Insurance` | text | yes | Driver-associated insurance/category code; code expansion is not established. |
 | `Ninox_ID` | numeric | yes | Unique DriversDB source ID; preferred join key. |
 | `ID` | bigint | no | Supabase identity primary key. |
-| `organization_id` | uuid | no | Tenant key. |
 | `Date of Hire` | date | yes | Current driver hire date. Physical type/column verified; source-field mapping and any employment-policy semantics are not established. |
 
 ## `returns` — current expected-return list
@@ -118,7 +114,6 @@ Use `Out Date` alone for departures and `Return Date` alone for returns. For ove
 | `Return Date` | date | yes | Expected return date; null means no date stored. Ninox `S.H`. |
 | `ID` | bigint | no | Supabase identity primary key. |
 | `Ninox_ID` | numeric | yes | Returns source-record ID; **not** a driver ID. |
-| `organization_id` | uuid | no | Tenant key. |
 | `CDL` | text | yes | Sensitive commercial driver-license value. Use as an exact driver link only after confirming the same CDL in a related approved record. |
 
 ## `settlements` — weekly financial ledger
@@ -156,6 +151,5 @@ Use `Out Date` alone for departures and `Return Date` alone for returns. For ove
 | `Gross_with_%_deduction_All` | numeric | yes | Gross after percentage; verified formula `Gross × (%AppliedSaved/100)` for eligible live rows. Ninox `DE.G8`. |
 | `Driven_miles` | numeric | yes | Miles driven in the period. Ninox `DE.S5`. |
 | `ID` | bigint | no | Supabase identity primary key. |
-| `organization_id` | uuid | no | Tenant key. |
 
 Use stored `Gross`, `Total Expenses`, and `Net`. Do not add `tonu` to Gross or expense components to Total Expenses. Require an explicit period; historical `To Report=Yes` rows make the flag unsafe as a current-cycle selector.

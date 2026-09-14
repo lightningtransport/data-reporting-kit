@@ -9,7 +9,7 @@ GET /functions/v1/agent-reporting?report=catalog
 x-agent-key: <assigned secret>
 ```
 
-The key identifies an agent principal. The function scopes every query to that principal's configured organization, optional report allowlist, expiry, and sensitive-field permission. The function uses an internal Supabase admin credential; callers never receive it.
+The key identifies an agent principal. The function is single-organization and authorizes requests by optional report allowlist, expiry, and sensitive-field permission. The function uses an internal Supabase admin credential; callers never receive it.
 
 - `supabase/config.toml` sets `verify_jwt=false` only for this custom-key function and keeps `verify_jwt=true` for `reporting-query`.
 - Never expose `x-agent-key` in browser/frontend code.
@@ -32,7 +32,7 @@ Explicit reports reject:
 - invalid numbers, booleans, limits, and offsets;
 - blank filter values, nonnumeric numeric identifiers, and `temporal_driver` values other than `Yes` or `No`;
 - missing required history/financial anchors;
-- caller-supplied `organization_id`;
+
 - unauthorized `include_sensitive=true` for a key explicitly restricted by `AGENT_ALLOW_SENSITIVE_<n>=false`.
 
 Global data parameters are `report`, `limit` (1–1000), `offset` (0–100000), and `include_sensitive` (`true`/`false`). Metadata requests accept only `report` and `metadata=true`.
@@ -70,6 +70,6 @@ A request that omits `report` remains the legacy `settlement_summary` call only 
 
 New agents must always send an explicit report and use the strict/paginated contract.
 
-## Audit and tenancy
+## Audit and access
 
-Each authorized data request records request ID, configured principal role in `role`, agent-key identifier and principal role as distinct JSON fields, organization, applied filters, `include_sensitive`, limit, offset, row count, outcome, and time in `public.agent_query_audit`. The key value is never stored, and the caller cannot override organization scope. Authorized data is returned only after the audit insert succeeds; audit failure returns `500`. Organization resolution and upstream query failures also return `500`, while request-validation failures return `400`.
+Each authorized data request records request ID, configured principal role in `role`, agent-key identifier and principal role as distinct JSON fields, applied filters, `include_sensitive`, limit, offset, row count, outcome, and time in `public.agent_query_audit`. The key value is never stored. Authorized data is returned only after the audit insert succeeds; audit failure returns `500`. Upstream query failures are sanitized to `500` responses.

@@ -88,7 +88,7 @@ for label, params in [
     checks.append(f"{label}=400")
 
 status, sensitive_drivers = call([("report", "drivers"), ("driver_id", "3"), ("include_sensitive", "true")])
-expected_driver_fields = {"FullName", "First Name", "Middle Name", "Last Name", "E-mail", "Phone Number", "Years Of Experience", "DOB", "Company Name (This is NOT the Insurance)", "CDL", "State", "CDL Expiration", "Gender", "Insurance", "Ninox_ID", "ID", "organization_id", "Date of Hire"}
+expected_driver_fields = {"FullName", "First Name", "Middle Name", "Last Name", "E-mail", "Phone Number", "Years Of Experience", "DOB", "Company Name (This is NOT the Insurance)", "CDL", "State", "CDL Expiration", "Gender", "Insurance", "Ninox_ID", "ID", "Date of Hire"}
 check(status == 200 and sensitive_drivers.get("total_count") == 1 and all(set(row) == expected_driver_fields for row in sensitive_drivers.get("data", [])), "default agent key did not receive the complete drivers projection")
 status, _ = call([("report", "drivers"), ("driver_id", "3"), ("include_sensitive", "true")], RESTRICTED_KEY)
 check(status == 403, "explicit AGENT_ALLOW_SENSITIVE=false restriction was bypassed")
@@ -115,7 +115,7 @@ checks.append("settlements-filter=accepted")
 
 status, summary = call([("report", "settlement_summary"), ("period_from", "2026-09-01"), ("period_to", "2026-09-01"), ("limit", "1000")])
 check(status == 200 and summary.get("total_count") == settlements.get("total_count"), "settlement_summary exact-period query failed")
-summary_fields = {"settlement_id", "organization_id", "truck", "owner", "period_from", "period_to", "gross", "total_expenses", "net", "total_driver_pay", "fuel_expenses", "driven_miles"}
+summary_fields = {"settlement_id", "truck", "owner", "period_from", "period_to", "gross", "total_expenses", "net", "total_driver_pay", "fuel_expenses", "driven_miles"}
 check(all(set(row) == summary_fields for row in summary.get("data", [])), "settlement_summary projection differs from contract")
 checks.append("settlement-summary=accepted-exact-projection")
 
@@ -123,12 +123,12 @@ status, returns = call([("report", "returns"), ("return_from", "2026-09-10"), ("
 check(status == 200, "returns date query failed")
 check(all("Phone Number" not in row for row in returns.get("data", [])), "returns default exposed phone")
 status, all_returns = call([("report", "returns"), ("include_sensitive", "true"), ("limit", "1")])
-expected_return_fields = {"Insurance", "Truck", "Driver Name", "Phone Number", "Return Date", "ID", "Ninox_ID", "organization_id", "CDL"}
+expected_return_fields = {"Insurance", "Truck", "Driver Name", "Phone Number", "Return Date", "ID", "Ninox_ID", "CDL"}
 check(status == 200 and all_returns.get("total_count", 0) > 0 and bool(all_returns.get("data")) and all(set(row) == expected_return_fields for row in all_returns.get("data", [])), "returns full-column projection failed")
 checks.append("returns=accepted-full-columns")
 
 status, all_trucks = call([("report", "trucks"), ("include_sensitive", "true"), ("limit", "1")])
-expected_truck_fields = {"truck_number", "dispatcher", "insurance", "vin", "make", "odometer_miles", "owner", "last_known_address", "model_year", "license_plate", "yard_location", "samsara_last_connected_at", "samsara_vehicle_id", "mechanic_status", "ID", "organization_id", "Ninox_ID"}
+expected_truck_fields = {"truck_number", "dispatcher", "insurance", "vin", "make", "odometer_miles", "owner", "last_known_address", "model_year", "license_plate", "yard_location", "samsara_last_connected_at", "samsara_vehicle_id", "mechanic_status", "ID", "Ninox_ID"}
 check(status == 200 and all_trucks.get("total_count", 0) > 0 and bool(all_trucks.get("data")) and all(set(row) == expected_truck_fields for row in all_trucks.get("data", [])), "trucks full-column projection failed")
 checks.append("trucks=accepted-full-columns")
 

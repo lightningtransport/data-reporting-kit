@@ -5,7 +5,7 @@
 ### Onboard
 
 1. Assign one new sequential `AGENT_API_KEY_<n>` secret; never reuse another agent's value.
-2. Optionally set matching controls: `AGENT_ORGANIZATION_ID_<n>`, `AGENT_REPORTS_<n>`, `AGENT_ROLE_<n>`, `AGENT_EXPIRES_AT_<n>`, and `AGENT_ALLOW_SENSITIVE_<n>`.
+2. Optionally set matching controls: `AGENT_REPORTS_<n>`, `AGENT_ROLE_<n>`, `AGENT_EXPIRES_AT_<n>`, and `AGENT_ALLOW_SENSITIVE_<n>`.
 3. By default, the key has full read access to all six approved reports and their explicit sensitive-field allowlists. Set `AGENT_ALLOW_SENSITIVE_<n>=false` only when a particular key needs to be restricted.
 4. Give the key once through an approved private channel; never commit or log it.
 5. Test `report=catalog`, one allowed data query, one disallowed/sensitive query, and an invalid key.
@@ -39,13 +39,12 @@ Personal onboarding is paused until approved Auth email/SMTP delivery is configu
 
 ## Membership SQL
 
-Run only from an administrator-controlled environment after confirming the user and organization UUIDs.
+Run only from an administrator-controlled environment after confirming the user UUID.
 
 ```sql
-insert into public.user_memberships (user_id, organization_id, role)
-values ('AUTH_USER_UUID', 'ORGANIZATION_UUID', 'viewer');
+insert into public.user_memberships (user_id, role)
+values ('AUTH_USER_UUID', 'viewer');
 
 delete from public.user_memberships
-where user_id = 'AUTH_USER_UUID'
-  and organization_id = 'ORGANIZATION_UUID';
+where user_id = 'AUTH_USER_UUID';
 ```

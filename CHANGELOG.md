@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.0.0 - 2026-09-14
+
+- Removed the retired `organization_id` scope from reporting tables, the settlement summary view, query functions, metadata, tests, and documentation.
+- Removed organization resolution from agent keys; reporting is now a single-organization system while retaining per-key authorization controls and audit logging.
+
 ## 0.6.3 — 2026-09-11
 
 - Added newly verified live columns to the agent-reporting contract: `drivers."Date of Hire"` (date), `returns.CDL` (sensitive text), and `trucks.Ninox_ID` (numeric), raising coverage from 96 to 99 physical columns.

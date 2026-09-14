@@ -48,7 +48,7 @@ Deno.test("omitted report resolves to settlement_summary and obeys report allowl
 Deno.test("settlement summary uses the exact declared projection", () => {
   assert(
     settlementSummarySelect() ===
-      "settlement_id,organization_id,truck,owner,period_from,period_to,gross,total_expenses,net,total_driver_pay,fuel_expenses,driven_miles",
+      "settlement_id,truck,owner,period_from,period_to,gross,total_expenses,net,total_driver_pay,fuel_expenses,driven_miles",
     "settlement summary projection drifted",
   );
 });

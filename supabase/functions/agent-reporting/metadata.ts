@@ -1,5 +1,5 @@
-export const SCHEMA_VERSION = "2.0.0";
-export const SCHEMA_VERIFIED_AT = "2026-09-11T15:04:43Z";
+export const SCHEMA_VERSION = "3.0.0";
+export const SCHEMA_VERIFIED_AT = "2026-09-14T15:13:19Z";
 
 const field = (
   type: string,
@@ -9,7 +9,7 @@ const field = (
 ) => ({ type, nullable, meaning, ...options });
 
 export const GLOBAL_GUIDANCE = {
-  tenancy: "Every request is scoped server-side to the organization assigned to the authenticated agent key. organization_id is not a caller-selectable filter.",
+  tenancy: "This is a single-organization reporting system. Requests are authorized by their assigned agent key, without organization-based filtering.",
   freshness: "as_of is the API request time, not the Ninox-to-Supabase sync time. These tables have no source-updated timestamp, so source freshness cannot be proven from the row itself.",
   answer_evidence: [
     "State the report/table, normalized filters, exact period, result, page_count or total_count, as_of, and material caveats.",
@@ -71,7 +71,6 @@ export const TABLES = {
       Dispatch_Name_: field("text", true, "Historical dispatch value for this assignment. Live history includes group labels and legacy dispatcher names; filter exact stored values.", { ninox_field: "WD.ZA" }),
       Temporal_Driver: field("text", true, "Temporary-CDL indicator stored as text; verified values are Yes, No, or null.", { ninox_field: "WD.UJ" }),
       ID: field("bigint", false, "Supabase identity primary key for this imported row; not the Ninox DriverPay record ID."),
-      organization_id: field("uuid", false, "Tenant organization ID. Applied server-side and returned for traceability."),
     },
   },
   drivers: {
@@ -99,7 +98,6 @@ export const TABLES = {
       Insurance: field("text", true, "Driver-associated insurance category/code. Use the literal stored value; code expansion is not established."),
       Ninox_ID: field("numeric", true, "Unique Ninox DriversDB source ID and preferred business join key."),
       ID: field("bigint", false, "Supabase identity primary key for this imported row; not the Ninox driver ID."),
-      organization_id: field("uuid", false, "Tenant organization ID. Applied server-side and returned for traceability."),
       "Date of Hire": field("date", true, "Current driver hire date. The physical column and type are verified; its source-field mapping and any employment-policy semantics are not established."),
     },
   },
@@ -124,7 +122,6 @@ export const TABLES = {
       "Return Date": field("date", true, "Expected return date to yard/rest; null means no date is currently stored, not a text status.", { ninox_field: "S.H" }),
       ID: field("bigint", false, "Supabase identity primary key for this imported row."),
       Ninox_ID: field("numeric", true, "Ninox Returns source-record ID. Do not join to drivers.Ninox_ID."),
-      organization_id: field("uuid", false, "Tenant organization ID. Applied server-side and returned for traceability."),
       CDL: field("text", true, "Sensitive commercial driver-license value for this return row. The physical column is verified; use it for an exact driver link only when a related approved record has the same verified CDL.", { sensitive: true }),
     },
     source_omissions: ["Ninox S.E3 Solo", "Ninox S.J3 DriverDB_Id_saved", "Ninox S.K3 Driver_id_Pay_ are not columns in this Supabase table"],
@@ -183,7 +180,6 @@ export const TABLES = {
       "Gross_with_%_deduction_All": field("numeric", true, "Gross after applying %AppliedSaved.", { ninox_field: "DE.G8" }),
       Driven_miles: field("numeric", true, "Miles driven during the settlement period.", { ninox_field: "DE.S5" }),
       ID: field("bigint", false, "Supabase identity primary key for this imported row."),
-      organization_id: field("uuid", false, "Tenant organization ID. Applied server-side and returned for traceability."),
     },
   },
   trucks: {
@@ -216,7 +212,6 @@ export const TABLES = {
       samsara_vehicle_id: field("text", true, "Sensitive Samsara vehicle identifier.", { sensitive: true, ninox_field: "E.BM" }),
       mechanic_status: field("text", true, "Current mechanic/shop status. Use the literal stored value; blank/null means no status is stored.", { ninox_field: "E.TA" }),
       ID: field("bigint", false, "Supabase identity primary key for this row; not the Ninox TrucksDB record ID."),
-      organization_id: field("uuid", false, "Tenant organization ID. Applied server-side and returned for traceability."),
       Ninox_ID: field("numeric", true, "Ninox TrucksDB source record ID. The physical column and type are verified; it is not the canonical truck number and its broader business semantics are not established."),
     },
   },
@@ -226,7 +221,7 @@ export const REPORTS = {
   settlement_summary: {
     source: "reporting.settlement_summary",
     row_grain: TABLES.settlements.row_grain,
-    returned_fields: ["settlement_id", "organization_id", "truck", "owner", "period_from", "period_to", "gross", "total_expenses", "net", "total_driver_pay", "fuel_expenses", "driven_miles"],
+    returned_fields: ["settlement_id", "truck", "owner", "period_from", "period_to", "gross", "total_expenses", "net", "total_driver_pay", "fuel_expenses", "driven_miles"],
     filters: {
       truck: "exact text truck/bucket identifier",
       owner: "exact historical owner",

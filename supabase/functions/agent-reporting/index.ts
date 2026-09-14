@@ -49,7 +49,6 @@ const agentPrincipals = Object.entries(Deno.env.toObject())
     return {
       id: name,
       key: value,
-      organizationId: Deno.env.get(`AGENT_ORGANIZATION_ID${suffix}`) ?? Deno.env.get("AGENT_ORGANIZATION_ID"),
       role: Deno.env.get(`AGENT_ROLE${suffix}`) ?? "agent",
       allowedReports: reportList ? new Set(reportList) : null,
       // Approved AGENT_API_KEY principals have full read access by default. Set the
@@ -114,32 +113,8 @@ function findPrincipal(suppliedKey: string | null) {
   return agentPrincipals.find((principal) => constantTimeEqual(principal.key, suppliedKey)) ?? null;
 }
 
-function validUuid(value: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
-}
-
-let singleOrganizationPromise: Promise<string> | null = null;
-async function resolveOrganizationId(configured?: string): Promise<string> {
-  if (configured) {
-    if (!validUuid(configured)) throw new ServerError("Configured agent organization ID is invalid");
-    return configured;
-  }
-  if (!singleOrganizationPromise) {
-    singleOrganizationPromise = (async () => {
-      const { data, error } = await admin.from("organizations").select("id").limit(2);
-      if (error) throw new ServerError("Unable to resolve agent organization");
-      if (!data || data.length !== 1) {
-        throw new ServerError("Each agent key must be assigned an organization when the project has zero or multiple organizations");
-      }
-      return data[0].id as string;
-    })();
-  }
-  return await singleOrganizationPromise;
-}
-
 async function audit(
   requestId: string,
-  organizationId: string | null,
   principal: { id: string; role: string },
   report: string,
   appliedFilters: Record<string, string>,
@@ -153,7 +128,6 @@ async function audit(
     const { error } = await admin.from("agent_query_audit").insert({
       request_id: requestId,
       user_id: null,
-      organization_id: organizationId,
       role: principal.role,
       report_name: report,
       filters: buildAuditFilters(principal, appliedFilters, includeSensitive, limit, offset),
@@ -207,12 +181,12 @@ function catalogResponse(principal: { id: string; allowSensitive: boolean; allow
   };
 }
 
-async function runLegacySettlementSummary(params: URLSearchParams, organizationId: string) {
+async function runLegacySettlementSummary(params: URLSearchParams) {
   validateLegacyParameters(params);
   const rawLimit = Number(params.get("limit") ?? "100");
   const limit = Number.isInteger(rawLimit) && rawLimit >= 1 ? Math.min(rawLimit, 1000) : 100;
   const filters: Record<string, string> = {};
-  let query: any = admin.schema("reporting").from("settlement_summary").select(settlementSummarySelect()).eq("organization_id", organizationId);
+  let query: any = admin.schema("reporting").from("settlement_summary").select(settlementSummarySelect());
   const truck = params.get("truck");
   const owner = params.get("owner");
   const periodFrom = params.get("period_from");
@@ -256,24 +230,16 @@ Deno.serve(async (req: Request) => {
   const params = url.searchParams;
   const requested = resolveRequestedReport(params);
   const reportName = requested.report;
-  let organizationId: string | null = null;
-
   if (requested.legacy && !isReportAuthorized(principal.allowedReports, "settlement_summary")) {
-    const configuredOrganizationId = principal.organizationId && validUuid(principal.organizationId)
-      ? principal.organizationId
-      : null;
-    await audit(requestId, configuredOrganizationId, principal, "settlement_summary_legacy", {}, false, 100, 0, "denied", null);
+    await audit(requestId, principal, "settlement_summary_legacy", {}, false, 100, 0, "denied", null);
     return json({ error: "This agent key is not authorized for the requested report", request_id: requestId }, 403);
   }
 
   try {
-    organizationId = await resolveOrganizationId(principal.organizationId);
-
     if (requested.legacy) {
-      const legacy = await runLegacySettlementSummary(params, organizationId);
+      const legacy = await runLegacySettlementSummary(params);
       const audited = await audit(
         requestId,
-        organizationId,
         principal,
         "settlement_summary_legacy",
         legacy.filters,
@@ -296,12 +262,12 @@ Deno.serve(async (req: Request) => {
     }
 
     if (!supportedReports.includes(reportName as SupportedReport)) {
-      await audit(requestId, organizationId, principal, reportName, {}, false, 100, 0, "invalid", null);
+      await audit(requestId, principal, reportName, {}, false, 100, 0, "invalid", null);
       return json({ error: "Unsupported report", supported_reports: [...supportedReports, "catalog"], request_id: requestId }, 400);
     }
     const report = reportName as SupportedReport;
     if (!isReportAuthorized(principal.allowedReports, report)) {
-      await audit(requestId, organizationId, principal, report, {}, false, 100, 0, "denied", null);
+      await audit(requestId, principal, report, {}, false, 100, 0, "denied", null);
       return json({ error: "This agent key is not authorized for the requested report", request_id: requestId }, 403);
     }
 
@@ -317,14 +283,14 @@ Deno.serve(async (req: Request) => {
     const offset = parseInteger(params.get("offset"), "offset", 0, 0, 100000);
     const filters = normalizedFilters(params, report);
     if (includeSensitive && !principal.allowSensitive) {
-      await audit(requestId, organizationId, principal, report, filters, true, limit, offset, "denied", null);
+      await audit(requestId, principal, report, filters, true, limit, offset, "denied", null);
       return json({ error: "This agent key is not authorized for sensitive fields", request_id: requestId }, 403);
     }
 
     let query: any;
     let sort: string[];
     if (report === "settlement_summary") {
-      query = admin.schema("reporting").from("settlement_summary").select(settlementSummarySelect(), { count: "exact" }).eq("organization_id", organizationId);
+      query = admin.schema("reporting").from("settlement_summary").select(settlementSummarySelect(), { count: "exact" });
       if (params.get("truck")) query = query.eq("truck", params.get("truck"));
       if (params.get("owner")) query = query.eq("owner", params.get("owner"));
       if (params.get("period_from")) query = query.gte("period_from", params.get("period_from"));
@@ -332,7 +298,7 @@ Deno.serve(async (req: Request) => {
       query = query.order("period_from", { ascending: true }).order("settlement_id", { ascending: true });
       sort = ["period_from asc", "settlement_id asc"];
     } else if (report === "settlements") {
-      query = admin.from("settlements").select(tableSelect("settlements", includeSensitive), { count: "exact" }).eq("organization_id", organizationId);
+      query = admin.from("settlements").select(tableSelect("settlements", includeSensitive), { count: "exact" });
       for (const [parameter, column] of [["truck", "Truck"], ["owner", "Owner"], ["dispatch", "Dispatch"], ["insurance", "truck_insurance"], ["to_report", "To Report"]]) {
         if (params.get(parameter)) query = query.eq(column, params.get(parameter));
       }
@@ -341,7 +307,7 @@ Deno.serve(async (req: Request) => {
       query = query.order("From", { ascending: true }).order("ID", { ascending: true });
       sort = ["From asc", "ID asc"];
     } else if (report === "driver_pay") {
-      query = admin.from("DriverPay").select(tableSelect("driver_pay", includeSensitive), { count: "exact" }).eq("organization_id", organizationId);
+      query = admin.from("DriverPay").select(tableSelect("driver_pay", includeSensitive), { count: "exact" });
       for (const [parameter, column] of [["truck_number", "Truck_Number"], ["driver_id", "DriversDB_ID"], ["transfer", "Transfer"], ["termination", "Termination"], ["owner", "owner"], ["dispatch", "Dispatch_Name_"], ["temporal_driver", "Temporal_Driver"]]) {
         if (params.get(parameter)) query = query.eq(column, params.get(parameter));
       }
@@ -358,7 +324,7 @@ Deno.serve(async (req: Request) => {
       const maxExperience = parseNumber(params.get("max_experience"), "max_experience");
       const hireFrom = params.get("hire_from");
       const hireTo = params.get("hire_to");
-      query = admin.from("drivers").select(tableSelect("drivers", includeSensitive), { count: "exact" }).eq("organization_id", organizationId);
+      query = admin.from("drivers").select(tableSelect("drivers", includeSensitive), { count: "exact" });
       const driverId = parseNumber(params.get("driver_id"), "driver_id");
       if (driverId !== null) query = query.eq("Ninox_ID", driverId);
       for (const [parameter, column] of [["first_name", "First Name"], ["last_name", "Last Name"], ["state", "State"], ["insurance", "Insurance"], ["company", "Company Name (This is NOT the Insurance)"]]) {
@@ -372,7 +338,7 @@ Deno.serve(async (req: Request) => {
       query = query.order("Ninox_ID", { ascending: true, nullsFirst: false }).order("ID", { ascending: true });
       sort = ["Ninox_ID asc nulls last", "ID asc"];
     } else if (report === "returns") {
-      query = admin.from("returns").select(tableSelect("returns", includeSensitive), { count: "exact" }).eq("organization_id", organizationId);
+      query = admin.from("returns").select(tableSelect("returns", includeSensitive), { count: "exact" });
       const ninoxId = parseNumber(params.get("ninox_id"), "ninox_id");
       if (ninoxId !== null) query = query.eq("Ninox_ID", ninoxId);
       for (const [parameter, column] of [["truck", "Truck"], ["insurance", "Insurance"]]) {
@@ -388,7 +354,7 @@ Deno.serve(async (req: Request) => {
       const maxOdometer = parseNumber(params.get("max_odometer"), "max_odometer");
       const minModelYear = parseNumber(params.get("min_model_year"), "min_model_year");
       const maxModelYear = parseNumber(params.get("max_model_year"), "max_model_year");
-      query = admin.from("trucks").select(tableSelect("trucks", includeSensitive), { count: "exact" }).eq("organization_id", organizationId);
+      query = admin.from("trucks").select(tableSelect("trucks", includeSensitive), { count: "exact" });
       const truckNumber = parseNumber(params.get("truck_number"), "truck_number");
       const ninoxId = parseNumber(params.get("ninox_id"), "ninox_id");
       if (truckNumber !== null) query = query.eq("truck_number", truckNumber);
@@ -409,7 +375,7 @@ Deno.serve(async (req: Request) => {
     const { data, error, count } = await query.range(offset, offset + limit - 1);
     if (error) {
       console.error(`agent-reporting ${report} query failed`, error.message);
-      await audit(requestId, organizationId, principal, report, filters, includeSensitive, limit, offset, "invalid", null);
+      await audit(requestId, principal, report, filters, includeSensitive, limit, offset, "invalid", null);
       if (error.code === "PGRST103") {
         return json({ error: "Requested offset is beyond the available result range", request_id: requestId }, 416);
       }
@@ -420,12 +386,12 @@ Deno.serve(async (req: Request) => {
       totalCount = requireExactCount(count);
     } catch {
       console.error(`agent-reporting ${report} exact count was missing or invalid`);
-      await audit(requestId, organizationId, principal, report, filters, includeSensitive, limit, offset, "invalid", null);
+      await audit(requestId, principal, report, filters, includeSensitive, limit, offset, "invalid", null);
       return json({ error: "Unable to determine exact result count", request_id: requestId }, 500);
     }
     const pageCount = data?.length ?? 0;
     const hasMore = offset + pageCount < totalCount;
-    const audited = await audit(requestId, organizationId, principal, report, filters, includeSensitive, limit, offset, "success", pageCount);
+    const audited = await audit(requestId, principal, report, filters, includeSensitive, limit, offset, "success", pageCount);
     if (!audited) return json({ error: "Unable to record reporting audit", request_id: requestId }, 500);
     return json({
       schema_version: SCHEMA_VERSION,
@@ -454,7 +420,6 @@ Deno.serve(async (req: Request) => {
     const auditContext = error instanceof ServerError ? error.auditContext : undefined;
     await audit(
       requestId,
-      organizationId,
       principal,
       reportName,
       auditContext?.filters ?? {},
