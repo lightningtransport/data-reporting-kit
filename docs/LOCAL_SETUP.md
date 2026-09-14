@@ -13,7 +13,7 @@ cp .env.example .env
 # Set AGENT_REPORTING_KEY in the shell or a local ignored environment file.
 npm install
 npm run build
-AGENT_REPORTING_KEY="$AGENT_REPORTING_KEY" npm run dev
+REPORTING_KNOWLEDGE_ROOT=../.. AGENT_REPORTING_KEY="$AGENT_REPORTING_KEY" npm run dev
 ```
 
 The server listens on `http://localhost:8000`, exposes `GET /health`, and exposes MCP Streamable HTTP at `/mcp`.

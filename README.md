@@ -14,6 +14,7 @@ Every agent must read [`AGENTS.md`](AGENTS.md). The runtime contract is availabl
 - Source for the separate membership/JWT `reporting-query` Edge Function.
 - A portable Hermes reporting skill, correction-feedback contract, and access lifecycle guidance.
 - A private ChatGPT Plugin package: reusable reporting skill plus remote, read-only MCP connector; see [`docs/chatgpt-plugin.md`](docs/chatgpt-plugin.md).
+- A TypeScript Streamable HTTP MCP server with focused fleet/reporting tools; see [`docs/LOCAL_SETUP.md`](docs/LOCAL_SETUP.md), [`docs/MCP_TOOLS.md`](docs/MCP_TOOLS.md), and [`docs/CHATGPT_PLUGIN_SETUP.md`](docs/CHATGPT_PLUGIN_SETUP.md).
 
 ## Active interfaces
 
@@ -32,6 +33,25 @@ Every agent must read [`AGENTS.md`](AGENTS.md). The runtime contract is availabl
 ## Data safety
 
 Raw public tables remain protected by RLS. This public knowledge repository contains no business rows, passwords, API keys, JWTs, refresh tokens, database credentials, or service-role/secret keys.
+
+## Lightning MCP server
+
+The plugin server runs as a read-only gateway:
+
+```text
+ChatGPT → MCP /mcp → agent-reporting Edge Function → approved reporting sources
+```
+
+It never accepts SQL and never connects directly to Supabase tables. The current contract supports trucks, driver assignments, drivers, returns, and settlements. Work orders, parts, bays, repair history, and downtime duration are not documented and are returned as `BLOCKED_BY_DATA`.
+
+```bash
+cd chatgpt-plugin/mcp-server
+npm install
+npm run build
+AGENT_REPORTING_KEY=... npm run dev
+```
+
+Production requires OAuth configuration; see [`docs/AUTHENTICATION.md`](docs/AUTHENTICATION.md) and [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 
 ## Maintenance
 

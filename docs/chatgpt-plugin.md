@@ -1,11 +1,11 @@
 # ChatGPT plugin deployment
 
-The `chatgpt-plugin/` package makes this repository usable from standard ChatGPT conversations through a private workspace plugin and a remote MCP service.
+The `chatgpt-plugin/` package makes this repository usable from current ChatGPT Plugin connections through a private plugin and a remote MCP service. The server implementation is TypeScript and uses the official MCP Streamable HTTP transport.
 
 ## Components
 
 - The ChatGPT skill (`chatgpt-plugin/skills/lightning-reporting/SKILL.md`) contains the minimum non-negotiable reporting instructions.
-- The MCP server supplies the `search` and `fetch` tools required for ChatGPT company-knowledge and deep-research compatibility, plus `catalog`, `metadata`, and `run_report` for governed reporting access.
+- The MCP server supplies `search` and `fetch` plus focused read-only tools for truck status, OOS facts, truck reporting history, operational facts, and structured report data.
 - The existing `agent-reporting` Edge Function remains the only data gateway. The MCP server does not query Supabase tables directly.
 
 ## Required hosting controls
@@ -25,4 +25,4 @@ The `chatgpt-plugin/` package makes this repository usable from standard ChatGPT
 - An explicit sensitive-data request is denied or minimized according to the connector principal's policy.
 - A multi-page result is not summarized as complete until `has_more` is false.
 
-Follow the current OpenAI [plugin quickstart](https://platform.openai.com/plugins/quickstart), [MCP server guide](https://platform.openai.com/plugins/build/mcp-server), and [authentication guide](https://platform.openai.com/plugins/build/auth) while connecting the deployed endpoint. Keep screenshots, OAuth client secrets, and service credentials outside this repository.
+Follow [`docs/CHATGPT_PLUGIN_SETUP.md`](CHATGPT_PLUGIN_SETUP.md), [`docs/AUTHENTICATION.md`](AUTHENTICATION.md), and the current OpenAI [plugin quickstart](https://developers.openai.com/plugins/quickstart) while connecting the deployed endpoint. Keep screenshots, OAuth client secrets, and service credentials outside this repository.

@@ -2,6 +2,7 @@
 
 ## 2026-09-14
 
+- Added a read-only TypeScript MCP server and internal ChatGPT Plugin package. All live data remains behind the approved `agent-reporting` gateway; the server exposes focused structured tools and explicitly reports Shop domains that are not present in the data contract as `BLOCKED_BY_DATA`.
 - Clarified that settlement Trucks 1/2/3 are Carlos/Jorge/CDT non-physical owner-expense allocation buckets only in `settlements` and settlement-derived reports. Each represents its owner's total unassigned `truck_loans` and `Insurance`; reports must label them as non-physical, include them in the matching owner total, and exclude them from physical-truck counts/rankings.
 - Removed the incorrect application of that settlement-only rule from the current `trucks` report and its `physical_only` API filter.
 
