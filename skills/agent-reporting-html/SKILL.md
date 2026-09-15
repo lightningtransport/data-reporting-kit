@@ -4,7 +4,7 @@ description: >-
   Use when a Grok Bot or Cursor agent queries agent-reporting or builds HTML
   reports — auto-configure from this kit, always fetch ≥3 months for
   HTML/analytical settlement history, and ship the confirmed report sections.
-version: 0.1.0
+version: 0.1.1
 license: Proprietary
 platforms: [linux, macos, windows]
 metadata:
@@ -43,7 +43,7 @@ A Grok Bot or Cursor agent is building or updating HTML reports from the `agent-
 
 ## HTML every time
 
-The settlement dashboard is [`apps/reporting-dashboard`](../../apps/reporting-dashboard). Link the live URL in `docs/html-reporting.md`. Do not replace it with a native multi `<select>` or a one-off HTML file.
+The settlement dashboard is [`apps/reporting-dashboard`](../../apps/reporting-dashboard). Link the live URL https://lightning-settlement-dashboard.vercel.app. Do not replace it with a native multi `<select>` or a one-off HTML file.
 
 Always apply the confirmed report sections:
 

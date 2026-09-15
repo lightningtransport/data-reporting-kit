@@ -55,7 +55,11 @@ class HtmlReportingKitTests(unittest.TestCase):
         self.assertTrue((ROOT / "apps/reporting-dashboard/src/data/settlement-summary.json").is_file())
         self.assertTrue((ROOT / "apps/reporting-dashboard/vercel.json").is_file())
         html = (ROOT / "docs/html-reporting.md").read_text(encoding="utf-8")
-        self.assertIn("PENDING_VERCEL_PRODUCTION_URL", html)
+        agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+        self.assertIn("https://lightning-settlement-dashboard.vercel.app", html)
+        self.assertIn("https://lightning-settlement-dashboard.vercel.app", agents)
+        self.assertNotIn("PENDING_VERCEL_PRODUCTION_URL", html)
+        self.assertNotIn("PENDING_VERCEL_PRODUCTION_URL", agents)
         self.assertRegex(html, r"link (that |the )?live URL", re.I)
 
     def test_embedded_settlement_window_covers_three_months(self):

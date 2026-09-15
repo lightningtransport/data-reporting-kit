@@ -53,4 +53,4 @@ Every answer states source, normalized filters, exact period, result, row/distin
 
 ## 7. HTML reports
 
-The settlement dashboard is `apps/reporting-dashboard` (Next.js + real shadcn/ui). Grok Bot and Cursor agents link the live Vercel URL from `docs/html-reporting.md` and do not generate one-off HTML replacements. Required sections: weekly/monthly review, truck and owner rankings, fuel spend by owner, KPI strip, evidence footer. Owner/equipo uses a shadcn Popover + Command multi-select, not a native multi `<select>`.
+The settlement dashboard is `apps/reporting-dashboard` (Next.js + real shadcn/ui). Grok Bot and Cursor agents link https://lightning-settlement-dashboard.vercel.app and do not generate one-off HTML replacements. Required sections: weekly/monthly review, truck and owner rankings, fuel spend by owner, KPI strip, evidence footer. Owner/equipo uses a shadcn Popover + Command multi-select, not a native multi `<select>`.

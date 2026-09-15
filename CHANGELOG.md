@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.3.1 - 2026-09-15
+
+- Recorded the production settlement dashboard URL `https://lightning-settlement-dashboard.vercel.app` in `AGENTS.md`, `docs/html-reporting.md`, the dashboard env example/README, routing/rules, and HTML reporting skills (`agent-reporting-html` 0.1.1, `reporting-html-shadcn` 0.2.1, `itpros-supabase-reporting` 0.8.2) so Grok bots link the live host instead of a pending placeholder.
+
 ## 3.3.0 - 2026-09-15
 
 - Added portable HTML reporting guidance for **Grok Bot and Cursor agents** that auto-configure from this kit, so they reuse the confirmed settlement-report sections.
