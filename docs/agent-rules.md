@@ -51,4 +51,4 @@ Every answer states source, normalized filters, exact period, result, row/distin
 
 ## 7. HTML reports
 
-Grok Bot and Cursor agents producing standalone HTML from `agent-reporting` must follow `docs/html-reporting.md` and the skills `skills/agent-reporting-html` and `skills/reporting-html-shadcn`. Copy `skills/reporting-html-shadcn/assets/report-ui.css`. Required sections: weekly/monthly review, truck and owner rankings, fuel spend by owner, KPI strip, evidence footer, shared light theme. Do not invent one-off styles.
+The settlement dashboard is `apps/reporting-dashboard` (Next.js + real shadcn/ui). Grok Bot and Cursor agents link the live Vercel URL from `docs/html-reporting.md` and do not generate one-off HTML replacements. Required sections: weekly/monthly review, truck and owner rankings, fuel spend by owner, KPI strip, evidence footer. Owner/equipo uses a shadcn Popover + Command multi-select, not a native multi `<select>`.

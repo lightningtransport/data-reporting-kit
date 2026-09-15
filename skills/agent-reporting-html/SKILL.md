@@ -43,6 +43,8 @@ A Grok Bot or Cursor agent is building or updating HTML reports from the `agent-
 
 ## HTML every time
 
+The settlement dashboard is [`apps/reporting-dashboard`](../../apps/reporting-dashboard). Link the live URL in `docs/html-reporting.md`. Do not replace it with a native multi `<select>` or a one-off HTML file.
+
 Always apply the confirmed report sections:
 
 - Weekly and monthly review modes (named date is toolbar focus).
@@ -50,11 +52,7 @@ Always apply the confirmed report sections:
 - Fuel spend by owner for the focused week and month.
 - KPI strip: Gross, Expenses, Net, Fuel, physical trucks, miles.
 - Evidence footer: source report(s), normalized filters, exact period/window, row/distinct count, pagination completeness, `as_of`, source-freshness limitation, material caveats.
-- Clean minimal **light** theme.
-
-Build UI only via [`reporting-html-shadcn`](../reporting-html-shadcn/SKILL.md) so components and styles stay consistent. Copy [`../reporting-html-shadcn/assets/report-ui.css`](../reporting-html-shadcn/assets/report-ui.css); do not invent one-off styles.
-
-In the agent's working workspace (not this knowledge repository): emit candidates under `reports/candidates/`; wait for user confirmation before `reports/confirmed/`. Do not regenerate a confirmed report unchanged.
+- Real shadcn/ui in the Next app; Popover + Command for owner multi-select.
 
 ## Don't
 

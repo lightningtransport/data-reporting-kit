@@ -2,11 +2,13 @@
 
 ## 3.3.0 - 2026-09-15
 
-- Added portable HTML reporting guidance for **Grok Bot and Cursor agents** that auto-configure from this kit, so they reuse the confirmed settlement-report sections and shared light UI kit.
+- Added portable HTML reporting guidance for **Grok Bot and Cursor agents** that auto-configure from this kit, so they reuse the confirmed settlement-report sections.
+- Added a deployable Next.js App Router + **real shadcn/ui** settlement dashboard at `apps/reporting-dashboard`, replacing the native `<select multiple>` owner control with a Popover + Command multi-select.
 - HTML reports and analytical settlement/fleet-history answers must fetch at least three calendar months of history; the user-named date is UI focus only, not the sole data window.
-- Every HTML report must include weekly/monthly review modes, truck and owner rankings, fuel spend by owner, a KPI strip, an evidence footer, and the shared `report-ui.css` component classes.
-- Packaged skills: `skills/agent-reporting-html`, `skills/reporting-html-shadcn` (with `assets/report-ui.css`). Cross-linked from `AGENTS.md`, README Start here, routing, metrics, agent rules, and the installed reporting skill.
-- The historical `chatgpt-plugin/` package and `docs/chatgpt-plugin.md` are left untouched; HTML reporting skills do not change ChatGPT plugin runtime or packaging.
+- Every settlement dashboard view must include weekly/monthly review modes, truck and owner rankings, fuel spend by owner, a KPI strip, an evidence footer, and the shared light theme.
+- Grok bots must **link the live Vercel dashboard URL** (recorded in `docs/html-reporting.md` after deploy) instead of generating one-off HTML files. `AGENT_REPORTING_KEY` is documented as a server-only Vercel env var and is not committed.
+- Packaged skills: `skills/agent-reporting-html`, `skills/reporting-html-shadcn` 0.2.0 (with `assets/report-ui.css`), and `skills/itpros-supabase-reporting` 0.8.1 pointing at the Next dashboard. Cross-linked from `AGENTS.md`, README Start here, routing, metrics, agent rules, and the installed reporting skill.
+- The historical `chatgpt-plugin/` package and `docs/chatgpt-plugin.md` are left untouched.
 
 ## 3.2.0 - 2026-09-14
 

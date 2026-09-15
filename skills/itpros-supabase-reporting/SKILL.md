@@ -1,7 +1,7 @@
 ---
 name: itpros-supabase-reporting
 description: Answer Lightning reports through the approved reporting APIs.
-version: 0.8.0
+version: 0.8.1
 author: Ibrain Ortega, Hermes Agent
 license: Proprietary
 platforms: [linux, macos, windows]
@@ -52,9 +52,11 @@ Use schedule `0 10,14 * * *`. The job updates instructions only and must report 
 
 ## HTML reports
 
-Grok Bot and Cursor agents follow [`docs/html-reporting.md`](../../docs/html-reporting.md) plus sibling skills [`agent-reporting-html`](../agent-reporting-html/SKILL.md) and [`reporting-html-shadcn`](../reporting-html-shadcn/SKILL.md). Copy [`../reporting-html-shadcn/assets/report-ui.css`](../reporting-html-shadcn/assets/report-ui.css) (local skill-cache fallback: `$HERMES_HOME/cache/data-reporting-kit/skills/reporting-html-shadcn/assets/report-ui.css`). Do not invent one-off styles.
+The settlement dashboard is [`apps/reporting-dashboard`](../../apps/reporting-dashboard) (Next.js + real shadcn/ui). Grok Bot and Cursor agents **link the live URL** recorded in [`docs/html-reporting.md`](../../docs/html-reporting.md) and keep that app in sync from this repository. Do not generate a one-off HTML replacement or a native `<select multiple>` for Owner/equipo.
 
-Every HTML report must include weekly/monthly review modes, truck and owner rankings, fuel spend by owner, a KPI strip, an evidence footer, and the shared light minimal theme. Write candidates in the agent's workspace (`reports/candidates/`), not in this knowledge repository.
+Sibling skills: [`agent-reporting-html`](../agent-reporting-html/SKILL.md) and [`reporting-html-shadcn`](../reporting-html-shadcn/SKILL.md). Copy [`../reporting-html-shadcn/assets/report-ui.css`](../reporting-html-shadcn/assets/report-ui.css) only for other static reports (local skill-cache fallback: `$HERMES_HOME/cache/data-reporting-kit/skills/reporting-html-shadcn/assets/report-ui.css`). Do not invent one-off styles.
+
+Every settlement dashboard view must include weekly/monthly review modes, truck and owner rankings, fuel spend by owner, a KPI strip, an evidence footer, and the shared light minimal theme. Write other static candidates in the agent's workspace (`reports/candidates/`), not in this knowledge repository.
 
 ## User-correction webhook — required shared feedback event
 

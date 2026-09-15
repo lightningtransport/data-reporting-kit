@@ -1,14 +1,22 @@
 # HTML reporting conventions
 
-Read `AGENTS.md` first. These rules are for **Grok Bot and Cursor agents** that auto-configure from this kit and build a standalone HTML report or an analytical settlement/fleet-history view from `agent-reporting`. They do not change the API contract.
+Read `AGENTS.md` first. These rules are for **Grok Bot and Cursor agents** that auto-configure from this kit.
 
-*Evidence: portable HTML reporting convention published 2026-09-15 so Grok/Cursor agents that auto-configure from this kit reuse the confirmed settlement-report sections and shared light UI kit.*
+*Evidence: settlement dashboard published as a Next.js + shadcn/ui app on 2026-09-15; ≥3-month window and confirmed report sections preserved from the confirmed settlement-summary v2 behavior.*
 
-## Portable skills
+## Settlement dashboard (source of truth)
+
+The live settlement screen is [`apps/reporting-dashboard`](../apps/reporting-dashboard): Next.js App Router + **real shadcn/ui** (Button, Tabs, Card, Badge, Input, Table, Checkbox, Select, Popover + Command multi-select). Do not rebuild it as a native `<select multiple>` or a hand-rolled CSS imitation.
+
+- **Live URL:** `PENDING_VERCEL_PRODUCTION_URL` — replace after the first production deploy, and set `NEXT_PUBLIC_DASHBOARD_URL` to the same value.
+- **Grok bots:** when answering questions about this screen, **link that live URL**. Keep the app in sync from this repository. Do not generate a one-off HTML replacement.
+- Deploy: set Vercel Root Directory to `apps/reporting-dashboard`. See [`apps/reporting-dashboard/README.md`](../apps/reporting-dashboard/README.md). Optional live data uses server-only `AGENT_REPORTING_KEY` (never `NEXT_PUBLIC_*`, never git). v1 embeds the confirmed ≥3-month `settlement_summary` snapshot until that key is configured.
+
+## Portable skills (other static reports)
 
 - [`skills/agent-reporting-html/SKILL.md`](../skills/agent-reporting-html/SKILL.md) — auto-configure, ≥3-month fetch window, query and confirmation process.
-- [`skills/reporting-html-shadcn/SKILL.md`](../skills/reporting-html-shadcn/SKILL.md) — shadcn-like static HTML components and class names.
-- Shared stylesheet to copy: [`skills/reporting-html-shadcn/assets/report-ui.css`](../skills/reporting-html-shadcn/assets/report-ui.css). Place a working copy at `reports/assets/report-ui.css` in the agent's workspace, not in this knowledge repository.
+- [`skills/reporting-html-shadcn/SKILL.md`](../skills/reporting-html-shadcn/SKILL.md) — static HTML fallback kit. Prefer the Next app for the settlement dashboard.
+- Shared stylesheet for non-dashboard static files: [`skills/reporting-html-shadcn/assets/report-ui.css`](../skills/reporting-html-shadcn/assets/report-ui.css).
 
 ## History window
 
@@ -22,14 +30,14 @@ A one-week headline question that is not an HTML report and not a trend/ranking 
 
 ## Required HTML sections
 
-Every HTML report must include:
+The settlement dashboard in `apps/reporting-dashboard` must include:
 
 1. Weekly and monthly review modes, with the named date selected in the toolbar.
 2. Truck rankings and owner rankings by stored Gross and Net.
-3. Fuel spend by owner for the focused week and month, using stored `fuel.owner`.
+3. Fuel spend by owner for the focused week and month, using stored `fuel.owner` / `fuel_expenses`.
 4. KPI strip: Gross, Expenses, Net, Fuel, physical-truck count, miles.
 5. Evidence footer with source report(s), normalized filters, exact period/window, row/distinct count, pagination completeness, `as_of`, source-freshness limitation, and material caveats.
-6. The shared light minimal theme from `report-ui.css`. Do not invent one-off styles.
+6. Real shadcn/ui components. Owner/equipo is a Popover + Command multi-select, never a native multi `<select>`.
 
 ## Business-rule reminders that affect HTML
 
@@ -40,4 +48,4 @@ Every HTML report must include:
 
 ## Local output convention
 
-Operational HTML belongs in the agent's working workspace (`reports/candidates/`, then `reports/confirmed/` after the user confirms). This public kit stores instructions and the CSS kit only—never business rows, secrets, or generated reports.
+Operational HTML candidates still belong in an agent's working workspace when a static file is explicitly requested. The settlement dashboard itself is `apps/reporting-dashboard` and is deployed from this kit. This public kit still must not store secrets.

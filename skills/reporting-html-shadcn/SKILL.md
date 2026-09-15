@@ -3,7 +3,7 @@ name: reporting-html-shadcn
 description: >-
   Use when a Grok Bot or Cursor agent builds Lightning reporting HTML dashboards
   so every screen reuses the same shadcn-like components and styles.
-version: 0.1.0
+version: 0.2.0
 license: Proprietary
 platforms: [linux, macos, windows]
 metadata:
@@ -16,18 +16,18 @@ metadata:
 
 ## When
 
-A Grok Bot or Cursor agent is building any standalone HTML report or dashboard for Lightning reporting (settlement, trucks, fuel, drivers, returns). Use this so every report shares the same components and styles.
+A Grok Bot or Cursor agent is changing Lightning reporting UI. The **settlement dashboard** is the Next.js app [`apps/reporting-dashboard`](../../apps/reporting-dashboard) with **real shadcn/ui**. Use this skill so other static reports stay consistent; do not rebuild the settlement screen as a CSS imitation.
 
 ## Goal
 
-Static single-file (or small multi-file) HTML that **looks and behaves like shadcn/ui**: same tokens, radii, borders, typography, and component patterns — even without a React app.
+For the settlement dashboard: Next.js App Router + shadcn/ui (Button, Tabs, Card, Badge, Input, Table, Checkbox, Select, Popover + Command multi-select). Owner/equipo is never a native `<select multiple>`.
+
+For other static files only: small HTML that reuses [`assets/report-ui.css`](assets/report-ui.css).
 
 ## Source of truth
 
-1. Copy the shared kit stylesheet before building a new report:
-   - Canonical file in this repository: [`assets/report-ui.css`](assets/report-ui.css)
-   - In the agent's working workspace, place it at `reports/assets/report-ui.css`
-2. If the workspace copy is missing, copy it from this skill (or from the public `main` path `skills/reporting-html-shadcn/assets/report-ui.css`). Do not invent a second visual language.
+1. Settlement dashboard: edit [`apps/reporting-dashboard`](../../apps/reporting-dashboard) (Next.js + real shadcn/ui). That app is what Grok bots must link after deploy (`docs/html-reporting.md`).
+2. Other static HTML only: copy [`assets/report-ui.css`](assets/report-ui.css) to the workspace `reports/assets/report-ui.css` (skill-cache fallback: `skills/reporting-html-shadcn/assets/report-ui.css`). Do not invent a second visual language.
 3. Match the confirmed settlement look: clean minimal **light** theme, more whitespace, clear hierarchy, soft borders, no heavy shadows.
 
 ## Stack for static HTML
@@ -63,13 +63,15 @@ Map mentally to shadcn: Card, Badge, Button, Tabs, Input, Select, Table, Separat
 
 ## Process
 
-1. Load/copy `assets/report-ui.css` (and optional JS helpers only if they reuse these class names).
-2. Fetch data per [`agent-reporting-html`](../agent-reporting-html/SKILL.md).
-3. Emit candidate HTML under the workspace `reports/candidates/` directory; wait for confirm before `reports/confirmed/`. Do not store operational HTML in this knowledge repository.
-4. If you add a new reusable pattern, extend `assets/report-ui.css` and this skill in the same change.
+1. If the work is the settlement dashboard, change `apps/reporting-dashboard` and keep it Vercel-deployable. Do not emit a replacement HTML file.
+2. For other static reports: load/copy `assets/report-ui.css` (and optional JS helpers only if they reuse these class names).
+3. Fetch data per [`agent-reporting-html`](../agent-reporting-html/SKILL.md).
+4. Emit candidate HTML under the workspace `reports/candidates/` directory; wait for confirm before `reports/confirmed/`. Do not store operational HTML in this knowledge repository.
+5. If you add a new reusable static pattern, extend `assets/report-ui.css` and this skill in the same change.
 
 ## Don't
 
-- Don't invent one-off colors, fonts, or card styles per report.
-- Don't ship a React/Vite build for these ops HTML files unless the user asks for an app.
+- Don't rebuild the settlement dashboard as a CSS-only imitation or a native `<select multiple>`.
+- Don't invent one-off colors, fonts, or card styles when shadcn/ui already covers the control.
 - Don't drop the shared toolbar / KPI / ranking / fuel sections “to save time.”
+- Don't put `AGENT_REPORTING_KEY` in the browser, `NEXT_PUBLIC_*`, or git.
