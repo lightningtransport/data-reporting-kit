@@ -1,6 +1,5 @@
 "use client"
 
-import { Badge } from "@/components/ui/badge"
 import {
   Card,
   CardContent,
@@ -31,13 +30,13 @@ const MATRIX: Array<{
   money?: boolean
 }> = [
   { key: "g", label: "Gross facturado", money: true },
-  { key: "c", label: "Facturado Compass", hint: "ya incluido en Gross", money: true },
-  { key: "e", label: "Total gastos", money: true },
-  { key: "n", label: "Net de la semana", money: true },
-  { key: "lo", label: "Truck loans", money: true },
+  { key: "c", label: "Facturado Compass", hint: "Incluido en Gross", money: true },
+  { key: "e", label: "Gastos", money: true },
+  { key: "n", label: "Net", money: true },
+  { key: "lo", label: "Préstamos de camión", money: true },
   { key: "f", label: "Combustible", money: true },
-  { key: "dp", label: "Pago conductores", money: true },
-  { key: "ltr", label: "Reparaciones (LTR)", money: true },
+  { key: "dp", label: "Pago a conductores", money: true },
+  { key: "ltr", label: "Reparaciones", money: true },
   { key: "tp", label: "Peajes + PrePass", money: true },
   { key: "m", label: "Millas" },
 ]
@@ -77,7 +76,7 @@ function Kpi({
 }: {
   label: string
   value: string
-  hint: string
+  hint?: string
 }) {
   return (
     <Card size="sm">
@@ -85,25 +84,24 @@ function Kpi({
         <CardDescription>{label}</CardDescription>
         <CardTitle className="font-mono text-lg tabular-nums">{value}</CardTitle>
       </CardHeader>
-      <CardContent>
-        <p className="text-muted-foreground text-xs">{hint}</p>
-      </CardContent>
+      {hint ? (
+        <CardContent>
+          <p className="text-muted-foreground text-xs">{hint}</p>
+        </CardContent>
+      ) : null}
     </Card>
   )
 }
 
 export function ExecutiveSummary({
   scope,
-  live,
   owners,
   total,
   physical,
   gallons,
   mpg,
-  products,
 }: {
   scope: string
-  live: boolean
   owners: OwnerExec[]
   total: OwnerExec
   physical: PhysicalExec
@@ -118,118 +116,51 @@ export function ExecutiveSummary({
   return (
     <section className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <h2 className="font-heading text-xl tracking-tight">Resumen ejecutivo</h2>
-          <Badge variant={live ? "default" : "secondary"}>
-            {live ? "Live agent-reporting" : "Snapshot embebido"}
-          </Badge>
-        </div>
-        <p className="text-muted-foreground max-w-3xl text-sm">
-          Totales de {scope} para C-level. Gross, gastos, net, loans, combustible y
-          pago son valores almacenados de <span className="font-medium">settlements</span>.
-          Compass no se suma otra vez a Gross. Dispatch y owner vienen de la fila
-          histórica, no de trucks actual.
-        </p>
+        <h2 className="font-heading text-xl tracking-tight">Resumen</h2>
+        <p className="text-muted-foreground text-sm">Totales de {scope}.</p>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <Kpi label="Gross promedio" value={avg(physical.avgGross, money)} />
+        <Kpi label="Gastos promedio" value={avg(physical.avgExp, money)} />
+        <Kpi label="Pago promedio" value={avg(physical.avgPay, money)} />
         <Kpi
-          label="Ave. Gross (físicos)"
-          value={avg(physical.avgGross, money)}
-          hint="Promedio de camiones físicos"
-        />
-        <Kpi
-          label="Ave. gastos (físicos)"
-          value={avg(physical.avgExp, money)}
-          hint="Total Expenses almacenado"
-        />
-        <Kpi
-          label="Ave. pago (físicos)"
-          value={avg(physical.avgPay, money)}
-          hint="Total Driver Pay"
-        />
-        <Kpi
-          label="Ave. RPM"
+          label="Ingreso por milla"
           value={avg(physical.rpm, (value) => moneyExact(value))}
-          hint="Gross físico ÷ millas físicas"
         />
+        <Kpi label="Millas promedio" value={avg(physical.avgMiles, num)} />
+        <Kpi label="Millas" value={num(physical.miles)} />
+        {mpg != null ? <Kpi label="MPG" value={num(mpg)} /> : null}
+        {gallons != null ? <Kpi label="Galones" value={num(gallons)} /> : null}
         <Kpi
-          label="Ave. millas (físicos)"
-          value={avg(physical.avgMiles, num)}
-          hint="Driven_miles"
-        />
-        <Kpi
-          label="Millas totales"
-          value={num(physical.miles)}
-          hint="Suma física"
-        />
-        {mpg != null ? (
-          <Kpi
-            label="Ave. MPG"
-            value={num(mpg)}
-            hint="Millas físicas ÷ galones fuel"
-          />
-        ) : null}
-        {gallons != null ? (
-          <Kpi
-            label="Galones"
-            value={num(gallons)}
-            hint={
-              products.length
-                ? `fuel.Gallons · productos: ${products.join(", ")}`
-                : "fuel.Gallons de la ventana foco"
-            }
-          />
-        ) : null}
-        <Kpi
-          label={`Gross < ${money(LOW_GROSS_THRESHOLD)}`}
+          label={`Gross bajo ${money(LOW_GROSS_THRESHOLD)}`}
           value={String(physical.lowGross)}
-          hint="Camiones físicos"
         />
         <Kpi
           label="Net negativo"
           value={String(physical.netNeg)}
-          hint={`${physical.netPos} positivos · ${physical.netZero} en cero`}
+          hint={`${physical.netPos} con net positivo`}
         />
-        <Kpi
-          label="Camiones físicos"
-          value={String(physical.count)}
-          hint="Excluye buckets 1/2/3"
-        />
-        <Kpi
-          label="Reparaciones LTR"
-          value={money(total.ltr)}
-          hint="LTR Invoices"
-        />
-        <Kpi
-          label="Peajes + PrePass"
-          value={money(total.tp)}
-          hint="Tolls + PrePass; no incluye BestPass"
-        />
+        <Kpi label="Camiones" value={String(physical.count)} />
+        <Kpi label="Reparaciones" value={money(total.ltr)} />
+        <Kpi label="Peajes + PrePass" value={money(total.tp)} />
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Totales por owner</CardTitle>
-          <CardDescription>
-            TOTAL incluye buckets 1/2/3 en el owner que les corresponde. No se
-            muestra Full Week ni Other Deductions+Previous: no existen en
-            public.settlements.
-          </CardDescription>
+          <CardTitle>Por equipo</CardTitle>
+          <CardDescription>Incluye asignaciones 1, 2 y 3 en su equipo.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto rounded-lg border">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="bg-background sticky left-0 z-10 min-w-44">
+                  <TableHead className="bg-background sticky left-0 z-10 min-w-40">
                     Métrica
                   </TableHead>
                   {columns.map((column) => (
-                    <TableHead
-                      key={column.o}
-                      className="min-w-36 text-right"
-                    >
+                    <TableHead key={column.o} className="min-w-32 text-right">
                       {column.o}
                     </TableHead>
                   ))}

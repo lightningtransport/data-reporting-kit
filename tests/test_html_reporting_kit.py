@@ -61,14 +61,26 @@ class HtmlReportingKitTests(unittest.TestCase):
         self.assertNotIn("PENDING_VERCEL_PRODUCTION_URL", html)
         self.assertNotIn("PENDING_VERCEL_PRODUCTION_URL", agents)
         self.assertRegex(html, r"link (that |the )?live URL", re.I)
-        self.assertIn("Resumen ejecutivo", texts)
+        self.assertIn("Liquidaciones", texts)
+        self.assertIn("Datos técnicos", texts)
+        self.assertIn("Ocultar asignaciones 1/2/3", texts)
+        self.assertIn("Números de liquidación semanal (mar–lun).", texts)
         self.assertIn("Ver más", texts)
+        self.assertIn("TruckFocusCard", texts)
+        self.assertIn("No hay liquidación de este camión en este periodo.", texts)
         self.assertNotIn("Trucks Full Week", texts)
+        self.assertNotIn("Evidencia / provenance", texts)
         executive = (ROOT / "apps/reporting-dashboard/src/components/executive-summary.tsx").read_text(
             encoding="utf-8"
         )
-        self.assertIn("no existen", executive)
+        self.assertIn(">Resumen<", executive)
         self.assertNotIn('{ key: "otro"', executive)
+        dashboard = (ROOT / "apps/reporting-dashboard/src/components/settlement-dashboard.tsx").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("Full Week", dashboard)
+        self.assertNotIn("period_from", dashboard)
+        self.assertNotIn("Diario (rev.)", dashboard)
 
     def test_dashboard_loads_twelve_month_settlements(self):
         data_ts = (ROOT / "apps/reporting-dashboard/src/lib/data.ts").read_text(encoding="utf-8")

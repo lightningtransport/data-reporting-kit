@@ -5,7 +5,7 @@ description: >-
   reports — auto-configure from this kit, fetch ≥12 months for the
   settlement dashboard and ≥3 months for other HTML/analytical settlement
   history, and ship the confirmed report sections.
-version: 0.2.0
+version: 0.2.1
 license: Proprietary
 platforms: [linux, macos, windows]
 metadata:
@@ -49,13 +49,14 @@ The settlement dashboard is [`apps/reporting-dashboard`](../../apps/reporting-da
 
 Always apply the confirmed report sections:
 
-- C-level Resumen ejecutivo from `settlements` (owner matrix, physical averages, $11k Gross count, net+/−, LTR, Tolls+PrePass). Compass = `tonu` (already in Gross).
+- Slim **Liquidaciones** header plus a **Camión** focus card immediately under filters when searching a truck.
+- **Resumen** from `settlements` (owner matrix, physical averages, $11k Gross count, net+/−, LTR, Tolls+PrePass). Compass = `tonu` (already in Gross). Visible copy is Spanish operational wording.
 - Dispatch filter = exact historical `settlements.Dispatch`.
 - Weekly and monthly review modes (named date is toolbar focus).
-- Truck rankings and owner rankings (Gross and Net); exclude settlement trucks 1/2/3 from physical-truck rankings; include them in matching owner totals; Ver más = full selection.
+- Truck rankings and owner rankings (Gross and Net); exclude settlement trucks 1/2/3 from physical-truck rankings; include them in matching owner totals; Ver más = full selection; badge **No físico**.
 - Fuel spend by owner from stored Fuel Expenses; gallons/MPG from `fuel`.
-- KPI strip: Gross, Expenses, Net, Fuel, physical trucks, miles.
-- Evidence footer: source report(s), normalized filters, exact period/window, row/distinct count, pagination completeness, `as_of`, source-freshness limitation, material caveats.
+- KPI strip: Gross, Gastos, Net, Combustible, physical trucks, millas.
+- Evidence in a closed **Datos técnicos** accordion: source report(s), normalized filters, exact period/window, row/distinct count, pagination completeness, `as_of`, source-freshness limitation, material caveats.
 - Real shadcn/ui in the Next app; Popover + Command for owner multi-select.
 - Do not display Full Week or Other Deductions+Previous.
 

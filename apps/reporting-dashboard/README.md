@@ -1,6 +1,6 @@
 # Lightning reporting dashboard
 
-Next.js App Router + shadcn/ui dashboard for the `settlements` ledger (C-level executive summary + analysis). This is the deployable settlement screen for Grok Bot and Cursor agents.
+Next.js App Router + shadcn/ui dashboard for the `settlements` ledger (**Resumen** + analysis). This is the deployable settlement screen for Grok Bot and Cursor agents. Visible copy is Spanish operational wording; kit evidence lives under **Datos técnicos**.
 
 ## Local
 

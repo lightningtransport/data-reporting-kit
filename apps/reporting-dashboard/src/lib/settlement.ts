@@ -70,7 +70,36 @@ export const MONTH_NAMES = [
 
 export function monthLabel(ym: string): string {
   const [, month] = ym.split("-")
-  return `${MONTH_NAMES[Number(month) - 1]} ${ym.slice(0, 4)}`
+  const name = MONTH_NAMES[Number(month) - 1] ?? month
+  return `${name.charAt(0).toUpperCase()}${name.slice(1)} ${ym.slice(0, 4)}`
+}
+
+export function humanWeekRange(periodFrom: string, periodTo: string): string {
+  const from = periodFrom.split("-")
+  const to = (periodTo || periodFrom).split("-")
+  if (from.length < 3 || to.length < 3) return periodFrom
+  const fromDay = Number(from[2])
+  const toDay = Number(to[2])
+  const fromMonth = MONTH_NAMES[Number(from[1]) - 1]
+  const toMonth = MONTH_NAMES[Number(to[1]) - 1]
+  if (from[0] === to[0] && from[1] === to[1]) {
+    return `${fromDay}–${toDay} ${fromMonth} ${from[0]}`
+  }
+  if (from[0] === to[0]) {
+    return `${fromDay} ${fromMonth} – ${toDay} ${toMonth} ${from[0]}`
+  }
+  return `${fromDay} ${fromMonth} ${from[0]} – ${toDay} ${toMonth} ${to[0]}`
+}
+
+export function focusPeriodLabel(
+  vista: Vista,
+  week: string,
+  month: string,
+  rows: SettlementRow[]
+): string {
+  if (vista === "mensual") return monthLabel(month)
+  const match = rows.find((row) => row.pf === week)
+  return humanWeekRange(week, match?.pt ?? week)
 }
 
 export function uniqueSorted(values: string[]): string[] {
@@ -107,7 +136,7 @@ export function defaultMonth(weeks: string[], months: string[]): string {
 
 export function weekRangeLabel(rows: SettlementRow[], periodFrom: string): string {
   const match = rows.find((row) => row.pf === periodFrom)
-  return match ? `${periodFrom} → ${match.pt}` : periodFrom
+  return humanWeekRange(periodFrom, match?.pt ?? periodFrom)
 }
 
 export function filterRows(

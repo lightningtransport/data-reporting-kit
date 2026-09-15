@@ -54,15 +54,15 @@ The settlement dashboard is the Next.js + shadcn/ui app in `apps/reporting-dashb
 
 **Live dashboard URL:** https://lightning-settlement-dashboard.vercel.app
 
-The dashboard reads paginated `settlements` (plus `fuel` gallons for the focus window) for ≥12 months, shows a C-level **Resumen ejecutivo** (owner matrix, physical-truck KPIs, dispatch/owner filters), and must not present a truncated truck ranking as the full fleet: preview plus **Ver más** lists every physical truck in the selection.
+The dashboard reads paginated `settlements` (plus `fuel` gallons for the focus window) for ≥12 months, shows **Resumen** (owner matrix, physical-truck KPIs, dispatch/owner filters), a truck focus card under search, and must not present a truncated truck ranking as the full fleet: preview plus **Ver más** lists every physical truck in the selection.
 
 Other HTML reports still follow the ≥3-month window and confirmed sections. Do not invent a second visual language; prefer real shadcn components in `apps/reporting-dashboard`.
 
-Every settlement dashboard view must include the executive summary, weekly and monthly review modes, truck and owner rankings, fuel spend by owner, a KPI strip, an evidence footer, and the shared light theme. Do not display Ninox Full Week or Other Deductions+Previous: those fields are not in `public.settlements`.
+Every settlement dashboard view must include **Resumen**, weekly and monthly review modes, truck and owner rankings, fuel spend by owner, a KPI strip, a closed **Datos técnicos** evidence accordion, and the shared light theme. Visible copy is Spanish operational wording. Do not display Ninox Full Week or Other Deductions+Previous: those fields are not in `public.settlements`.
 
 ## Required answer evidence
 
-State source report/table, normalized filters, exact period, result and row/distinct count, pagination completeness, `as_of`, source-sync freshness limitation, and material grain/null/bucket/join/sensitivity caveats. Never present a truncated page or incomplete financial period as a complete total. HTML reports put the same evidence in the footer.
+State source report/table, normalized filters, exact period, result and row/distinct count, pagination completeness, `as_of`, source-sync freshness limitation, and material grain/null/bucket/join/sensitivity caveats. Never present a truncated page or incomplete financial period as a complete total. HTML reports put the same evidence in the **Datos técnicos** accordion.
 
 ## User-correction feedback
 

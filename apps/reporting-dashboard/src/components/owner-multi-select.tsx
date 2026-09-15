@@ -37,12 +37,12 @@ export function OwnerMultiSelect({
   const selectedSet = new Set(selected)
   const label =
     selected.length === owners.length
-      ? "Todos los owners"
+      ? "Todos"
       : selected.length === 0
-        ? "Ningún owner"
+        ? "Ninguno"
         : selected.length === 1
           ? selected[0]
-          : "Owners"
+          : `${selected.length} equipos`
 
   function toggle(owner: string) {
     if (selectedSet.has(owner)) {
@@ -58,7 +58,7 @@ export function OwnerMultiSelect({
         render={
           <Button
             variant="outline"
-            className="min-w-56 justify-between font-normal"
+            className="w-full justify-between font-normal md:min-w-56"
           />
         }
       >
@@ -70,10 +70,10 @@ export function OwnerMultiSelect({
       </PopoverTrigger>
       <PopoverContent align="start" className="w-72 p-0">
         <PopoverHeader className="sr-only">
-          <PopoverTitle>Owner / equipo</PopoverTitle>
+          <PopoverTitle>Equipo</PopoverTitle>
         </PopoverHeader>
         <Command>
-          <CommandInput placeholder="Buscar owner…" />
+          <CommandInput placeholder="Buscar equipo…" />
           <div className="flex gap-2 border-b px-2 py-2">
             <Button
               size="xs"
@@ -87,7 +87,7 @@ export function OwnerMultiSelect({
             </Button>
           </div>
           <CommandList>
-            <CommandEmpty>Sin owners.</CommandEmpty>
+            <CommandEmpty>Sin equipos.</CommandEmpty>
             <CommandGroup>
               {owners.map((owner) => {
                 const isSelected = selectedSet.has(owner)
