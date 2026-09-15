@@ -74,6 +74,8 @@ class HtmlReportingKitTests(unittest.TestCase):
             encoding="utf-8"
         )
         self.assertIn(">Resumen<", executive)
+        self.assertIn("No está en esta copia", executive)
+        self.assertIn("isCopy", executive)
         self.assertNotIn('{ key: "otro"', executive)
         dashboard = (ROOT / "apps/reporting-dashboard/src/components/settlement-dashboard.tsx").read_text(
             encoding="utf-8"
