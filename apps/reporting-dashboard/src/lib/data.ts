@@ -15,6 +15,21 @@ const PAGE_SIZE = 1000
 const FETCH_CONCURRENCY = 6
 const LIVE_REVALIDATE_SECONDS = 300
 
+function logLoadFailure(stage: "configuration" | "settlements" | "fuel", error: unknown) {
+  const name = error instanceof Error ? error.name : "UnknownError"
+  const message = error instanceof Error ? error.message : "Unknown reporting error"
+  const details = {
+    stage,
+    name,
+    message: message.slice(0, 240),
+  }
+  if (stage === "settlements") {
+    console.error("[reporting-dashboard] live data unavailable", details)
+    return
+  }
+  console.warn("[reporting-dashboard] live data fallback", details)
+}
+
 function num(value: unknown): number {
   const parsed = Number(value ?? 0)
   return Number.isFinite(parsed) ? parsed : 0
@@ -125,7 +140,7 @@ async function fetchOffset<T>(
   url.searchParams.set("offset", String(offset))
   const response = await fetch(url, {
     headers: { "x-agent-key": key, Accept: "application/json" },
-    cache: "no-store",
+    next: { revalidate: LIVE_REVALIDATE_SECONDS },
   })
   if (response.status === 416) {
     return {
@@ -259,7 +274,10 @@ export async function fetchLiveSettlements(): Promise<SettlementPayload> {
       report: "fuel",
       store_from: historyStart,
       store_to: today,
-    }).catch(() => null),
+    }).catch((error) => {
+      logLoadFailure("fuel", error)
+      return null
+    }),
   ])
   const rows = settlements.rows
     .map(mapSettlement)
@@ -303,11 +321,13 @@ export async function fetchLiveSettlements(): Promise<SettlementPayload> {
 
 export async function getSettlementSummary(): Promise<SettlementPayload> {
   if (!process.env.AGENT_REPORTING_KEY) {
+    logLoadFailure("configuration", new Error("AGENT_REPORTING_KEY is not configured"))
     return getEmbeddedSettlementSummary()
   }
   try {
     return await fetchLiveSettlements()
-  } catch {
+  } catch (error) {
+    logLoadFailure("settlements", error)
     return getEmbeddedSettlementSummary()
   }
 }

@@ -2,7 +2,7 @@
 
 ## 3.6.0 - 2026-09-15
 
-- Live dashboard no longer refetches ~6k settlement rows and ~43k fuel rows on every browser load: settlements and fuel paginate in parallel, the HTML revalidates every 5 minutes, and the function allows 60s. A loading state shows while the first live fetch runs.
+- Live dashboard no longer refetches ~6k settlement rows and ~43k fuel rows on every browser load: settlements and fuel paginate in parallel, every server-side data page plus the HTML and JSON route revalidate every 5 minutes, and the functions allow 60s. A loading state shows while the first live fetch runs; sanitized server logs identify configuration, settlement, or optional fuel fallback without recording keys or operational rows.
 
 ## 3.5.0 - 2026-09-15
 
