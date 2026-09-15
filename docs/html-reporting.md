@@ -10,7 +10,7 @@ The live settlement screen is [`apps/reporting-dashboard`](../apps/reporting-das
 
 - **Live URL:** https://lightning-settlement-dashboard.vercel.app
 - **Grok bots:** when answering questions about this screen, **link that live URL**. Keep the app in sync from this repository. Do not generate a one-off HTML replacement.
-- Deploy: set Vercel Root Directory to `apps/reporting-dashboard`. See [`apps/reporting-dashboard/README.md`](../apps/reporting-dashboard/README.md). Live data uses server-only `AGENT_REPORTING_KEY` (never `NEXT_PUBLIC_*`, never git) to paginate `settlements` for ≥12 months and `fuel` gallons for the focus window. The embedded JSON is fallback only and may be shorter than 12 months; production must not stay on the snapshot when the key is configured.
+- Deploy: set Vercel Root Directory to `apps/reporting-dashboard`. See [`apps/reporting-dashboard/README.md`](../apps/reporting-dashboard/README.md). Live data uses server-only `AGENT_REPORTING_KEY` (never `NEXT_PUBLIC_*`, never git) to paginate `settlements` for ≥12 months and `fuel` gallons for the focus window. The HTML, JSON route, and each server-side `agent-reporting` page reuse the live payload for up to five minutes (`revalidate = 300`). The embedded JSON is fallback only and may be shorter than 12 months; production must not stay on the snapshot when the key is configured.
 
 ## Portable skills (other static reports)
 

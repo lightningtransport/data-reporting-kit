@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.6.0 - 2026-09-15
+
+- Live dashboard no longer refetches ~6k settlement rows and ~43k fuel rows on every browser load: settlements and fuel paginate in parallel, every server-side data page plus the HTML and JSON route revalidate every 5 minutes, and the functions allow 60s. A loading state shows while the first live fetch runs; sanitized server logs identify configuration, settlement, or optional fuel fallback without recording keys or operational rows.
+
 ## 3.5.0 - 2026-09-15
 
 - Settlement dashboard UX: slim **Liquidaciones** header (focused period + **Copia** when not live), mobile-first filters, immediate **Camión** focus card on search, Spanish operational copy, and kit evidence in a closed **Datos técnicos** accordion. The owner matrix scrolls horizontally; on the embedded copy, Compass/loans/repairs/tolls show as missing rather than $0.00.

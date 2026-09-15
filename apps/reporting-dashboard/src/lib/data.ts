@@ -11,6 +11,24 @@ const DEFAULT_ENDPOINT =
   "https://aaqquwhdglueqlnbifvn.supabase.co/functions/v1/agent-reporting"
 
 const MAX_PAGES = 80
+const PAGE_SIZE = 1000
+const FETCH_CONCURRENCY = 6
+const LIVE_REVALIDATE_SECONDS = 300
+
+function logLoadFailure(stage: "configuration" | "settlements" | "fuel", error: unknown) {
+  const name = error instanceof Error ? error.name : "UnknownError"
+  const message = error instanceof Error ? error.message : "Unknown reporting error"
+  const details = {
+    stage,
+    name,
+    message: message.slice(0, 240),
+  }
+  if (stage === "settlements") {
+    console.error("[reporting-dashboard] live data unavailable", details)
+    return
+  }
+  console.warn("[reporting-dashboard] live data fallback", details)
+}
 
 function num(value: unknown): number {
   const parsed = Number(value ?? 0)
@@ -99,6 +117,62 @@ type FuelLive = {
   Unit?: number
 }
 
+type PagePayload<T> = {
+  chunk: T[]
+  totalCount: number
+  asOf: string
+  freshness: string
+  hasMore: boolean
+  nextOffset: number | null
+}
+
+async function fetchOffset<T>(
+  endpoint: string,
+  key: string,
+  params: Record<string, string>,
+  offset: number
+): Promise<PagePayload<T>> {
+  const url = new URL(endpoint)
+  for (const [name, value] of Object.entries(params)) {
+    url.searchParams.set(name, value)
+  }
+  url.searchParams.set("limit", String(PAGE_SIZE))
+  url.searchParams.set("offset", String(offset))
+  const response = await fetch(url, {
+    headers: { "x-agent-key": key, Accept: "application/json" },
+    next: { revalidate: LIVE_REVALIDATE_SECONDS },
+  })
+  if (response.status === 416) {
+    return {
+      chunk: [],
+      totalCount: 0,
+      asOf: "",
+      freshness: "",
+      hasMore: false,
+      nextOffset: null,
+    }
+  }
+  if (!response.ok) {
+    throw new Error(`agent-reporting HTTP ${response.status}`)
+  }
+  const payload = (await response.json()) as {
+    data?: T[]
+    total_count?: number
+    as_of?: string
+    source_freshness?: string
+    has_more?: boolean
+    next_offset?: number | null
+  }
+  return {
+    chunk: payload.data ?? [],
+    totalCount: Number(payload.total_count ?? 0),
+    asOf: String(payload.as_of ?? ""),
+    freshness: String(payload.source_freshness ?? ""),
+    hasMore: Boolean(payload.has_more),
+    nextOffset: payload.next_offset ?? null,
+  }
+}
+
 async function fetchPages<T>(
   endpoint: string,
   key: string,
@@ -110,49 +184,41 @@ async function fetchPages<T>(
   freshness: string
   complete: boolean
 }> {
-  const rows: T[] = []
-  let offset = 0
-  let totalCount = 0
-  let asOf = ""
-  let freshness = ""
-  let complete = false
-  for (let page = 0; page < MAX_PAGES; page += 1) {
-    const url = new URL(endpoint)
-    for (const [name, value] of Object.entries(params)) {
-      url.searchParams.set(name, value)
-    }
-    url.searchParams.set("limit", "1000")
-    url.searchParams.set("offset", String(offset))
-    const response = await fetch(url, {
-      headers: { "x-agent-key": key, Accept: "application/json" },
-      cache: "no-store",
-    })
-    if (!response.ok) {
-      throw new Error(`agent-reporting HTTP ${response.status}`)
-    }
-    const payload = (await response.json()) as {
-      data?: T[]
-      total_count?: number
-      as_of?: string
-      source_freshness?: string
-      has_more?: boolean
-      next_offset?: number | null
-    }
-    asOf = String(payload.as_of ?? asOf)
-    freshness = String(payload.source_freshness ?? freshness)
-    totalCount = Number(payload.total_count ?? totalCount)
-    const chunk = payload.data ?? []
-    rows.push(...chunk)
-    if (!payload.has_more) {
-      complete = true
-      break
-    }
-    if (payload.next_offset == null || payload.next_offset === offset) {
-      complete = false
-      break
-    }
-    offset = payload.next_offset
+  const first = await fetchOffset<T>(endpoint, key, params, 0)
+  const rows = [...first.chunk]
+  let asOf = first.asOf
+  let freshness = first.freshness
+  const totalCount = first.totalCount
+  if (!first.hasMore) {
+    return { rows, totalCount, asOf, freshness, complete: true }
   }
+
+  const step = first.chunk.length || PAGE_SIZE
+  const offsets: number[] = []
+  let offset = first.nextOffset
+  while (
+    offset != null &&
+    offset !== 0 &&
+    offsets.length < MAX_PAGES &&
+    (totalCount ? offset < totalCount : true)
+  ) {
+    offsets.push(offset)
+    offset += step
+  }
+
+  for (let i = 0; i < offsets.length; i += FETCH_CONCURRENCY) {
+    const batch = offsets.slice(i, i + FETCH_CONCURRENCY)
+    const pages = await Promise.all(
+      batch.map((value) => fetchOffset<T>(endpoint, key, params, value))
+    )
+    for (const page of pages) {
+      rows.push(...page.chunk)
+      asOf = page.asOf || asOf
+      freshness = page.freshness || freshness
+    }
+  }
+
+  const complete = totalCount ? rows.length === totalCount : !first.hasMore
   return { rows, totalCount, asOf, freshness, complete }
 }
 
@@ -198,34 +264,31 @@ export async function fetchLiveSettlements(): Promise<SettlementPayload> {
   const today = new Date().toISOString().slice(0, 10)
   const historyStart = dashboardHistoryStart(today)
 
-  const settlements = await fetchPages<LiveSettlement>(endpoint, key, {
-    report: "settlements",
-    period_from: historyStart,
-    period_to: today,
-  })
+  const [settlements, fuel] = await Promise.all([
+    fetchPages<LiveSettlement>(endpoint, key, {
+      report: "settlements",
+      period_from: historyStart,
+      period_to: today,
+    }),
+    fetchPages<FuelLive>(endpoint, key, {
+      report: "fuel",
+      store_from: historyStart,
+      store_to: today,
+    }).catch((error) => {
+      logLoadFailure("fuel", error)
+      return null
+    }),
+  ])
   const rows = settlements.rows
     .map(mapSettlement)
     .filter((row): row is SettlementRow => row !== null)
     .sort((a, b) => a.pf.localeCompare(b.pf) || a.sid - b.sid)
 
   const weekBounds = [...new Map(rows.map((row) => [row.pf, { pf: row.pf, pt: row.pt || row.pf }])).values()]
-  let fuelByWeek: Record<string, FuelWeek> = {}
-  let fuelComplete = false
-  let fuelFetched = 0
-  let fuelTotal = 0
-  try {
-    const fuel = await fetchPages<FuelLive>(endpoint, key, {
-      report: "fuel",
-      store_from: historyStart,
-      store_to: today,
-    })
-    fuelByWeek = aggregateFuel(fuel.rows, weekBounds)
-    fuelComplete = fuel.complete
-    fuelFetched = fuel.rows.length
-    fuelTotal = fuel.totalCount
-  } catch {
-    fuelByWeek = {}
-  }
+  const fuelByWeek = fuel ? aggregateFuel(fuel.rows, weekBounds) : {}
+  const fuelComplete = Boolean(fuel?.complete)
+  const fuelFetched = fuel?.rows.length ?? 0
+  const fuelTotal = fuel?.totalCount ?? 0
 
   return {
     meta: {
@@ -240,6 +303,7 @@ export async function fetchLiveSettlements(): Promise<SettlementPayload> {
         period_to: today,
         dataset: "settlements",
         history_months: DASHBOARD_HISTORY_MONTHS,
+        html_revalidate_seconds: LIVE_REVALIDATE_SECONDS,
         note: "Paginated settlements plus fuel gallons bucketed onto settlement weeks",
       },
       pagination_complete: settlements.complete && rows.length === (settlements.totalCount || rows.length),
@@ -257,11 +321,13 @@ export async function fetchLiveSettlements(): Promise<SettlementPayload> {
 
 export async function getSettlementSummary(): Promise<SettlementPayload> {
   if (!process.env.AGENT_REPORTING_KEY) {
+    logLoadFailure("configuration", new Error("AGENT_REPORTING_KEY is not configured"))
     return getEmbeddedSettlementSummary()
   }
   try {
     return await fetchLiveSettlements()
-  } catch {
+  } catch (error) {
+    logLoadFailure("settlements", error)
     return getEmbeddedSettlementSummary()
   }
 }
