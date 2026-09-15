@@ -28,18 +28,27 @@ const MATRIX: Array<{
   label: string
   hint?: string
   money?: boolean
+  copyOnlyIfPresent?: boolean
 }> = [
   { key: "g", label: "Gross facturado", money: true },
-  { key: "c", label: "Facturado Compass", hint: "Incluido en Gross", money: true },
+  {
+    key: "c",
+    label: "Facturado Compass",
+    hint: "Incluido en Gross",
+    money: true,
+    copyOnlyIfPresent: true,
+  },
   { key: "e", label: "Gastos", money: true },
   { key: "n", label: "Net", money: true },
-  { key: "lo", label: "Préstamos de camión", money: true },
+  { key: "lo", label: "Préstamos de camión", money: true, copyOnlyIfPresent: true },
   { key: "f", label: "Combustible", money: true },
   { key: "dp", label: "Pago a conductores", money: true },
-  { key: "ltr", label: "Reparaciones", money: true },
-  { key: "tp", label: "Peajes + PrePass", money: true },
+  { key: "ltr", label: "Reparaciones", money: true, copyOnlyIfPresent: true },
+  { key: "tp", label: "Peajes + PrePass", money: true, copyOnlyIfPresent: true },
   { key: "m", label: "Millas" },
 ]
+
+const COPY_GAP_HINT = "No está en esta copia"
 
 function formatValue(
   row: OwnerExec,
@@ -93,6 +102,15 @@ function Kpi({
   )
 }
 
+function metricMissingFromCopy(
+  isCopy: boolean,
+  metric: (typeof MATRIX)[number],
+  columns: OwnerExec[]
+): boolean {
+  if (!isCopy || !metric.copyOnlyIfPresent) return false
+  return columns.every((column) => column[metric.key] === 0)
+}
+
 export function ExecutiveSummary({
   scope,
   owners,
@@ -100,6 +118,7 @@ export function ExecutiveSummary({
   physical,
   gallons,
   mpg,
+  isCopy = false,
 }: {
   scope: string
   owners: OwnerExec[]
@@ -108,10 +127,24 @@ export function ExecutiveSummary({
   gallons: number | null
   mpg: number | null
   products: string[]
+  isCopy?: boolean
 }) {
   const columns = [total, ...owners]
   const avg = (value: number | null, format: (n: number) => string) =>
     value == null ? "—" : format(value)
+  const copyGaps = MATRIX.filter((metric) =>
+    metricMissingFromCopy(isCopy, metric, columns)
+  )
+  const showRepairKpi = !metricMissingFromCopy(
+    isCopy,
+    MATRIX.find((metric) => metric.key === "ltr")!,
+    columns
+  )
+  const showTollKpi = !metricMissingFromCopy(
+    isCopy,
+    MATRIX.find((metric) => metric.key === "tp")!,
+    columns
+  )
 
   return (
     <section className="flex flex-col gap-4">
@@ -142,54 +175,75 @@ export function ExecutiveSummary({
           hint={`${physical.netPos} con net positivo`}
         />
         <Kpi label="Camiones" value={String(physical.count)} />
-        <Kpi label="Reparaciones" value={money(total.ltr)} />
-        <Kpi label="Peajes + PrePass" value={money(total.tp)} />
+        {showRepairKpi ? (
+          <Kpi label="Reparaciones" value={money(total.ltr)} />
+        ) : null}
+        {showTollKpi ? (
+          <Kpi label="Peajes + PrePass" value={money(total.tp)} />
+        ) : null}
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle>Por equipo</CardTitle>
-          <CardDescription>Incluye asignaciones 1, 2 y 3 en su equipo.</CardDescription>
+          <CardDescription>
+            Incluye asignaciones 1, 2 y 3 en su equipo. Desliza la tabla para ver
+            todos los equipos.
+            {copyGaps.length > 0
+              ? " Compass, préstamos, reparaciones y peajes no vienen en esta copia; no son $0."
+              : null}
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto rounded-lg border">
-            <Table>
+          <div className="rounded-lg border">
+            <Table className="min-w-max">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="bg-background sticky left-0 z-10 min-w-40">
+                  <TableHead className="bg-background sticky left-0 z-20 min-w-44 shadow-[4px_0_8px_-6px_rgba(0,0,0,0.35)]">
                     Métrica
                   </TableHead>
                   {columns.map((column) => (
-                    <TableHead key={column.o} className="min-w-32 text-right">
+                    <TableHead
+                      key={column.o}
+                      className="min-w-36 whitespace-nowrap text-right"
+                    >
                       {column.o}
                     </TableHead>
                   ))}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {MATRIX.map((metric) => (
-                  <TableRow key={metric.key}>
-                    <TableCell className="bg-background sticky left-0 z-10">
-                      <div className="font-medium">{metric.label}</div>
-                      {metric.hint ? (
-                        <div className="text-muted-foreground text-xs">{metric.hint}</div>
-                      ) : null}
-                    </TableCell>
-                    {columns.map((column) => {
-                      const value = column[metric.key]
-                      const text = formatValue(column, metric)
-                      return (
-                        <TableCell key={`${column.o}-${metric.key}`} className="text-right">
-                          {metric.key === "n" ? (
-                            <MoneyTone value={value}>{text}</MoneyTone>
-                          ) : (
-                            <span className="font-mono tabular-nums">{text}</span>
-                          )}
-                        </TableCell>
-                      )
-                    })}
-                  </TableRow>
-                ))}
+                {MATRIX.map((metric) => {
+                  const missing = metricMissingFromCopy(isCopy, metric, columns)
+                  return (
+                    <TableRow key={metric.key}>
+                      <TableCell className="bg-background sticky left-0 z-20 shadow-[4px_0_8px_-6px_rgba(0,0,0,0.35)]">
+                        <div className="font-medium">{metric.label}</div>
+                        {missing || metric.hint ? (
+                          <div className="text-muted-foreground text-xs">
+                            {missing ? COPY_GAP_HINT : metric.hint}
+                          </div>
+                        ) : null}
+                      </TableCell>
+                      {columns.map((column) => {
+                        const value = column[metric.key]
+                        const text = missing ? "—" : formatValue(column, metric)
+                        return (
+                          <TableCell
+                            key={`${column.o}-${metric.key}`}
+                            className="min-w-36 text-right whitespace-nowrap"
+                          >
+                            {metric.key === "n" && !missing ? (
+                              <MoneyTone value={value}>{text}</MoneyTone>
+                            ) : (
+                              <span className="font-mono tabular-nums">{text}</span>
+                            )}
+                          </TableCell>
+                        )
+                      })}
+                    </TableRow>
+                  )
+                })}
               </TableBody>
             </Table>
           </div>

@@ -2,7 +2,7 @@
 
 ## 3.5.0 - 2026-09-15
 
-- Settlement dashboard UX: slim **Liquidaciones** header (focused period + **Copia** when not live), mobile-first filters, immediate **Camión** focus card on search, Spanish operational copy, and kit evidence in a closed **Datos técnicos** accordion.
+- Settlement dashboard UX: slim **Liquidaciones** header (focused period + **Copia** when not live), mobile-first filters, immediate **Camión** focus card on search, Spanish operational copy, and kit evidence in a closed **Datos técnicos** accordion. The owner matrix scrolls horizontally; on the embedded copy, Compass/loans/repairs/tolls show as missing rather than $0.00.
 - Skills: `agent-reporting-html` 0.2.1, `reporting-html-shadcn` 0.3.1, `itpros-supabase-reporting` 0.9.1.
 
 ## 3.4.0 - 2026-09-15

@@ -323,6 +323,7 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
         gallons={fuelSel.gallons}
         mpg={fuelSel.mpg}
         products={fuelSel.products}
+        isCopy={!data.meta.live}
       />
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
