@@ -34,7 +34,7 @@ The six reporting-source schemas and 107 physical columns were verified on **202
 ## Non-negotiable analysis rules
 
 - Settlements run Tuesday through Monday. Use an explicit period; never infer the current cycle from `To Report` alone.
-- For HTML reports and analytical settlement/fleet-history answers (trends, rankings, dashboards), always fetch **at least three calendar months** ending today or at the user-named end date. The named week or day is UI focus only, not the sole data window. Paginate until complete. See `docs/html-reporting.md`.
+- For HTML reports and analytical settlement/fleet-history answers (trends, rankings), always fetch **at least three calendar months** ending today or at the user-named end date. The **settlement dashboard** loads **at least twelve calendar months**. The named week or day is UI focus only, not the sole data window. Paginate until complete. See `docs/html-reporting.md`.
 - Stored `Gross`, `Total Expenses`, and `Net` are authoritative. `tonu` is an additional/Compass income component already included in Gross; expense components are already included in Total Expenses.
 - Settlement Truck 1, 2, and 3 are owner-allocation buckets for Carlos, Jorge, and CDT—not physical trucks. Include them in the matching owner's general settlement totals; exclude them from physical-truck counts/rankings.
 - `DriverPay` and `returns` are driver-row sources; count distinct truck identifiers for truck totals.
@@ -54,9 +54,11 @@ The settlement dashboard is the Next.js + shadcn/ui app in `apps/reporting-dashb
 
 **Live dashboard URL:** https://lightning-settlement-dashboard.vercel.app
 
+The dashboard reads paginated `settlements` (plus `fuel` gallons for the focus window) for ≥12 months, shows a C-level **Resumen ejecutivo** (owner matrix, physical-truck KPIs, dispatch/owner filters), and must not present a truncated truck ranking as the full fleet: preview plus **Ver más** lists every physical truck in the selection.
+
 Other HTML reports still follow the ≥3-month window and confirmed sections. Do not invent a second visual language; prefer real shadcn components in `apps/reporting-dashboard`.
 
-Every settlement dashboard view must include weekly and monthly review modes, truck and owner rankings, fuel spend by owner, a KPI strip, an evidence footer, and the shared light theme.
+Every settlement dashboard view must include the executive summary, weekly and monthly review modes, truck and owner rankings, fuel spend by owner, a KPI strip, an evidence footer, and the shared light theme. Do not display Ninox Full Week or Other Deductions+Previous: those fields are not in `public.settlements`.
 
 ## Required answer evidence
 

@@ -1,7 +1,7 @@
 ---
 name: itpros-supabase-reporting
 description: Answer Lightning reports through the approved reporting APIs.
-version: 0.8.2
+version: 0.9.0
 author: Ibrain Ortega, Hermes Agent
 license: Proprietary
 platforms: [linux, macos, windows]
@@ -45,7 +45,7 @@ Use schedule `0 10,14 * * *`. The job updates instructions only and must report 
 
 1. Read `AGENTS.md`, `docs/agent-rules.md`, `docs/question-routing.md`, `docs/metric-definitions.md`, `docs/data-dictionary.md`, and `docs/html-reporting.md` when building HTML or analytical settlement/fleet history.
 2. Call `catalog`, then report metadata when the current schema/rules are not loaded.
-3. Choose the smallest report and exact filters. Settlement reports require an explicit period or truck; DriverPay requires truck, driver, `out_from`, or `return_from`; fuel requires `truck_number`, `store_from`, or `ninox_id`. HTML reports and analytical settlement/fleet-history answers must fetch at least three calendar months; the named date is UI focus only.
+3. Choose the smallest report and exact filters. Settlement reports require an explicit period or truck; DriverPay requires truck, driver, `out_from`, or `return_from`; fuel requires `truck_number`, `store_from`, or `ninox_id`. HTML reports and analytical settlement/fleet-history answers must fetch at least three calendar months; the settlement dashboard fetches at least twelve months of `settlements`. The named date is UI focus only.
 4. Run the helper and reconcile `fetched_count` with `total_count` when a complete answer is required.
 5. Apply grain, date, join, allocation-bucket, stored-value, and sensitive-output rules. When a needed field is absent from the selected record, use approved-report relational fallback before finalizing: CDL is the unique driver key across `drivers` and `DriverPay`; truck number is the vehicle key across documented field variants. Never substitute names, Supabase IDs, or `returns.Ninox_ID`; `returns` has no direct CDL/driver key, so report an unresolved driver link unless a related record provides a verified CDL match.
 6. For a current-week “how many trucks are leaving” report, query `driver_pay` by the Monday–Sunday `out_from`/`out_to` range and fetch live Ninox Schedule_Teams from `https://lightningtransport.ninoxdb.com/share/p10ce94o8paa2q4a1z4nw0emznn2ubhriza6?locale=en&utcoffset=-240`. Filter its `Out Date` to the same range, validate it is a JSON array, normalize only truck-key format, and union distinct DriverPay `Truck_Number` with Schedule_Teams `Truck`. Do not substitute either source for the other or double-count overlapping trucks.
@@ -57,7 +57,7 @@ The settlement dashboard is [`apps/reporting-dashboard`](../../apps/reporting-da
 
 Sibling skills: [`agent-reporting-html`](../agent-reporting-html/SKILL.md) and [`reporting-html-shadcn`](../reporting-html-shadcn/SKILL.md). Copy [`../reporting-html-shadcn/assets/report-ui.css`](../reporting-html-shadcn/assets/report-ui.css) only for other static reports (local skill-cache fallback: `$HERMES_HOME/cache/data-reporting-kit/skills/reporting-html-shadcn/assets/report-ui.css`). Do not invent one-off styles.
 
-Every settlement dashboard view must include weekly/monthly review modes, truck and owner rankings, fuel spend by owner, a KPI strip, an evidence footer, and the shared light minimal theme. Write other static candidates in the agent's workspace (`reports/candidates/`), not in this knowledge repository.
+Every settlement dashboard view must include the C-level executive summary, weekly/monthly review modes, truck and owner rankings with Ver más for the full physical selection, fuel spend by owner, a KPI strip, an evidence footer, and the shared light minimal theme. Do not show Full Week or Other Deductions+Previous. Write other static candidates in the agent's workspace (`reports/candidates/`), not in this knowledge repository.
 
 ## User-correction webhook — required shared feedback event
 

@@ -13,7 +13,7 @@ Read `AGENTS.md` first. Use the smallest `agent-reporting` report that answers t
 | Weekly headline gross/expense/net | `settlement_summary` | Supply `period_from` (and normally the same Tuesday in `period_to`) or a truck. |
 | Full weekly expenses/components | `settlements` | Supply `period_from` or truck; use explicit period for owner/dispatch totals. |
 | Historic fuel transactions, gallons, or fuel spending | `fuel` | Anchor with `truck_number`, `store_from`, or `ninox_id`. Use `Adjusted SubTotal` when populated for adjusted-spend totals; calculate aggregate price per gallon as applicable spend ÷ gallons. |
-| HTML settlement/fleet dashboard or analytical history (trends, rankings) | `settlements` plus `fuel` (optional `settlement_summary` for headlines) | Use the Next.js app `apps/reporting-dashboard` and **link** https://lightning-settlement-dashboard.vercel.app. Fetch ≥3 months: settlement `period_from` = Tuesday on or before `history_start`; fuel `store_from` = `history_start`. Named date is UI focus only. Follow `docs/html-reporting.md`. |
+| HTML settlement/fleet dashboard or analytical history (trends, rankings) | `settlements` plus `fuel` (optional `settlement_summary` for headlines) | Use the Next.js app `apps/reporting-dashboard` and **link** https://lightning-settlement-dashboard.vercel.app. Dashboard fetch ≥12 months of `settlements` (paginate). Other analytical HTML ≥3 months. Fuel gallons for dashboard MPG use `store_from`/`store_to`; settlement fuel dollars use stored `Fuel Expenses`. Named date is UI focus only. Follow `docs/html-reporting.md`. |
 | Current driver profile / hire date | `drivers` | Prefer exact `driver_id`; use `hire_from` / `hire_to` for Date of Hire ranges. Any `AGENT_API_KEY` can request the documented sensitive fields with `include_sensitive=true` unless its explicit `AGENT_ALLOW_SENSITIVE_<n>` control is set to `false`. |
 | Planned teams/departures | unsupported | Requires live Ninox Schedule_Teams; do not substitute DriverPay history. |
 | Exact trucks in yard/off duty/on road | unsupported | Supabase lacks `days_in_yard_` and numeric insurance-choice fields required by the Ninox definition. |
@@ -21,7 +21,7 @@ Read `AGENTS.md` first. Use the smallest `agent-reporting` report that answers t
 ## Date rules
 
 - Settlements: Tuesday `From` through the following Monday `To`. Use an exact Tuesday period anchor. Do not infer current cycle from `To Report` alone.
-- HTML reports and analytical settlement/fleet-history answers: load at least three calendar months; the named date is toolbar/focus only. See `docs/html-reporting.md`.
+- HTML reports and analytical settlement/fleet-history answers: load at least three calendar months; the settlement dashboard loads at least twelve. The named date is toolbar/focus only. See `docs/html-reporting.md`.
 - DriverPay departures: use only `Out Date` unless another date is explicitly requested.
 - DriverPay historical returns: use only `Return Date` unless another date is explicitly requested.
 - Current expected returns: use nullable `returns.Return Date` directly as an ISO date.

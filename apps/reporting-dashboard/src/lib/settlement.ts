@@ -1,9 +1,14 @@
 export type Vista = "semanal" | "mensual" | "diario"
 
+export const DASHBOARD_HISTORY_MONTHS = 12
+export const LOW_GROSS_THRESHOLD = 11000
+export const TRUCK_RANK_PREVIEW = 15
+
 export type SettlementRow = {
   sid: number
   t: string
   o: string
+  d: string
   pf: string
   pt: string
   g: number
@@ -12,6 +17,17 @@ export type SettlementRow = {
   f: number
   m: number
   dp: number
+  c: number
+  lo: number
+  ltr: number
+  tl: number
+  pp: number
+}
+
+export type FuelWeek = {
+  gallons: number
+  byOwner: Record<string, number>
+  products: string[]
 }
 
 export type SettlementMeta = {
@@ -22,11 +38,17 @@ export type SettlementMeta = {
   filters: Record<string, string | number | boolean>
   pagination_complete: boolean
   period_from_values: string[]
+  live: boolean
+  dataset: string
+  fuel_pagination_complete?: boolean
+  fuel_fetched_count?: number
+  fuel_total_count?: number
 }
 
 export type SettlementPayload = {
   meta: SettlementMeta
   rows: SettlementRow[]
+  fuelByWeek: Record<string, FuelWeek>
 }
 
 export const NON_PHYSICAL = new Set(["1", "2", "3"])
@@ -64,7 +86,11 @@ export function monthsFromWeeks(weeks: string[]): string[] {
 }
 
 export function ownersFromRows(rows: SettlementRow[]): string[] {
-  return uniqueSorted(rows.map((row) => row.o))
+  return uniqueSorted(rows.map((row) => row.o).filter(Boolean))
+}
+
+export function dispatchesFromRows(rows: SettlementRow[]): string[] {
+  return uniqueSorted(rows.map((row) => row.d).filter(Boolean))
 }
 
 export function defaultMonth(weeks: string[], months: string[]): string {
@@ -91,6 +117,7 @@ export function filterRows(
     week: string
     month: string
     owners: string[]
+    dispatch: string
     truckQuery: string
   }
 ): SettlementRow[] {
@@ -103,6 +130,7 @@ export function filterRows(
 
   return base.filter((row) => {
     if (!ownerSet.has(row.o)) return false
+    if (options.dispatch && row.d !== options.dispatch) return false
     if (truckQ && !String(row.t).toLowerCase().includes(truckQ)) return false
     return true
   })
@@ -116,6 +144,7 @@ export type TruckAgg = {
   n: number
   f: number
   m: number
+  dp: number
   np: boolean
 }
 
@@ -137,6 +166,52 @@ export type KpiAgg = {
   miles: number
   phys: number
   rows: number
+}
+
+export type OwnerExec = {
+  o: string
+  g: number
+  c: number
+  e: number
+  n: number
+  lo: number
+  f: number
+  dp: number
+  ltr: number
+  tp: number
+  m: number
+}
+
+export type PhysicalExec = {
+  count: number
+  avgGross: number | null
+  avgExp: number | null
+  avgPay: number | null
+  avgMiles: number | null
+  rpm: number | null
+  miles: number
+  gross: number
+  lowGross: number
+  netNeg: number
+  netPos: number
+  netZero: number
+}
+
+function emptyOwnerExec(owner: string): OwnerExec {
+  return { o: owner, g: 0, c: 0, e: 0, n: 0, lo: 0, f: 0, dp: 0, ltr: 0, tp: 0, m: 0 }
+}
+
+function addOwnerExec(target: OwnerExec, row: SettlementRow) {
+  target.g += row.g
+  target.c += row.c
+  target.e += row.e
+  target.n += row.n
+  target.lo += row.lo
+  target.f += row.f
+  target.dp += row.dp
+  target.ltr += row.ltr
+  target.tp += row.tl + row.pp
+  target.m += row.m
 }
 
 export function aggregate(rows: SettlementRow[]): {
@@ -180,6 +255,7 @@ export function aggregate(rows: SettlementRow[]): {
         n: 0,
         f: 0,
         m: 0,
+        dp: 0,
         np: NON_PHYSICAL.has(truck),
       }
     }
@@ -189,6 +265,7 @@ export function aggregate(rows: SettlementRow[]): {
     truckAgg.n += row.n
     truckAgg.f += row.f
     truckAgg.m += row.m
+    truckAgg.dp += row.dp
     truckAgg.o = row.o
   }
 
@@ -196,6 +273,95 @@ export function aggregate(rows: SettlementRow[]): {
     byTruck,
     byOwner,
     kpi: { gross, exp, net, fuel, miles, phys: phys.size, rows: rows.length },
+  }
+}
+
+export function executiveTotals(rows: SettlementRow[]): {
+  total: OwnerExec
+  byOwner: Record<string, OwnerExec>
+  physical: PhysicalExec
+} {
+  const total = emptyOwnerExec("TOTAL")
+  const byOwner: Record<string, OwnerExec> = {}
+  const physicalTrucks = new Map<string, { g: number; e: number; dp: number; m: number; n: number }>()
+
+  for (const row of rows) {
+    addOwnerExec(total, row)
+    if (!byOwner[row.o]) byOwner[row.o] = emptyOwnerExec(row.o)
+    addOwnerExec(byOwner[row.o], row)
+    const truck = String(row.t)
+    if (NON_PHYSICAL.has(truck)) continue
+    if (!physicalTrucks.has(truck)) {
+      physicalTrucks.set(truck, { g: 0, e: 0, dp: 0, m: 0, n: 0 })
+    }
+    const phys = physicalTrucks.get(truck)!
+    phys.g += row.g
+    phys.e += row.e
+    phys.dp += row.dp
+    phys.m += row.m
+    phys.n += row.n
+  }
+
+  const physicalList = [...physicalTrucks.values()]
+  const count = physicalList.length
+  const miles = physicalList.reduce((sum, truck) => sum + truck.m, 0)
+  const gross = physicalList.reduce((sum, truck) => sum + truck.g, 0)
+  const avg = (pick: (truck: (typeof physicalList)[number]) => number) =>
+    count ? physicalList.reduce((sum, truck) => sum + pick(truck), 0) / count : null
+
+  return {
+    total,
+    byOwner,
+    physical: {
+      count,
+      avgGross: avg((truck) => truck.g),
+      avgExp: avg((truck) => truck.e),
+      avgPay: avg((truck) => truck.dp),
+      avgMiles: avg((truck) => truck.m),
+      rpm: miles > 0 ? gross / miles : null,
+      miles,
+      gross,
+      lowGross: physicalList.filter((truck) => truck.g < LOW_GROSS_THRESHOLD).length,
+      netNeg: physicalList.filter((truck) => truck.n < 0).length,
+      netPos: physicalList.filter((truck) => truck.n > 0).length,
+      netZero: physicalList.filter((truck) => truck.n === 0).length,
+    },
+  }
+}
+
+export function gallonsForSelection(
+  rows: SettlementRow[],
+  fuelByWeek: Record<string, FuelWeek>,
+  owners: string[],
+  ownersAll: string[]
+): { gallons: number | null; mpg: number | null; products: string[] } {
+  const weeks = uniqueSorted(rows.map((row) => row.pf))
+  if (!weeks.length) return { gallons: null, mpg: null, products: [] }
+  const allOwners = owners.length === ownersAll.length
+  let gallons = 0
+  let found = false
+  const products = new Set<string>()
+  for (const week of weeks) {
+    const bucket = fuelByWeek[week]
+    if (!bucket) continue
+    found = true
+    for (const product of bucket.products) products.add(product)
+    if (allOwners) {
+      gallons += bucket.gallons
+      continue
+    }
+    for (const owner of owners) {
+      gallons += bucket.byOwner[owner] ?? 0
+    }
+  }
+  if (!found) return { gallons: null, mpg: null, products: [] }
+  const physicalMiles = rows
+    .filter((row) => !NON_PHYSICAL.has(String(row.t)))
+    .reduce((sum, row) => sum + row.m, 0)
+  return {
+    gallons,
+    mpg: gallons > 0 ? physicalMiles / gallons : null,
+    products: [...products].sort(),
   }
 }
 
@@ -245,4 +411,33 @@ export function monthlyTotals(
     net: byMonth[month].n,
     fuel: byMonth[month].f,
   }))
+}
+
+export function normalizeSettlementRow(row: Partial<SettlementRow> & Record<string, unknown>): SettlementRow | null {
+  const pf = String(row.pf ?? "")
+  const t = row.t == null ? "" : String(row.t)
+  if (!pf || !t) return null
+  const n = (value: unknown) => {
+    const parsed = Number(value ?? 0)
+    return Number.isFinite(parsed) ? parsed : 0
+  }
+  return {
+    sid: n(row.sid),
+    t,
+    o: String(row.o ?? ""),
+    d: String(row.d ?? ""),
+    pf,
+    pt: String(row.pt ?? ""),
+    g: n(row.g),
+    e: n(row.e),
+    n: n(row.n),
+    f: n(row.f),
+    m: n(row.m),
+    dp: n(row.dp),
+    c: n(row.c),
+    lo: n(row.lo),
+    ltr: n(row.ltr),
+    tl: n(row.tl),
+    pp: n(row.pp),
+  }
 }

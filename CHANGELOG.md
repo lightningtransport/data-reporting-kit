@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.4.0 - 2026-09-15
+
+- Settlement dashboard now loads paginated `settlements` for ≥12 months (plus `fuel` gallons for MPG) and adds a C-level **Resumen ejecutivo**: owner matrix, physical-truck averages, Gross-below-$11,000 count, net+/−, LTR Invoices, Tolls+PrePass, historical Dispatch filter.
+- Truck Gross/Net lists preview a top slice and open **Ver más** for every physical truck in the selection. Compass is stored `tonu` (already in Gross). Full Week and Other Deductions+Previous are documented as not established.
+- Live fetch uses server-only `AGENT_REPORTING_KEY` with `cache: no-store`; the embedded JSON is fallback only. `as_of` remains request time, not Ninox sync.
+- Skills: `agent-reporting-html` 0.2.0, `reporting-html-shadcn` 0.3.0, `itpros-supabase-reporting` 0.9.0.
+
 ## 3.3.1 - 2026-09-15
 
 - Recorded the production settlement dashboard URL `https://lightning-settlement-dashboard.vercel.app` in `AGENTS.md`, `docs/html-reporting.md`, the dashboard env example/README, routing/rules, and HTML reporting skills (`agent-reporting-html` 0.1.1, `reporting-html-shadcn` 0.2.1, `itpros-supabase-reporting` 0.8.2) so Grok bots link the live host instead of a pending placeholder.

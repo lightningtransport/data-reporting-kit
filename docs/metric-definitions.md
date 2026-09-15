@@ -12,15 +12,22 @@ Read `AGENTS.md` and the report metadata before calculating.
 | Net | Stored authoritative net. The intended formula is gross-after-percentage minus total expenses, but verified live rows contain rare exceptions and null-expense cases. | `settlements.Net` |
 | Gross after percentage | `Gross × (%AppliedSaved / 100)` for eligible verified rows. Not Gross or Net. | `settlements.Gross_with_%_deduction_All` |
 | Driven miles | Period mileage. | `settlements.Driven_miles` |
+| Repairs (LTR) | Internal shop invoice expense. | `settlements.LTR Invoices` |
+| Tolls + PrePass | Sum of stored Tolls and PrePass only. Do not add BestPass into this pair. | `settlements.Tolls` + `settlements.PrePass` |
+| Ave. RPM (dashboard) | Physical-truck stored Gross ÷ physical Driven_miles when miles > 0. Derived, not stored. | `settlements` |
+| Ave. MPG (dashboard) | Physical Driven_miles ÷ `fuel.Gallons` for Store Dates in the focus settlement week(s). Hide when gallons are missing. Derived. | `settlements` + `fuel` |
+| Physical trucks under $11,000 Gross | Count of distinct physical trucks (exclude 1/2/3) whose stored Gross in the selection is below 11000. C-level threshold. | `settlements.Gross` |
+| Full Week / No Full Week | Not established. No matching column in `public.settlements`. Do not approximate. | unavailable |
+| Other Deductions+Previous | Not established. Not `Otro` and not a YTD reconstruction. Do not approximate. | unavailable |
 | Current reporting cycle | Select by an explicit Tuesday `From` period. `To Report` alone is unsafe because historical rows contain `Yes` and newer rows contain `true`. | `settlements.From` |
 
 Settlement periods run Tuesday through Monday. Attribute historical owner/dispatch using the settlement row.
 
 ### HTML and analytical history window
 
-For HTML reports and analytical settlement/fleet-history answers, the query window is **at least three calendar months** ending today or at the user-named end date. The named week or day selects the UI focus, not the only rows to load.
+For HTML reports and analytical settlement/fleet-history answers, the query window is **at least three calendar months** ending today or at the user-named end date. The live settlement dashboard query window is **at least twelve calendar months**. The named week or day selects the UI focus, not the only rows to load.
 
-- `history_start` = three calendar months before the end date.
+- `history_start` = three calendar months before the end date for non-dashboard HTML; twelve months for `apps/reporting-dashboard`.
 - Settlements: `period_from` = Tuesday on or before `history_start`; `period_to` = Tuesday of the latest included week (inclusive bounds on `From`).
 - Fuel: `store_from` = `history_start`. Attribute fuel spend by stored `fuel.owner`, not current `trucks.owner`.
 - Paginate until `has_more=false` before ranking or totaling.

@@ -2,9 +2,10 @@
 name: agent-reporting-html
 description: >-
   Use when a Grok Bot or Cursor agent queries agent-reporting or builds HTML
-  reports — auto-configure from this kit, always fetch ≥3 months for
-  HTML/analytical settlement history, and ship the confirmed report sections.
-version: 0.1.1
+  reports — auto-configure from this kit, fetch ≥12 months for the
+  settlement dashboard and ≥3 months for other HTML/analytical settlement
+  history, and ship the confirmed report sections.
+version: 0.2.0
 license: Proprietary
 platforms: [linux, macos, windows]
 metadata:
@@ -29,9 +30,10 @@ A Grok Bot or Cursor agent is building or updating HTML reports from the `agent-
 ## Data window (non-negotiable)
 
 - For any HTML report or analytical answer from settlement/fleet history, **always fetch at least 3 months** back from today (or from the user-named end date), even if the user named one week or one day.
+- The live settlement dashboard must fetch **at least 12 months** of `settlements` (paginated) plus `fuel` gallons for MPG. Use `report=settlements`, not the 11-field `settlement_summary` recorte, for that screen.
 - Use the named date as the **focus** (selected week/month in the UI), not as the only data loaded.
-- Compute `history_start` as three calendar months before today or the named end date. For `settlements` / `settlement_summary`, set `period_from` to the Tuesday on or before `history_start` and `period_to` to the Tuesday of the latest included week. For `fuel`, set `store_from` to `history_start` as the required fuel anchor.
-- Paginate until complete (`next_offset` while `has_more`). `count` / `page_count` is one page; `total_count` is the filtered total.
+- Compute `history_start` as three calendar months (dashboard: twelve) before today or the named end date. For `settlements` / `settlement_summary`, set `period_from` to the Tuesday on or before `history_start`. For `fuel`, set `store_from` to `history_start` as the required fuel anchor.
+- Paginate until complete (`next_offset` while `has_more`). `count` / `page_count` is one page; `total_count` is the filtered total. Truck rankings may preview top-N; **Ver más** must list the full physical selection.
 
 ## Query rules
 
@@ -47,12 +49,15 @@ The settlement dashboard is [`apps/reporting-dashboard`](../../apps/reporting-da
 
 Always apply the confirmed report sections:
 
+- C-level Resumen ejecutivo from `settlements` (owner matrix, physical averages, $11k Gross count, net+/−, LTR, Tolls+PrePass). Compass = `tonu` (already in Gross).
+- Dispatch filter = exact historical `settlements.Dispatch`.
 - Weekly and monthly review modes (named date is toolbar focus).
-- Truck rankings and owner rankings (Gross and Net); exclude settlement trucks 1/2/3 from physical-truck rankings; include them in matching owner totals.
-- Fuel spend by owner for the focused week and month.
+- Truck rankings and owner rankings (Gross and Net); exclude settlement trucks 1/2/3 from physical-truck rankings; include them in matching owner totals; Ver más = full selection.
+- Fuel spend by owner from stored Fuel Expenses; gallons/MPG from `fuel`.
 - KPI strip: Gross, Expenses, Net, Fuel, physical trucks, miles.
 - Evidence footer: source report(s), normalized filters, exact period/window, row/distinct count, pagination completeness, `as_of`, source-freshness limitation, material caveats.
 - Real shadcn/ui in the Next app; Popover + Command for owner multi-select.
+- Do not display Full Week or Other Deductions+Previous.
 
 ## Don't
 

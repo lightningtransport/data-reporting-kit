@@ -1,6 +1,6 @@
 # Lightning reporting dashboard
 
-Next.js App Router + shadcn/ui dashboard for settlement_summary. This is the deployable settlement screen for Grok Bot and Cursor agents.
+Next.js App Router + shadcn/ui dashboard for the `settlements` ledger (C-level executive summary + analysis). This is the deployable settlement screen for Grok Bot and Cursor agents.
 
 ## Local
 
@@ -10,7 +10,7 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). v1 serves the embedded ≥3-month `settlement_summary` snapshot. If `AGENT_REPORTING_KEY` is set in the server environment, `getSettlementSummary()` fetches live windows instead.
+Open [http://localhost:3000](http://localhost:3000). Without `AGENT_REPORTING_KEY`, the app serves the embedded fallback snapshot (may be shorter than 12 months). With the key, it paginates live `settlements` for ≥12 months and buckets `fuel` gallons onto settlement weeks.
 
 ## Vercel deploy
 

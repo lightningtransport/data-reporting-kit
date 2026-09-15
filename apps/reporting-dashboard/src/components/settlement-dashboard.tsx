@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react"
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 
+import { ExecutiveSummary } from "@/components/executive-summary"
 import { OwnerMultiSelect } from "@/components/owner-multi-select"
 import {
   FuelOwnerChart,
@@ -10,6 +11,7 @@ import {
   MonthlyTrendChart,
   WeeklyTrendChart,
 } from "@/components/settlement-charts"
+import { TruckRankCard } from "@/components/truck-rank-card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -44,7 +46,10 @@ import { money, moneyExact, num, pct } from "@/lib/format"
 import {
   aggregate,
   defaultMonth,
+  dispatchesFromRows,
+  executiveTotals,
   filterRows,
+  gallonsForSelection,
   monthLabel,
   monthlyTotals,
   monthsFromWeeks,
@@ -91,6 +96,7 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
   const weeks = useMemo(() => weeksFromRows(data.rows), [data.rows])
   const months = useMemo(() => monthsFromWeeks(weeks), [weeks])
   const ownersAll = useMemo(() => ownersFromRows(data.rows), [data.rows])
+  const dispatches = useMemo(() => dispatchesFromRows(data.rows), [data.rows])
   const weekItems = useMemo(
     () => weeks.map((week) => ({ value: week, label: weekRangeLabel(data.rows, week) })),
     [data.rows, weeks]
@@ -104,26 +110,41 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
   const [week, setWeek] = useState(weeks[weeks.length - 1] ?? "")
   const [month, setMonth] = useState(defaultMonth(weeks, months))
   const [owners, setOwners] = useState(ownersAll)
+  const [dispatch, setDispatch] = useState("")
   const [truckQuery, setTruckQuery] = useState("")
   const [physicalOnly, setPhysicalOnly] = useState(true)
 
   const selectedRows = useMemo(
-    () => filterRows(data.rows, { vista, week, month, owners, truckQuery }),
-    [data.rows, vista, week, month, owners, truckQuery]
+    () =>
+      filterRows(data.rows, {
+        vista,
+        week,
+        month,
+        owners,
+        dispatch,
+        truckQuery,
+      }),
+    [data.rows, vista, week, month, owners, dispatch, truckQuery]
   )
   const agg = useMemo(() => aggregate(selectedRows), [selectedRows])
+  const exec = useMemo(() => executiveTotals(selectedRows), [selectedRows])
+  const fuelSel = useMemo(
+    () => gallonsForSelection(selectedRows, data.fuelByWeek ?? {}, owners, ownersAll),
+    [selectedRows, data.fuelByWeek, owners, ownersAll]
+  )
   const weekIndex = weeks.indexOf(week)
   const trucks = Object.values(agg.byTruck).filter((truck) =>
     physicalOnly ? !truck.np : true
   )
   const ownerAggs = Object.values(agg.byOwner)
-  const topGrossTrucks = [...trucks].sort((a, b) => b.g - a.g).slice(0, 15)
-  const topNetTrucks = [...trucks].sort((a, b) => b.n - a.n).slice(0, 15)
+  const grossTrucks = [...trucks].sort((a, b) => b.g - a.g)
+  const netTrucks = [...trucks].sort((a, b) => b.n - a.n)
   const ownerGross = [...ownerAggs].sort((a, b) => b.g - a.g)
   const ownerNet = [...ownerAggs].sort((a, b) => b.n - a.n)
   const ownerFuel = [...ownerAggs].sort((a, b) => b.f - a.f)
+  const execOwners = Object.values(exec.byOwner).sort((a, b) => a.o.localeCompare(b.o))
   const scope =
-    vista === "mensual" ? `mes ${monthLabel(month)}` : `semana ${week}`
+    vista === "mensual" ? `mes ${monthLabel(month)}` : `semana ${weekRangeLabel(data.rows, week)}`
   const fuelPct = agg.kpi.exp ? agg.kpi.fuel / agg.kpi.exp : 0
   const trendWeekly = weeklyTotals(data.rows, weeks, owners)
   const trendMonthly = monthlyTotals(data.rows, months, owners)
@@ -144,8 +165,9 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
             Lightning Transportation · Resumen de liquidaciones
           </h1>
           <p className="text-muted-foreground max-w-3xl text-sm">
-            Settlement Summary — grano semanal (mar–lun). Gross / Gastos / Net /
-            Combustible son valores almacenados.
+            Ledger <span className="font-medium">settlements</span> — grano semanal
+            (mar–lun). Ventana cargada ≥12 meses; el selector es el foco, no el
+            único periodo analizado.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -153,11 +175,14 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
             {weeks[0]} → {weeks[weeks.length - 1]} ({weeks.length} semanas)
           </Badge>
           <Badge variant="outline">
-            {data.meta.total_count} filas · paginación{" "}
+            {data.meta.fetched_count}/{data.meta.total_count} filas · paginación{" "}
             {data.meta.pagination_complete ? "completa" : "incompleta"}
           </Badge>
+          <Badge variant={data.meta.live ? "default" : "secondary"}>
+            {data.meta.live ? "Live" : "Snapshot"}
+          </Badge>
           <Badge variant="secondary">Camiones 1/2/3 = buckets de owner</Badge>
-          <Badge variant="secondary">Equipo = owner</Badge>
+          <Badge variant="secondary">Equipo = owner histórico</Badge>
         </div>
       </header>
 
@@ -283,10 +308,44 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
                 </FieldLabel>
               </Field>
             </div>
+
+            <Field className="w-auto">
+              <FieldLabel>Dispatch histórico</FieldLabel>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  variant={dispatch === "" ? "default" : "outline"}
+                  onClick={() => setDispatch("")}
+                >
+                  Todos
+                </Button>
+                {dispatches.map((value) => (
+                  <Button
+                    key={value}
+                    size="sm"
+                    variant={dispatch === value ? "default" : "outline"}
+                    onClick={() => setDispatch(value)}
+                  >
+                    {value}
+                  </Button>
+                ))}
+              </div>
+            </Field>
             <p className="text-muted-foreground text-sm">{HINTS[vista]}</p>
           </FieldGroup>
         </CardContent>
       </Card>
+
+      <ExecutiveSummary
+        scope={scope}
+        live={Boolean(data.meta.live)}
+        owners={execOwners}
+        total={exec.total}
+        physical={exec.physical}
+        gallons={fuelSel.gallons}
+        mpg={fuelSel.mpg}
+        products={fuelSel.products}
+      />
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <KpiCard label="Gross" value={money(agg.kpi.gross)} hint="Almacenado" />
@@ -340,7 +399,7 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
           <CardHeader>
             <CardTitle>Combustible por owner</CardTitle>
             <CardDescription>
-              fuel_expenses almacenado · vista según selección
+              Fuel Expenses almacenado · vista según selección
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -351,7 +410,7 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
           <CardHeader>
             <CardTitle>Combustible % de gastos totales</CardTitle>
             <CardDescription>
-              fuel_expenses / total_expenses por owner
+              Fuel Expenses / Total Expenses por owner
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -361,37 +420,23 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <RankTable
-          title={`Top camiones · Gross · ${scope}`}
-          description="Físicos si el toggle está activo · buckets 1/2/3 excluidos de ranking"
-          headers={["#", "Camión", "Owner", "Gross", "Net"]}
-          rows={topGrossTrucks.map((truck, index) => [
-            String(index + 1),
-            truck.t,
-            truck.o,
-            money(truck.g),
-            money(truck.n),
-          ])}
-          bucketFlags={topGrossTrucks.map((truck) => truck.np)}
+        <TruckRankCard
+          title={`Camiones · Gross · ${scope}`}
+          description="Top 15 en pantalla; Ver más abre la flota completa de la selección"
+          trucks={grossTrucks}
+          primary="g"
         />
-        <RankTable
-          title={`Top camiones · Net · ${scope}`}
-          description="Misma selección"
-          headers={["#", "Camión", "Owner", "Net", "Gross"]}
-          rows={topNetTrucks.map((truck, index) => [
-            String(index + 1),
-            truck.t,
-            truck.o,
-            money(truck.n),
-            money(truck.g),
-          ])}
-          bucketFlags={topNetTrucks.map((truck) => truck.np)}
+        <TruckRankCard
+          title={`Camiones · Net · ${scope}`}
+          description="Misma selección, ordenada por Net"
+          trucks={netTrucks}
+          primary="n"
         />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
         <RankTable
-          title="Top owners · Gross"
+          title="Owners · Gross"
           description="Incluye buckets 1/2/3 en totales de owner"
           headers={["#", "Owner", "Gross", "Net"]}
           rows={ownerGross.map((owner, index) => [
@@ -402,7 +447,7 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
           ])}
         />
         <RankTable
-          title="Top owners · Net"
+          title="Owners · Net"
           description="Incluye buckets 1/2/3 en totales de owner"
           headers={["#", "Owner", "Net", "Gross"]}
           rows={ownerNet.map((owner, index) => [
@@ -414,7 +459,7 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
         />
         <RankTable
           title="Combustible por owner"
-          description="Ranking fuel_expenses · % de gastos"
+          description="Ranking Fuel Expenses · % de gastos"
           headers={["#", "Owner", "Combustible", "% gast."]}
           rows={ownerFuel.map((owner, index) => [
             String(index + 1),
@@ -440,6 +485,7 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
                   {[
                     "Camión",
                     "Owner",
+                    "Dispatch",
                     "Desde",
                     "Hasta",
                     "Gross",
@@ -456,7 +502,7 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
               <TableBody>
                 {detailRows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={10} className="text-muted-foreground">
+                    <TableCell colSpan={11} className="text-muted-foreground">
                       Sin filas
                     </TableCell>
                   </TableRow>
@@ -470,6 +516,7 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
                         ) : null}
                       </TableCell>
                       <TableCell>{row.o}</TableCell>
+                      <TableCell>{row.d || "—"}</TableCell>
                       <TableCell>{row.pf}</TableCell>
                       <TableCell>{row.pt}</TableCell>
                       <TableCell className="text-right font-mono tabular-nums">
@@ -506,15 +553,23 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
         <CardContent className="text-muted-foreground flex flex-col gap-2 text-sm">
           <p>
             Filtros activos: vista=<strong>{vista}</strong>,{" "}
-            {vista === "mensual" ? `mes=${month}` : `semana=${week}`}, owners=
+            {vista === "mensual" ? `mes=${month}` : `semana=${week}`}, dispatch=
+            <strong>{dispatch || "todos"}</strong>, owners=
             {owners.length}/{ownersAll.length}, truck_search=&quot;{truckQuery}
             &quot;, physical_only_rankings=<strong>{String(physicalOnly)}</strong>.
           </p>
           <p>
-            Dataset: <strong>settlement_summary</strong> · total_count=
-            <strong>{data.meta.total_count}</strong> · fetched=
+            Dataset: <strong>{data.meta.dataset || "settlements"}</strong> ·
+            total_count=<strong>{data.meta.total_count}</strong> · fetched=
             <strong>{data.meta.fetched_count}</strong> · pagination_complete=
-            <strong>{String(data.meta.pagination_complete)}</strong>.
+            <strong>{String(data.meta.pagination_complete)}</strong> · live=
+            <strong>{String(Boolean(data.meta.live))}</strong>.
+          </p>
+          <p>
+            Fuel (galones): fetched=
+            <strong>{data.meta.fuel_fetched_count ?? 0}</strong> /
+            <strong>{data.meta.fuel_total_count ?? 0}</strong> · pagination_complete=
+            <strong>{String(Boolean(data.meta.fuel_pagination_complete))}</strong>.
           </p>
           <p>
             as_of=<strong>{data.meta.as_of}</strong> · source_freshness=
@@ -528,11 +583,12 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
           <p>
             Caveats: grano semanal mar–lun (no diario). Camiones 1/2/3 son buckets
             de asignación a owner: incluidos en totales de owner, excluidos de
-            rankings físicos. Equipo = campo owner (Schedule_Teams no
-            disponible). Combustible = campo fuel_expenses almacenado. API limita
-            ~1000 filas/request; v1 usa el snapshot embebido ≥3 meses, o ventanas
-            de periodo si AGENT_REPORTING_KEY está configurada en el servidor.
-            Dispatch/dispatcher no unido.
+            conteos/rankings físicos. Facturado Compass es <code>tonu</code> y ya
+            está en Gross. Peajes+PrePass = Tolls+PrePass (sin BestPass). Galones /
+            MPG salen de <code>fuel</code>, no de Fuel Expenses. Full Week y Other
+            Deductions+Previous no están en estas tablas. as_of es hora de request,
+            no sync Ninox. El snapshot embebido es fallback si no hay
+            AGENT_REPORTING_KEY; producción debe servir live paginado a 12 meses.
           </p>
         </CardContent>
       </Card>
@@ -545,13 +601,11 @@ function RankTable({
   description,
   headers,
   rows,
-  bucketFlags,
 }: {
   title: string
   description: string
   headers: string[]
   rows: string[][]
-  bucketFlags?: boolean[]
 }) {
   return (
     <Card>
@@ -585,12 +639,6 @@ function RankTable({
                         className={cellIndex > 1 ? "text-right font-mono tabular-nums" : undefined}
                       >
                         {cell}
-                        {cellIndex === 1 && bucketFlags?.[index] ? (
-                          <>
-                            {" "}
-                            <Badge variant="outline">bucket</Badge>
-                          </>
-                        ) : null}
                       </TableCell>
                     ))}
                   </TableRow>
