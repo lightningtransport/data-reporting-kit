@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react"
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
+import Image from "next/image"
 
 import { ExecutiveSummary } from "@/components/executive-summary"
 import { OwnerMultiSelect } from "@/components/owner-multi-select"
@@ -152,12 +153,30 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 md:px-6 md:py-8">
-      <header className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <h1 className="font-heading text-2xl tracking-tight">Liquidaciones</h1>
-        <p className="text-muted-foreground text-sm">{scope}</p>
-        {data.meta.live ? null : (
-          <Badge variant="secondary">Copia</Badge>
-        )}
+      <header className="flex flex-col gap-4 rounded-xl bg-black px-4 py-5 shadow-lg sm:flex-row sm:items-end sm:justify-between sm:px-6">
+        <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
+          <Image
+            src="/lightning-transport-logo.png"
+            alt="Lightning Transportation & Logistics"
+            width={1536}
+            height={894}
+            priority
+            sizes="(max-width: 640px) 210px, 280px"
+            className="h-auto w-48 sm:w-56"
+          />
+          <div className="mb-1 border-l border-white/20 pl-4">
+            <p className="text-secondary text-xs font-semibold tracking-[0.16em] uppercase">
+              Operaciones
+            </p>
+            <h1 className="font-heading text-xl font-semibold tracking-tight text-white">
+              Liquidaciones
+            </h1>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 sm:mb-1">
+          <p className="text-sm text-white/70">{scope}</p>
+          {data.meta.live ? null : <Badge variant="secondary">Copia</Badge>}
+        </div>
       </header>
 
       <Card>
