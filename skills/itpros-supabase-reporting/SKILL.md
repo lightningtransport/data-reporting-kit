@@ -1,7 +1,7 @@
 ---
 name: itpros-supabase-reporting
 description: Answer Lightning reports through the approved reporting APIs.
-version: 0.8.1
+version: 0.8.2
 author: Ibrain Ortega, Hermes Agent
 license: Proprietary
 platforms: [linux, macos, windows]
@@ -53,7 +53,7 @@ Use schedule `0 10,14 * * *`. The job updates instructions only and must report 
 
 ## HTML reports
 
-The settlement dashboard is [`apps/reporting-dashboard`](../../apps/reporting-dashboard) (Next.js + real shadcn/ui). Grok Bot and Cursor agents **link the live URL** recorded in [`docs/html-reporting.md`](../../docs/html-reporting.md) and keep that app in sync from this repository. Do not generate a one-off HTML replacement or a native `<select multiple>` for Owner/equipo.
+The settlement dashboard is [`apps/reporting-dashboard`](../../apps/reporting-dashboard) (Next.js + real shadcn/ui). Grok Bot and Cursor agents **link** https://lightning-settlement-dashboard.vercel.app and keep that app in sync from this repository. Do not generate a one-off HTML replacement or a native `<select multiple>` for Owner/equipo.
 
 Sibling skills: [`agent-reporting-html`](../agent-reporting-html/SKILL.md) and [`reporting-html-shadcn`](../reporting-html-shadcn/SKILL.md). Copy [`../reporting-html-shadcn/assets/report-ui.css`](../reporting-html-shadcn/assets/report-ui.css) only for other static reports (local skill-cache fallback: `$HERMES_HOME/cache/data-reporting-kit/skills/reporting-html-shadcn/assets/report-ui.css`). Do not invent one-off styles.
 

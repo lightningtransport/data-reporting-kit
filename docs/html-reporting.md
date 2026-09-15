@@ -8,7 +8,7 @@ Read `AGENTS.md` first. These rules are for **Grok Bot and Cursor agents** that 
 
 The live settlement screen is [`apps/reporting-dashboard`](../apps/reporting-dashboard): Next.js App Router + **real shadcn/ui** (Button, Tabs, Card, Badge, Input, Table, Checkbox, Select, Popover + Command multi-select). Do not rebuild it as a native `<select multiple>` or a hand-rolled CSS imitation.
 
-- **Live URL:** `PENDING_VERCEL_PRODUCTION_URL` — replace after the first production deploy, and set `NEXT_PUBLIC_DASHBOARD_URL` to the same value.
+- **Live URL:** https://lightning-settlement-dashboard.vercel.app
 - **Grok bots:** when answering questions about this screen, **link that live URL**. Keep the app in sync from this repository. Do not generate a one-off HTML replacement.
 - Deploy: set Vercel Root Directory to `apps/reporting-dashboard`. See [`apps/reporting-dashboard/README.md`](../apps/reporting-dashboard/README.md). Optional live data uses server-only `AGENT_REPORTING_KEY` (never `NEXT_PUBLIC_*`, never git). v1 embeds the confirmed ≥3-month `settlement_summary` snapshot until that key is configured.
 

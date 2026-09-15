@@ -19,7 +19,7 @@ Open [http://localhost:3000](http://localhost:3000). v1 serves the embedded ≥3
 3. Optional live data (server only):
    - `AGENT_REPORTING_KEY` — assigned `x-agent-key` (Sensitive)
    - `AGENT_REPORTING_ENDPOINT` — defaults to the published `agent-reporting` URL
-4. After the first production deploy, set `NEXT_PUBLIC_DASHBOARD_URL` to that production URL and record it in `docs/html-reporting.md`.
+4. Production is live at [https://lightning-settlement-dashboard.vercel.app](https://lightning-settlement-dashboard.vercel.app). Keep `NEXT_PUBLIC_DASHBOARD_URL` aligned with that host.
 5. Deploy from this directory:
 
 ```bash
@@ -31,4 +31,4 @@ Git integration also works: connecting this GitHub repo and using Root Directory
 
 ## Grok / Cursor
 
-When answering questions about this screen, **link the live dashboard URL**. Do not generate a replacement one-off HTML file. Keep UI changes in this app.
+When answering questions about this screen, **link** [https://lightning-settlement-dashboard.vercel.app](https://lightning-settlement-dashboard.vercel.app). Do not generate a replacement one-off HTML file. Keep UI changes in this app.

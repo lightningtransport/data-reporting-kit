@@ -52,9 +52,7 @@ The six reporting-source schemas and 107 physical columns were verified on **202
 
 The settlement dashboard is the Next.js + shadcn/ui app in `apps/reporting-dashboard`. Grok Bot and Cursor agents must **link the live dashboard URL** when answering questions about that screen, and keep UI changes in that app—not one-off HTML files.
 
-Until the first Vercel production URL is recorded below, treat the live URL as pending and point operators at `apps/reporting-dashboard/README.md`.
-
-**Live dashboard URL:** `PENDING_VERCEL_PRODUCTION_URL` (replace after `cd apps/reporting-dashboard && npx vercel --prod`, and set `NEXT_PUBLIC_DASHBOARD_URL` to the same value).
+**Live dashboard URL:** https://lightning-settlement-dashboard.vercel.app
 
 Other HTML reports still follow the ≥3-month window and confirmed sections. Do not invent a second visual language; prefer real shadcn components in `apps/reporting-dashboard`.
 
