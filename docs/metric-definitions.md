@@ -16,6 +16,19 @@ Read `AGENTS.md` and the report metadata before calculating.
 
 Settlement periods run Tuesday through Monday. Attribute historical owner/dispatch using the settlement row.
 
+### HTML and analytical history window
+
+For HTML reports and analytical settlement/fleet-history answers, the query window is **at least three calendar months** ending today or at the user-named end date. The named week or day selects the UI focus, not the only rows to load.
+
+- `history_start` = three calendar months before the end date.
+- Settlements: `period_from` = Tuesday on or before `history_start`; `period_to` = Tuesday of the latest included week (inclusive bounds on `From`).
+- Fuel: `store_from` = `history_start`. Attribute fuel spend by stored `fuel.owner`, not current `trucks.owner`.
+- Paginate until `has_more=false` before ranking or totaling.
+
+A single-week headline that is not HTML and not a trend/ranking analysis still uses one explicit Tuesday–Monday period.
+
+*Evidence: HTML reporting convention published 2026-09-15.*
+
 ### Owner-allocation buckets
 
 Only in `settlements` and settlement-derived reports, `Truck` 1=Carlos, 2=Jorge, and 3=CDT. These are non-physical owner-expense allocation buckets. Each bucket holds that owner's total `truck_loans` and `Insurance` amounts that are not applied to a specific physical truck.

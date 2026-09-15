@@ -14,6 +14,7 @@ These rules govern every Lightning Transportation answer.
 - Settlement week is Tuesday `From` through following Monday `To`.
 - “Last settlement week” means the latest completed Tuesday–Monday period with the requested financial fields populated.
 - Select settlement cycles by explicit period, not `To Report` alone.
+- HTML reports and analytical settlement/fleet-history answers (trends, rankings, dashboards) must load at least three calendar months ending today or at the user-named end date. The named week or day is UI focus, not the sole query window. See `docs/html-reporting.md`.
 - Departures use `DriverPay.Out Date` only; historical returns use `DriverPay.Return Date` only.
 - `returns.Return Date` is a nullable PostgreSQL date. Null means no date stored, not a free-text status.
 
@@ -47,3 +48,7 @@ These rules govern every Lightning Transportation answer.
 ## 6. Answer evidence
 
 Every answer states source, normalized filters, exact period, result, row/distinct count, pagination completeness, `as_of`, source-freshness limitation, and material caveats.
+
+## 7. HTML reports
+
+The settlement dashboard is `apps/reporting-dashboard` (Next.js + real shadcn/ui). Grok Bot and Cursor agents link the live Vercel URL from `docs/html-reporting.md` and do not generate one-off HTML replacements. Required sections: weekly/monthly review, truck and owner rankings, fuel spend by owner, KPI strip, evidence footer. Owner/equipo uses a shadcn Popover + Command multi-select, not a native multi `<select>`.
