@@ -6,7 +6,7 @@ Versioned, agent-readable instructions and source for the active Lightning Supab
 
 Every agent must read [`AGENTS.md`](AGENTS.md). The runtime contract is available from the authenticated `agent-reporting` catalog route.
 
-Grok Bot and Cursor agents: the settlement dashboard lives in [`apps/reporting-dashboard`](apps/reporting-dashboard). Link [https://lightning-settlement-dashboard.vercel.app](https://lightning-settlement-dashboard.vercel.app) when answering questions about that screen; do not generate a replacement one-off HTML file. Copy [`skills/reporting-html-shadcn/assets/report-ui.css`](skills/reporting-html-shadcn/assets/report-ui.css) only for other static reports that are not this dashboard.
+Grok Bot and Cursor agents: the settlement dashboard lives in [`apps/reporting-dashboard`](apps/reporting-dashboard). Link [https://lightning-settlement-dashboard.vercel.app](https://lightning-settlement-dashboard.vercel.app) when answering questions about that screen; do not generate a replacement one-off HTML file. Conventions: [`docs/html-reporting.md`](docs/html-reporting.md). Copy [`skills/reporting-html-shadcn/assets/report-ui.css`](skills/reporting-html-shadcn/assets/report-ui.css) only for other static reports that are not this dashboard.
 
 ## What this kit provides
 
