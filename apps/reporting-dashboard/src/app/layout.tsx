@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "Liquidaciones",
+  title: "Liquidaciones | Lightning Transportation",
   description: "Liquidaciones semanales Lightning Transportation.",
 }
 
