@@ -7,7 +7,8 @@ Read `AGENTS.md` first. Use the smallest `agent-reporting` report that answers t
 | Current truck facts or fleet list | `trucks` | Use current owner/dispatcher/mechanic fields only. The settlement-only 1/2/3 allocation rule does not filter or classify this source. |
 | Who/trucks are expected to return? | `returns` | Inclusive `return_from`/`return_to`. Count distinct `Truck` for trucks; rows represent drivers. |
 | Historical assignment for a truck/driver | `driver_pay` | Anchor with `truck_number` or `driver_id`; review dates, transfers, and terminations. |
-| Which trucks left in a period? | `driver_pay` | Filter `out_from`/`out_to` only; count distinct `Truck_Number`. |
+| Which trucks left in a historical period? | `driver_pay` | Filter `out_from`/`out_to` only; count distinct `Truck_Number`. |
+| How many trucks are leaving this current week? | `driver_pay` + live Ninox `Schedule_Teams` | Use the same Monday–Sunday `Out Date` window for both sources. Union distinct truck numbers; report DriverPay-only, Schedule_Teams-only, overlap, and final total. Fetch Schedule_Teams immediately from its documented live JSON URL. |
 | Which trucks returned historically? | `driver_pay` | Filter `return_from`/`return_to` only; count distinct `Truck_Number`. |
 | Weekly headline gross/expense/net | `settlement_summary` | Supply `period_from` (and normally the same Tuesday in `period_to`) or a truck. |
 | Full weekly expenses/components | `settlements` | Supply `period_from` or truck; use explicit period for owner/dispatch totals. |

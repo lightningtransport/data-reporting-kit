@@ -43,6 +43,7 @@ Only in `settlements` and settlement-derived reports, `Truck` 1=Carlos, 2=Jorge,
 |---|---|---|
 | Fleet count | Distinct `truck_number`; do not use the settlement-only 1/2/3 allocation-bucket rule to filter `trucks`. | `trucks` |
 | Trucks leaving | Distinct `Truck_Number` filtered by `Out Date` only. | `DriverPay` |
+| Current-week trucks leaving | Union of distinct DriverPay `Truck_Number` and distinct live Ninox Schedule_Teams `Truck` filtered by their respective `Out Date` in the same Monday–Sunday period. Report source counts, overlap, source-only counts, and the deduplicated union. | `DriverPay` + live Schedule_Teams |
 | Trucks returning historically | Distinct `Truck_Number` filtered by `Return Date` only. | `DriverPay` |
 | Current expected returns | Current Returns rows by nullable date; deduplicate `Truck` for truck count. | `returns` |
 | Current fleet assignment | Current owner/dispatcher/mechanic metadata, not history. | `trucks` |

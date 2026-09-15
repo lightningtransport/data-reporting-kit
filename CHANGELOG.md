@@ -9,6 +9,7 @@
 - Grok bots must **link the live Vercel dashboard URL** (recorded in `docs/html-reporting.md` after deploy) instead of generating one-off HTML files. `AGENT_REPORTING_KEY` is documented as a server-only Vercel env var and is not committed.
 - Packaged skills: `skills/agent-reporting-html`, `skills/reporting-html-shadcn` 0.2.0 (with `assets/report-ui.css`), and `skills/itpros-supabase-reporting` 0.8.1 pointing at the Next dashboard. Cross-linked from `AGENTS.md`, README Start here, routing, metrics, agent rules, and the installed reporting skill.
 - The historical `chatgpt-plugin/` package and `docs/chatgpt-plugin.md` are left untouched.
+- Corrected current-week “how many trucks are leaving” reporting: agents must reconcile distinct DriverPay `Out Date` departures with the live Ninox Schedule_Teams `Out Date` schedule for the same Monday–Sunday window. Reports now disclose the overlap, each source-only count, and the deduplicated union rather than treating either source as complete.
 
 ## 3.2.0 - 2026-09-14
 

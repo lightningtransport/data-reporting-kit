@@ -13,7 +13,7 @@ metadata:
 
 # Lightning reporting
 
-Read repository `AGENTS.md` first. Approved AI service agents use `agent-reporting`; the personal JWT-based `reporting-query` flow remains available only to already-approved Supabase members.
+Read repository `AGENTS.md` first. The canonical shared kit is `https://github.com/lightningtransport/data-reporting-kit`; its approved service-agent endpoint is `https://aaqquwhdglueqlnbifvn.supabase.co/functions/v1/agent-reporting`. Approved AI service agents use `agent-reporting`; the personal JWT-based `reporting-query` flow remains available only to already-approved Supabase members.
 
 ## Agent-key mode
 
@@ -48,7 +48,8 @@ Use schedule `0 10,14 * * *`. The job updates instructions only and must report 
 3. Choose the smallest report and exact filters. Settlement reports require an explicit period or truck; DriverPay requires truck, driver, `out_from`, or `return_from`; fuel requires `truck_number`, `store_from`, or `ninox_id`. HTML reports and analytical settlement/fleet-history answers must fetch at least three calendar months; the named date is UI focus only.
 4. Run the helper and reconcile `fetched_count` with `total_count` when a complete answer is required.
 5. Apply grain, date, join, allocation-bucket, stored-value, and sensitive-output rules. When a needed field is absent from the selected record, use approved-report relational fallback before finalizing: CDL is the unique driver key across `drivers` and `DriverPay`; truck number is the vehicle key across documented field variants. Never substitute names, Supabase IDs, or `returns.Ninox_ID`; `returns` has no direct CDL/driver key, so report an unresolved driver link unless a related record provides a verified CDL match.
-6. Answer with source, normalized filters, exact period, result and row/distinct count, pagination completeness, `as_of`, source-freshness limitation, and material caveats.
+6. For a current-week “how many trucks are leaving” report, query `driver_pay` by the Monday–Sunday `out_from`/`out_to` range and fetch live Ninox Schedule_Teams from `https://lightningtransport.ninoxdb.com/share/p10ce94o8paa2q4a1z4nw0emznn2ubhriza6?locale=en&utcoffset=-240`. Filter its `Out Date` to the same range, validate it is a JSON array, normalize only truck-key format, and union distinct DriverPay `Truck_Number` with Schedule_Teams `Truck`. Do not substitute either source for the other or double-count overlapping trucks.
+7. Answer with source, normalized filters, exact period, result and row/distinct count, pagination completeness, `as_of`, source-freshness limitation, and material caveats. For the current-week departure union, include both-source, DriverPay-only, Schedule_Teams-only, and union counts.
 
 ## HTML reports
 
@@ -128,6 +129,7 @@ Agent-key reports are `settlement_summary`, `settlements`, `driver_pay`, `driver
 - A successful zero-row page has `total_count=0`; an offset beyond the available range returns HTTP `416`.
 - DriverPay and returns can produce two rows per team truck; deduplicate trucks when asked for trucks.
 - Departures use `Out Date` only; historical returns use `Return Date` only.
+- For “how many trucks are leaving” in a current week, DriverPay and live Schedule_Teams are both required. Deduplicate their same-window truck union and disclose reconciliation counts.
 - Settlement weeks run Tuesday through Monday and require an explicit period.
 - Only in `settlements` and settlement-derived reports, Trucks 1/2/3 are Carlos/Jorge/CDT non-physical owner-expense allocation buckets. Each holds that owner's total `truck_loans` and `Insurance` amounts not assigned to a specific physical truck; include it in the owner's general settlement total, label it as non-physical, and exclude it from physical-truck counts/rankings. Do not apply this rule to `trucks`, DriverPay, or returns.
 - Stored Gross, Total Expenses, and Net take precedence; do not add included components again.

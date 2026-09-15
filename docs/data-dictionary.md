@@ -44,6 +44,8 @@ The settlement-only Truck 1/2/3 owner-expense allocation rule does not apply to 
 
 Use `Out Date` alone for departures and `Return Date` alone for returns. For overlap with a settlement week: `Out Date <= settlements.To` and (`Return Date` is null or `Return Date >= settlements.From`), then inspect transfers/terminations inside that period.
 
+For a current-week departure total, DriverPay is one required source, not a complete substitute for Schedule_Teams: union its distinct `Truck_Number` departures with distinct live Schedule_Teams `Truck` records for the same Monday–Sunday `Out Date` window. Deduplicate by truck number and preserve a reconciliation of both-source, DriverPay-only, and Schedule_Teams-only trucks.
+
 | Column | Type | Null? | Meaning / safe use |
 |---|---|---:|---|
 | `Truck_Number` | text | yes | Actual truck number from Ninox `WD.IA / TruckNumber_`. |
