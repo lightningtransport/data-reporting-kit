@@ -11,7 +11,7 @@ This repository is the canonical reporting contract for Lightning Transportation
 5. `docs/data-dictionary.md`
 6. `api/openapi.yaml`
 7. Authenticated runtime catalog: `GET /functions/v1/agent-reporting?report=catalog`
-8. HTML / analytical settlement reports: `docs/html-reporting.md`, then `skills/agent-reporting-html/SKILL.md` and `skills/reporting-html-shadcn/SKILL.md`
+8. HTML / analytical settlement reports (Grok Bot / Cursor agents): `docs/html-reporting.md`, then `skills/agent-reporting-html/SKILL.md` and `skills/reporting-html-shadcn/SKILL.md`
 
 The six reporting-source schemas and 107 physical columns were verified on **2026-09-14**. The deployed catalog is the runtime contract. If it conflicts with the repository, stop and report the contradiction instead of guessing.
 
@@ -49,7 +49,7 @@ The six reporting-source schemas and 107 physical columns were verified on **202
 
 ## HTML reports
 
-When producing standalone HTML from `agent-reporting`, follow `docs/html-reporting.md` and the portable skills `skills/agent-reporting-html` and `skills/reporting-html-shadcn`. Copy `skills/reporting-html-shadcn/assets/report-ui.css`; do not invent one-off styles.
+Grok Bot and Cursor agents that produce standalone HTML from `agent-reporting` must follow `docs/html-reporting.md` and the portable skills `skills/agent-reporting-html` and `skills/reporting-html-shadcn`. Copy `skills/reporting-html-shadcn/assets/report-ui.css`; do not invent one-off styles.
 
 Every HTML report must include weekly and monthly review modes, truck and owner rankings, fuel spend by owner, a KPI strip, an evidence footer, and the shared light minimal theme.
 

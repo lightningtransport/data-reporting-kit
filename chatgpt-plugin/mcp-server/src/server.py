@@ -23,7 +23,6 @@ DOCUMENT_PATHS = (
     "docs/metric-definitions.md",
     "docs/data-dictionary.md",
     "docs/agent-reporting.md",
-    "docs/html-reporting.md",
     "api/openapi.yaml",
 )
 
@@ -44,12 +43,11 @@ def create_server() -> FastMCP:
     mcp = FastMCP(
         name="Lightning Transportation Reporting",
         instructions=(
-            "Use search then fetch to retrieve current reporting rules, including HTML reporting "
-            "conventions. Use catalog before discovering reports, metadata before unfamiliar "
-            "reports, and run_report only for approved read-only reporting requests. Never "
-            "request sensitive fields unless the user explicitly needs them. Cite fetched "
-            "documentation and state report filters, period, row count, freshness, pagination, "
-            "and material caveats."
+            "Use search then fetch to retrieve current reporting rules. Use catalog before "
+            "discovering reports, metadata before unfamiliar reports, and run_report only for "
+            "approved read-only reporting requests. Never request sensitive fields unless the "
+            "user explicitly needs them. Cite fetched documentation and state report filters, "
+            "period, row count, freshness, pagination, and material caveats."
         ),
     )
 

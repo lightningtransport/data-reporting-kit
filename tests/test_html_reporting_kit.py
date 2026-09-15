@@ -31,12 +31,15 @@ class HtmlReportingKitTests(unittest.TestCase):
         self.assertIn("skills/reporting-html-shadcn", agents)
         self.assertRegex(agents, r"three calendar months|at least three calendar months")
         self.assertRegex(html_skill, r"3 months|three calendar months")
+        self.assertRegex(agents, r"Grok Bot|Cursor")
+        self.assertNotIn("ChatGPT", html_skill)
 
     def test_readme_start_here_points_at_html_skills(self):
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
         self.assertIn("docs/html-reporting.md", readme)
         self.assertIn("skills/agent-reporting-html/SKILL.md", readme)
         self.assertIn("skills/reporting-html-shadcn/assets/report-ui.css", readme)
+        self.assertIn("Grok Bot", readme)
 
     def test_new_guidance_files_do_not_embed_secrets(self):
         paths = [

@@ -1,8 +1,8 @@
 # HTML reporting conventions
 
-Read `AGENTS.md` first. These rules apply when an agent builds a standalone HTML report or an analytical settlement/fleet-history view from `agent-reporting`. They do not change the API contract.
+Read `AGENTS.md` first. These rules are for **Grok Bot and Cursor agents** that auto-configure from this kit and build a standalone HTML report or an analytical settlement/fleet-history view from `agent-reporting`. They do not change the API contract.
 
-*Evidence: portable HTML reporting convention published 2026-09-15 so agents that auto-configure from this kit reuse the confirmed settlement-report sections and shared light UI kit.*
+*Evidence: portable HTML reporting convention published 2026-09-15 so Grok/Cursor agents that auto-configure from this kit reuse the confirmed settlement-report sections and shared light UI kit.*
 
 ## Portable skills
 

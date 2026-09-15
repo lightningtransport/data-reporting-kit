@@ -18,9 +18,13 @@ Approved agents use `GET /functions/v1/agent-reporting` with an individually ass
 
 Personal Supabase Auth onboarding for `reporting-query` remains paused until approved company Auth email/subdomain/SMTP delivery is configured. Do not distribute a shared password, employee session, database key, or service credential as a workaround.
 
+## Grok Bot / Cursor auto-configure
+
+Grok Bot and Cursor agents that auto-configure from this repository start at `AGENTS.md`. For HTML reports they also load `docs/html-reporting.md` and the portable skills `skills/agent-reporting-html` and `skills/reporting-html-shadcn`. Documentation access does not grant data access; data calls still require an approved agent key.
+
 ## Hermes knowledge installation
 
-Anyone may read the public knowledge during this phase. An approved Hermes agent can install the skill bundle, but documentation access does not grant data access. Data calls still require an approved agent key or personal Auth membership.
+Anyone may read the public knowledge during this phase. An approved local skill bundle can be installed for Grok/Cursor agents that use the Hermes skill layout, but documentation access does not grant data access. Data calls still require an approved agent key or personal Auth membership.
 
 ```bash
 hermes skills tap add lightningtransport/data-reporting-kit
@@ -29,7 +33,7 @@ hermes skills install lightningtransport/data-reporting-kit/skills/agent-reporti
 hermes skills install lightningtransport/data-reporting-kit/skills/reporting-html-shadcn --yes
 ```
 
-Start a new session after installation. Follow `AGENTS.md`, `docs/agent-reporting.md`, `docs/data-dictionary.md`, `docs/question-routing.md`, `docs/metric-definitions.md`, `docs/html-reporting.md`, and `api/openapi.yaml`. The twice-daily `data-reporting-kit-sync` job copies the reporting skill and sibling HTML skills together.
+Start a new session after installation. Follow `AGENTS.md`, `docs/agent-reporting.md`, `docs/data-dictionary.md`, `docs/question-routing.md`, `docs/metric-definitions.md`, `docs/html-reporting.md`, and `api/openapi.yaml`. The twice-daily `data-reporting-kit-sync` job copies the reporting skill and sibling HTML skills into the local agent skill bundle.
 
 ## Future privacy change
 

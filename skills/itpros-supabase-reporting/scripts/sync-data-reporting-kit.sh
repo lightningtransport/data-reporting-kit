@@ -56,8 +56,9 @@ trap 'rm -rf "$STAGE_DIR"' EXIT
 cp -R "$SOURCE_DIR/." "$STAGE_DIR/"
 
 # Sibling HTML-reporting skills live next to this package in the canonical repo.
-# Copy them before replacing the versioned reporting skill so a sibling failure
-# does not leave the installed version current while the CSS/HTML skills are missing.
+# Copy them into the local Grok/Cursor skill bundle before replacing the
+# versioned reporting skill so a sibling failure does not leave the installed
+# version current while the CSS/HTML skills are missing.
 for skill_dir in "$CACHE_DIR/skills"/*; do
   [ -d "$skill_dir" ] || continue
   skill_name="$(basename "$skill_dir")"

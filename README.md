@@ -6,7 +6,7 @@ Versioned, agent-readable instructions and source for the active Lightning Supab
 
 Every agent must read [`AGENTS.md`](AGENTS.md). The runtime contract is available from the authenticated `agent-reporting` catalog route.
 
-When building HTML reports from `agent-reporting`, also read [`docs/html-reporting.md`](docs/html-reporting.md) and the portable skills [`skills/agent-reporting-html/SKILL.md`](skills/agent-reporting-html/SKILL.md) and [`skills/reporting-html-shadcn/SKILL.md`](skills/reporting-html-shadcn/SKILL.md). Copy [`skills/reporting-html-shadcn/assets/report-ui.css`](skills/reporting-html-shadcn/assets/report-ui.css) instead of inventing one-off styles.
+Grok Bot and Cursor agents building HTML reports from `agent-reporting` must also read [`docs/html-reporting.md`](docs/html-reporting.md) and the portable skills [`skills/agent-reporting-html/SKILL.md`](skills/agent-reporting-html/SKILL.md) and [`skills/reporting-html-shadcn/SKILL.md`](skills/reporting-html-shadcn/SKILL.md). Copy [`skills/reporting-html-shadcn/assets/report-ui.css`](skills/reporting-html-shadcn/assets/report-ui.css) instead of inventing one-off styles.
 
 ## What this kit provides
 
@@ -15,7 +15,7 @@ When building HTML reports from `agent-reporting`, also read [`docs/html-reporti
 - Source and OpenAPI contract for the custom-key `agent-reporting` Edge Function.
 - Source for the separate membership/JWT `reporting-query` Edge Function.
 - A portable Hermes reporting skill, correction-feedback contract, and access lifecycle guidance.
-- HTML reporting skills and a shared light CSS kit so standalone reports reuse weekly/monthly review, rankings, fuel-by-owner, KPIs, and an evidence footer.
+- HTML reporting skills and a shared light CSS kit for Grok Bot / Cursor agents, so standalone reports reuse weekly/monthly review, rankings, fuel-by-owner, KPIs, and an evidence footer.
 - A private ChatGPT Plugin package: reusable reporting skill plus remote, read-only MCP connector; see [`docs/chatgpt-plugin.md`](docs/chatgpt-plugin.md).
 
 ## Active interfaces

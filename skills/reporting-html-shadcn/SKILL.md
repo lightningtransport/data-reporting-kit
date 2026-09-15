@@ -1,8 +1,8 @@
 ---
 name: reporting-html-shadcn
 description: >-
-  Use when building Lightning reporting HTML dashboards so every screen reuses
-  the same shadcn-like components and styles.
+  Use when a Grok Bot or Cursor agent builds Lightning reporting HTML dashboards
+  so every screen reuses the same shadcn-like components and styles.
 version: 0.1.0
 license: Proprietary
 platforms: [linux, macos, windows]
@@ -16,7 +16,7 @@ metadata:
 
 ## When
 
-Any standalone HTML report or dashboard for Lightning reporting (settlement, trucks, fuel, drivers, returns). Use this so every report shares the same components and styles.
+A Grok Bot or Cursor agent is building any standalone HTML report or dashboard for Lightning reporting (settlement, trucks, fuel, drivers, returns). Use this so every report shares the same components and styles.
 
 ## Goal
 

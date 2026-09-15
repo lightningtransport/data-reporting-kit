@@ -1,9 +1,9 @@
 ---
 name: agent-reporting-html
 description: >-
-  Use when querying agent-reporting or building HTML reports — auto-configure
-  from this kit, always fetch ≥3 months for HTML/analytical settlement history,
-  and ship the confirmed report sections.
+  Use when a Grok Bot or Cursor agent queries agent-reporting or builds HTML
+  reports — auto-configure from this kit, always fetch ≥3 months for
+  HTML/analytical settlement history, and ship the confirmed report sections.
 version: 0.1.0
 license: Proprietary
 platforms: [linux, macos, windows]
@@ -17,13 +17,13 @@ metadata:
 
 ## When
 
-Building or updating HTML reports from the `agent-reporting` gateway, or bootstrapping an agent that auto-configures from this repository.
+A Grok Bot or Cursor agent is building or updating HTML reports from the `agent-reporting` gateway, or bootstrapping after auto-configure from this repository.
 
 ## Auto-configure first
 
 1. Read this kit in order: `AGENTS.md`, `docs/agent-rules.md`, `docs/question-routing.md`, `docs/metric-definitions.md`, `docs/data-dictionary.md`, `docs/agent-reporting.md`, `docs/html-reporting.md`, `api/openapi.yaml`.
-2. Use the assigned runtime secret only (`LIGHTNING_AGENT_REPORTING_KEY` for the packaged helper; `AGENT_REPORTING_KEY` for the ChatGPT connector). Never put the key in chat, a URL, HTML, a prompt, a log, or this repository. If it is missing, stop and ask the operator to inject it through the host secret mechanism.
-3. Default endpoint: `https://aaqquwhdglueqlnbifvn.supabase.co/functions/v1/agent-reporting`. Override only with the operator-configured `AGENT_REPORTING_ENDPOINT`.
+2. Use the assigned runtime secret only (`LIGHTNING_AGENT_REPORTING_KEY` for the packaged helper). Never put the key in chat, a URL, HTML, a prompt, a log, or this repository. If it is missing, stop and ask the operator to inject it through the host secret mechanism.
+3. Default endpoint: `https://aaqquwhdglueqlnbifvn.supabase.co/functions/v1/agent-reporting`. Override only with the operator-configured endpoint for this agent.
 4. Validate with `GET ?report=catalog` and header `x-agent-key`. If the live catalog conflicts with this kit, stop and report the contradiction.
 
 ## Data window (non-negotiable)

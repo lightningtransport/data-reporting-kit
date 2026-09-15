@@ -51,4 +51,4 @@ Every answer states source, normalized filters, exact period, result, row/distin
 
 ## 7. HTML reports
 
-Standalone HTML from `agent-reporting` must follow `docs/html-reporting.md` and the skills `skills/agent-reporting-html` and `skills/reporting-html-shadcn`. Copy `skills/reporting-html-shadcn/assets/report-ui.css`. Required sections: weekly/monthly review, truck and owner rankings, fuel spend by owner, KPI strip, evidence footer, shared light theme. Do not invent one-off styles.
+Grok Bot and Cursor agents producing standalone HTML from `agent-reporting` must follow `docs/html-reporting.md` and the skills `skills/agent-reporting-html` and `skills/reporting-html-shadcn`. Copy `skills/reporting-html-shadcn/assets/report-ui.css`. Required sections: weekly/monthly review, truck and owner rankings, fuel spend by owner, KPI strip, evidence footer, shared light theme. Do not invent one-off styles.

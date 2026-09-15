@@ -52,7 +52,7 @@ Use schedule `0 10,14 * * *`. The job updates instructions only and must report 
 
 ## HTML reports
 
-Follow [`docs/html-reporting.md`](../../docs/html-reporting.md) plus sibling skills [`agent-reporting-html`](../agent-reporting-html/SKILL.md) and [`reporting-html-shadcn`](../reporting-html-shadcn/SKILL.md). Copy [`../reporting-html-shadcn/assets/report-ui.css`](../reporting-html-shadcn/assets/report-ui.css) (Hermes cache fallback: `$HERMES_HOME/cache/data-reporting-kit/skills/reporting-html-shadcn/assets/report-ui.css`). Do not invent one-off styles.
+Grok Bot and Cursor agents follow [`docs/html-reporting.md`](../../docs/html-reporting.md) plus sibling skills [`agent-reporting-html`](../agent-reporting-html/SKILL.md) and [`reporting-html-shadcn`](../reporting-html-shadcn/SKILL.md). Copy [`../reporting-html-shadcn/assets/report-ui.css`](../reporting-html-shadcn/assets/report-ui.css) (local skill-cache fallback: `$HERMES_HOME/cache/data-reporting-kit/skills/reporting-html-shadcn/assets/report-ui.css`). Do not invent one-off styles.
 
 Every HTML report must include weekly/monthly review modes, truck and owner rankings, fuel spend by owner, a KPI strip, an evidence footer, and the shared light minimal theme. Write candidates in the agent's workspace (`reports/candidates/`), not in this knowledge repository.
 

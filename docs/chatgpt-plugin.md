@@ -4,7 +4,7 @@ The `chatgpt-plugin/` package makes this repository usable from standard ChatGPT
 
 ## Components
 
-- The ChatGPT skill (`chatgpt-plugin/skills/lightning-reporting/SKILL.md`) contains the minimum non-negotiable reporting instructions, including the ≥3-month window for HTML/analytical settlement history.
+- The ChatGPT skill (`chatgpt-plugin/skills/lightning-reporting/SKILL.md`) contains the minimum non-negotiable reporting instructions.
 - The MCP server supplies the `search` and `fetch` tools required for ChatGPT company-knowledge and deep-research compatibility, plus `catalog`, `metadata`, and `run_report` for governed reporting access.
 - The existing `agent-reporting` Edge Function remains the only data gateway. The MCP server does not query Supabase tables directly.
 
