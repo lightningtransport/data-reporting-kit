@@ -61,6 +61,25 @@ class HtmlReportingKitTests(unittest.TestCase):
         self.assertNotIn("PENDING_VERCEL_PRODUCTION_URL", html)
         self.assertNotIn("PENDING_VERCEL_PRODUCTION_URL", agents)
         self.assertRegex(html, r"link (that |the )?live URL", re.I)
+        self.assertIn("Resumen ejecutivo", texts)
+        self.assertIn("Ver más", texts)
+        self.assertNotIn("Trucks Full Week", texts)
+        executive = (ROOT / "apps/reporting-dashboard/src/components/executive-summary.tsx").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("no existen", executive)
+        self.assertNotIn('{ key: "otro"', executive)
+
+    def test_dashboard_loads_twelve_month_settlements(self):
+        data_ts = (ROOT / "apps/reporting-dashboard/src/lib/data.ts").read_text(encoding="utf-8")
+        settlement_ts = (ROOT / "apps/reporting-dashboard/src/lib/settlement.ts").read_text(encoding="utf-8")
+        self.assertIn("DASHBOARD_HISTORY_MONTHS = 12", settlement_ts)
+        self.assertIn('report: "settlements"', data_ts)
+        self.assertIn("next_offset", data_ts)
+        self.assertIn("LOW_GROSS_THRESHOLD = 11000", settlement_ts)
+        self.assertIn("if (NON_PHYSICAL.has(truck)) continue", settlement_ts)
+        agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+        self.assertRegex(agents, r"twelve calendar months|12 months")
 
     def test_embedded_settlement_window_covers_three_months(self):
         payload = json.loads(
@@ -73,6 +92,22 @@ class HtmlReportingKitTests(unittest.TestCase):
         self.assertLessEqual(weeks[0], "2026-06-02")
         self.assertGreaterEqual(weeks[-1], "2026-09-01")
         self.assertTrue(payload["meta"]["pagination_complete"])
+        sample = payload["rows"][0]
+        for key in ("d", "c", "lo", "ltr", "tl", "pp"):
+            self.assertIn(key, sample)
+        physical = {
+            str(row["t"])
+            for row in payload["rows"]
+            if row["pf"] == weeks[-1] and str(row["t"]) not in {"1", "2", "3"}
+        }
+        buckets = {
+            str(row["t"])
+            for row in payload["rows"]
+            if row["pf"] == weeks[-1] and str(row["t"]) in {"1", "2", "3"}
+        }
+        self.assertTrue(physical)
+        self.assertTrue(buckets)
+        self.assertTrue(physical.isdisjoint(buckets))
 
     def test_new_guidance_files_do_not_embed_secrets(self):
         paths = [

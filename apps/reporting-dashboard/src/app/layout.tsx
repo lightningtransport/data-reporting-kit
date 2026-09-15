@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Lightning · Resumen de liquidaciones",
   description:
-    "Dashboard de settlement_summary para Grok Bot y Cursor agents. Granularidad semanal mar–lun.",
+    "Dashboard de settlements para Grok Bot y Cursor agents. Granularidad semanal mar–lun. Resumen ejecutivo C-level.",
 }
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
