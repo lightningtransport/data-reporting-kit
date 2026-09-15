@@ -40,7 +40,9 @@ export function OwnerMultiSelect({
       ? "Todos los owners"
       : selected.length === 0
         ? "Ningún owner"
-        : `${selected.length} de ${owners.length}`
+        : selected.length === 1
+          ? selected[0]
+          : "Owners"
 
   function toggle(owner: string) {
     if (selectedSet.has(owner)) {
