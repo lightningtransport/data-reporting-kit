@@ -136,7 +136,7 @@ export function defaultMonth(weeks: string[], months: string[]): string {
 
 export function weekRangeLabel(rows: SettlementRow[], periodFrom: string): string {
   const match = rows.find((row) => row.pf === periodFrom)
-  return match ? `${periodFrom} → ${match.pt}` : periodFrom
+  return humanWeekRange(periodFrom, match?.pt ?? periodFrom)
 }
 
 export function filterRows(
