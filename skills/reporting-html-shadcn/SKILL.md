@@ -3,7 +3,7 @@ name: reporting-html-shadcn
 description: >-
   Use when a Grok Bot or Cursor agent builds Lightning reporting HTML dashboards
   so every screen reuses the same shadcn-like components and styles.
-version: 0.3.0
+version: 0.3.1
 license: Proprietary
 platforms: [linux, macos, windows]
 metadata:
@@ -26,7 +26,7 @@ For other static files only: small HTML that reuses [`assets/report-ui.css`](ass
 
 ## Source of truth
 
-1. Settlement dashboard: edit [`apps/reporting-dashboard`](../../apps/reporting-dashboard) (Next.js + real shadcn/ui), including the C-level Resumen ejecutivo from 12 months of `settlements`. Grok bots must link https://lightning-settlement-dashboard.vercel.app.
+1. Settlement dashboard: edit [`apps/reporting-dashboard`](../../apps/reporting-dashboard) (Next.js + real shadcn/ui), including slim **Liquidaciones** header, truck focus card, and **Resumen** from 12 months of `settlements`. Grok bots must link https://lightning-settlement-dashboard.vercel.app.
 2. Other static HTML only: copy [`assets/report-ui.css`](assets/report-ui.css) to the workspace `reports/assets/report-ui.css` (skill-cache fallback: `skills/reporting-html-shadcn/assets/report-ui.css`). Do not invent a second visual language.
 3. Match the confirmed settlement look: clean minimal **light** theme, more whitespace, clear hierarchy, soft borders, no heavy shadows.
 
@@ -41,14 +41,14 @@ For other static files only: small HTML that reuses [`assets/report-ui.css`](ass
 Use these patterns every time (names stable):
 
 - **PageShell** — max-width container, padded background; `body.report-body` + `.page-shell`
-- **ReportHeader** — title, subtitle, meta badges (range, row count, caveats); `.report-header`, `.badge-row`, `.badge`
-- **Toolbar** — vista tabs (weekly / monthly / daily-review), week/month controls, owner multi-select, truck search, physical-only toggle; `.toolbar`, `.tabs`, `.week-nav`, `.field`, `.chk`
+- **ReportHeader** — short title + focused period; live vs **Copia** only; `.report-header`
+- **Toolbar** — Periodo tabs (Semana / Mes), week/month controls, Equipo multi-select, Camión search with immediate focus card, Despacho chips; `.toolbar`, `.tabs`, `.week-nav`, `.field`, `.chk`
 - **KpiStrip** — card grid: Gross, Expenses, Net, Fuel, physical trucks, miles; `.kpi-strip`, `.kpi`
 - **Card** — bordered rounded surface, light padding, `.card` + `.card-title` + optional `.card-hint`
 - **ChartCard** — Card + `.chart-box` for fixed chart height
 - **DataTable** — sticky header, tabular nums, hover row, non-physical bucket badge (`.tag-np`)
 - **RankList** — ordered top-N trucks/owners
-- **EvidenceFooter** — `.evidence`: filters, `as_of`, `source_freshness`, pagination complete, caveats
+- **EvidenceFooter** — closed **Datos técnicos** accordion with filters, `as_of`, `source_freshness`, pagination complete, caveats; one human line outside
 
 Map mentally to shadcn: Card, Badge, Button, Tabs, Input, Select, Table, Separator.
 
@@ -59,7 +59,7 @@ Map mentally to shadcn: Card, Badge, Button, Tabs, Input, Select, Table, Separat
 - Fuel spend by owner (focused week + month) using stored `fuel.owner`.
 - Top trucks/owners by Gross and Net from stored settlement values.
 - Settlement trucks `1` / `2` / `3`: label non-physical; exclude from physical rankings; include in owner totals.
-- Evidence footer on every report.
+- Evidence accordion (**Datos técnicos**, closed by default) on every report.
 
 ## Process
 

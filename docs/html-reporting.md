@@ -34,13 +34,15 @@ A one-week headline question that is not an HTML report and not a trend/ranking 
 
 The settlement dashboard in `apps/reporting-dashboard` must include:
 
-1. C-level **Resumen ejecutivo**: owner matrix (TOTAL + exact stored `Owner` columns), physical-truck averages, Gross below $11,000 count, net+/net−, LTR Invoices, Tolls+PrePass, optional gallons/MPG from `fuel`.
-2. Weekly and monthly review modes, with the named date selected in the toolbar. Historical `Dispatch` filter uses exact `settlements.Dispatch` values (not current `trucks.dispatcher`).
-3. Truck rankings and owner rankings by stored Gross and Net. Truck lists: preview plus **Ver más** for the full selection.
-4. Fuel spend by owner for the focused week and month, using stored `Fuel Expenses` (settlement) and `fuel.owner` only for gallon attribution.
-5. KPI strip: Gross, Expenses, Net, Fuel, physical-truck count, miles.
-6. Evidence footer with source report(s), normalized filters, exact period/window, row/distinct count, pagination completeness, `as_of`, source-freshness limitation, and material caveats.
-7. Real shadcn/ui components. Owner/equipo is a Popover + Command multi-select, never a native multi `<select>`.
+1. Slim header: title **Liquidaciones**, focused period, and a **Copia** badge only when data is not live.
+2. Mobile-first filters (Periodo Semana/Mes, Equipo, Camión, Despacho). Truck search renders a **Camión** focus card immediately under the filters (Gross, gastos, net, combustible, millas, equipo, weeks in the selection).
+3. **Resumen**: owner matrix (TOTAL + exact stored `Owner` columns), physical-truck averages, Gross below $11,000 count, net+/net−, LTR Invoices, Tolls+PrePass, optional gallons/MPG from `fuel`. Visible labels are Spanish operational copy, not API field names.
+4. Weekly and monthly review modes, with the named date selected in the toolbar. Historical `Dispatch` filter uses exact `settlements.Dispatch` values (not current `trucks.dispatcher`).
+5. Truck rankings and owner rankings by stored Gross and Net. Truck lists: preview plus **Ver más** for the full selection. Non-physical buckets use badge **No físico**.
+6. Fuel spend by owner for the focused week and month, using stored `Fuel Expenses` (settlement) and `fuel.owner` only for gallon attribution.
+7. KPI strip: Gross, Gastos, Net, Combustible, physical-truck count, millas.
+8. Evidence stays in a closed **Datos técnicos** accordion (source report(s), normalized filters, exact period/window, row/distinct count, pagination completeness, `as_of`, source-freshness limitation, material caveats). Humans see one line: weekly Tue–Mon settlement numbers.
+9. Real shadcn/ui components. Owner/equipo is a Popover + Command multi-select, never a native multi `<select>`.
 
 Not established (do not display or approximate): Ninox “Full Week” / “No Full Week”, and “Other Deductions+Previous”. There is no matching `public.settlements` column.
 

@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.5.0 - 2026-09-15
+
+- Settlement dashboard UX: slim **Liquidaciones** header (focused period + **Copia** when not live), mobile-first filters, immediate **Camión** focus card on search, Spanish operational copy, and kit evidence in a closed **Datos técnicos** accordion.
+- Skills: `agent-reporting-html` 0.2.1, `reporting-html-shadcn` 0.3.1, `itpros-supabase-reporting` 0.9.1.
+
 ## 3.4.0 - 2026-09-15
 
 - Settlement dashboard now loads paginated `settlements` for ≥12 months (plus `fuel` gallons for MPG) and adds a C-level **Resumen ejecutivo**: owner matrix, physical-truck averages, Gross-below-$11,000 count, net+/−, LTR Invoices, Tolls+PrePass, historical Dispatch filter.

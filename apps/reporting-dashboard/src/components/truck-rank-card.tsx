@@ -45,8 +45,8 @@ export function TruckRankCard({
   const preview = trucks.slice(0, TRUCK_RANK_PREVIEW)
   const headers =
     primary === "g"
-      ? ["#", "Camión", "Owner", "Gross", "Net"]
-      : ["#", "Camión", "Owner", "Net", "Gross"]
+      ? ["#", "Camión", "Equipo", "Gross", "Net"]
+      : ["#", "Camión", "Equipo", "Net", "Gross"]
 
   return (
     <Card>
@@ -87,8 +87,8 @@ function TruckListDialog({
   }, [query, trucks])
   const headers =
     primary === "g"
-      ? ["#", "Camión", "Owner", "Gross", "Net"]
-      : ["#", "Camión", "Owner", "Net", "Gross"]
+      ? ["#", "Camión", "Equipo", "Gross", "Net"]
+      : ["#", "Camión", "Equipo", "Net", "Gross"]
 
   return (
     <Dialog>
@@ -105,7 +105,7 @@ function TruckListDialog({
         <Input
           type="search"
           value={query}
-          placeholder="Buscar camión u owner"
+            placeholder="Buscar camión o equipo"
           onChange={(event) => setQuery(event.target.value)}
         />
         <div className="max-h-[60vh] overflow-auto rounded-lg border">
@@ -152,7 +152,7 @@ function RankBody({
                 {truck.np ? (
                   <>
                     {" "}
-                    <Badge variant="outline">bucket</Badge>
+                    <Badge variant="outline">No físico</Badge>
                   </>
                 ) : null}
               </TableCell>
