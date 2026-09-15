@@ -26,6 +26,7 @@ Do not publish assumptions, individual agent guesses, raw customer/driver data, 
    - `docs/data-dictionary.md` for table, column, grain, join, PII, or source-system changes.
    - `docs/metric-definitions.md` for calculations, inclusions/exclusions, or period definitions.
    - `docs/question-routing.md` for source/report/filter selection.
+   - `docs/html-reporting.md` and `skills/agent-reporting-html`, `skills/reporting-html-shadcn` (including `assets/report-ui.css`) for HTML report windows, required sections, or shared UI kit changes.
    - `api/openapi.yaml` and the reporting skill when API behavior changes.
 3. Add a dated `CHANGELOG.md` entry explaining the answer-impacting change.
 4. Validate the changed artifact against its evidence source. For schema/API changes, re-query the live schema/API; for calculations, run a reproducible test or reconciliation.

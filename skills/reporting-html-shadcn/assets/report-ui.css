@@ -1,0 +1,81 @@
+/* Lightning reporting UI kit — shadcn-like tokens for static HTML reports.
+ * Keep in sync with skill reporting-html-shadcn. Light minimal theme.
+ */
+:root {
+  --background: 210 20% 98%;
+  --foreground: 222 47% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+  --muted: 215 16% 47%;
+  --muted-foreground: 215 16% 47%;
+  --border: 214 20% 90%;
+  --input: 214 20% 90%;
+  --primary: 221 83% 53%;
+  --primary-foreground: 0 0% 100%;
+  --accent: 210 40% 96%;
+  --accent-foreground: 222 47% 11%;
+  --destructive: 0 84% 60%;
+  --ring: 221 83% 53%;
+  --radius: 0.625rem;
+  --success: 142 71% 45%;
+  --warning: 38 92% 50%;
+  --chart-1: 221 83% 53%;
+  --chart-2: 142 71% 45%;
+  --chart-3: 199 89% 48%;
+  --chart-4: 38 92% 50%;
+  --chart-5: 258 90% 66%;
+  --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+*{box-sizing:border-box}
+body.report-body{
+  margin:0; font-family:var(--font); color:hsl(var(--foreground));
+  background:hsl(var(--background)); font-size:14px; line-height:1.45; min-height:100vh;
+}
+.page-shell{max-width:1280px;margin:0 auto;padding:24px 20px 48px}
+.report-header{padding-bottom:16px;margin-bottom:16px;border-bottom:1px solid hsl(var(--border))}
+.report-header h1{margin:0 0 4px;font-size:1.375rem;font-weight:650;letter-spacing:-.02em}
+.report-header .sub{color:hsl(var(--muted));font-size:.875rem}
+.badge-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.badge{display:inline-flex;align-items:center;padding:2px 10px;border-radius:999px;font-size:.72rem;font-weight:600;
+  border:1px solid hsl(var(--border)); background:hsl(var(--card)); color:hsl(var(--muted))}
+.toolbar{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;padding:14px 0;margin-bottom:16px;
+  border-bottom:1px solid hsl(var(--border))}
+.field{display:flex;flex-direction:column;gap:4px;min-width:120px}
+.field label{font-size:.68rem;text-transform:uppercase;letter-spacing:.04em;color:hsl(var(--muted));font-weight:600}
+.field select,.field input,button.btn{
+  background:hsl(var(--card)); color:hsl(var(--foreground)); border:1px solid hsl(var(--border));
+  border-radius:calc(var(--radius) - 2px); padding:7px 10px; font-size:.85rem;
+}
+.field select[multiple]{min-height:78px;min-width:180px}
+.tabs{display:inline-flex;border:1px solid hsl(var(--border));border-radius:calc(var(--radius) - 2px);overflow:hidden;background:hsl(var(--card))}
+.tabs button{background:transparent;border:0;color:hsl(var(--muted));padding:8px 14px;cursor:pointer;font-weight:600;font-size:.82rem}
+.tabs button.active{background:hsl(var(--accent));color:hsl(var(--foreground))}
+.chk{display:flex;align-items:center;gap:8px;padding-bottom:6px;color:hsl(var(--muted));font-size:.82rem}
+.kpi-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px}
+.card{background:hsl(var(--card));border:1px solid hsl(var(--border));border-radius:var(--radius);padding:14px 16px;margin-bottom:12px}
+.card-title{margin:0 0 2px;font-size:1rem;font-weight:650}
+.card-hint{font-size:.72rem;color:hsl(var(--muted));margin-bottom:10px}
+.kpi .l{font-size:.68rem;text-transform:uppercase;letter-spacing:.04em;color:hsl(var(--muted));margin-bottom:4px}
+.kpi .v{font-size:1.2rem;font-weight:700;font-variant-numeric:tabular-nums}
+.kpi .h{font-size:.7rem;color:hsl(var(--muted));margin-top:2px}
+.kpi.gross .v{color:hsl(var(--primary))}
+.kpi.net .v{color:hsl(var(--success))}
+.kpi.fuel .v{color:hsl(var(--chart-3))}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px}
+@media(max-width:1000px){.grid-2,.grid-3{grid-template-columns:1fr}}
+.chart-box{position:relative;height:280px}
+.table-wrap{max-height:420px;overflow:auto;border:1px solid hsl(var(--border));border-radius:calc(var(--radius) - 2px)}
+table.data{width:100%;border-collapse:collapse;font-size:.8rem}
+table.data th,table.data td{padding:7px 8px;border-bottom:1px solid hsl(var(--border));text-align:right;font-variant-numeric:tabular-nums}
+table.data th:first-child,table.data td:first-child,table.data .left{text-align:left}
+table.data th{position:sticky;top:0;background:hsl(var(--accent));color:hsl(var(--muted));font-size:.68rem;text-transform:uppercase;letter-spacing:.03em;z-index:1}
+table.data tr:hover td{background:hsl(var(--accent))}
+.tag-np{display:inline-block;font-size:.65rem;padding:1px 6px;border-radius:999px;background:hsl(38 92% 50% / .12);color:hsl(32 95% 35%);margin-left:4px}
+.pos{color:hsl(var(--success))}.neg{color:hsl(var(--destructive))}.muted{color:hsl(var(--muted))}
+.evidence{margin-top:16px;padding-top:14px;border-top:1px solid hsl(var(--border));font-size:.78rem;color:hsl(var(--muted));line-height:1.55}
+.evidence strong{color:hsl(var(--foreground))}
+.week-nav{display:flex;gap:6px;align-items:center}
+.week-nav button{background:hsl(var(--card));border:1px solid hsl(var(--border));color:hsl(var(--foreground));border-radius:calc(var(--radius) - 2px);padding:7px 12px;cursor:pointer;font-weight:600}
+.week-nav button:hover{border-color:hsl(var(--primary))}
+.week-nav button:disabled{opacity:.4;cursor:not-allowed}

@@ -55,6 +55,28 @@ STAGE_DIR="$(mktemp -d "$HERMES_HOME/skills/.itpros-supabase-reporting.stage.XXX
 trap 'rm -rf "$STAGE_DIR"' EXIT
 cp -R "$SOURCE_DIR/." "$STAGE_DIR/"
 
+# Sibling HTML-reporting skills live next to this package in the canonical repo.
+# Copy them before replacing the versioned reporting skill so a sibling failure
+# does not leave the installed version current while the CSS/HTML skills are missing.
+for skill_dir in "$CACHE_DIR/skills"/*; do
+  [ -d "$skill_dir" ] || continue
+  skill_name="$(basename "$skill_dir")"
+  if [ "$skill_name" = "itpros-supabase-reporting" ]; then
+    continue
+  fi
+  if [ ! -f "$skill_dir/SKILL.md" ]; then
+    continue
+  fi
+  sibling_target="$HERMES_HOME/skills/$skill_name"
+  sibling_stage="$(mktemp -d "$HERMES_HOME/skills/.${skill_name}.stage.XXXXXX")"
+  cp -R "$skill_dir/." "$sibling_stage/"
+  if [ -d "$sibling_target" ]; then
+    sibling_backup="$STATE_DIR/backups/${skill_name}-$(date -u +%Y%m%dT%H%M%SZ)"
+    mv "$sibling_target" "$sibling_backup"
+  fi
+  mv "$sibling_stage" "$sibling_target"
+done
+
 if [ -d "$TARGET_DIR" ]; then
   BACKUP_DIR="$STATE_DIR/backups/itpros-supabase-reporting-$(date -u +%Y%m%dT%H%M%SZ)"
   mv "$TARGET_DIR" "$BACKUP_DIR"

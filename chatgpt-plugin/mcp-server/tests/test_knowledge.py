@@ -30,3 +30,13 @@ class KnowledgeBaseTests(unittest.TestCase):
         self.assertEqual(base.fetch("AGENTS.md")["text"], "Approved reporting instructions.")
         with self.assertRaisesRegex(ValueError, "Unknown knowledge document"):
             base.fetch(".env")
+
+    def test_canonical_html_reporting_doc_is_available_to_packaged_knowledge(self):
+        root = Path(__file__).parents[3]
+        html_reporting = (root / "docs/html-reporting.md").read_text(encoding="utf-8")
+        self.assertIn("three calendar months", html_reporting)
+        self.assertIn("report-ui.css", html_reporting)
+
+        base = KnowledgeBase({"docs/html-reporting.md": html_reporting}, "https://github.com/lightningtransport/data-reporting-kit/blob/main")
+        result = base.search("html report three months css")
+        self.assertEqual(result["results"][0]["id"], "docs/html-reporting.md")

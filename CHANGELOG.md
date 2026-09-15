@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.3.0 - 2026-09-15
+
+- Added portable HTML reporting guidance so agents that auto-configure from this kit reuse the confirmed settlement-report sections and shared light UI kit.
+- HTML reports and analytical settlement/fleet-history answers must fetch at least three calendar months of history; the user-named date is UI focus only, not the sole data window.
+- Every HTML report must include weekly/monthly review modes, truck and owner rankings, fuel spend by owner, a KPI strip, an evidence footer, and the shared `report-ui.css` component classes.
+- Packaged skills: `skills/agent-reporting-html`, `skills/reporting-html-shadcn` (with `assets/report-ui.css`). Cross-linked from `AGENTS.md`, README Start here, routing, metrics, agent rules, and the installed reporting skill.
+
 ## 3.2.0 - 2026-09-14
 
 - Added the approved `fuel` report to the custom-key `agent-reporting` gateway, with all 13 verified `public.fuel` fields, strict bounded filters, stable transaction ordering, catalog/metadata discovery, and exact pagination.

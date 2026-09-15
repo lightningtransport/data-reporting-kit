@@ -11,6 +11,7 @@ This repository is the canonical reporting contract for Lightning Transportation
 5. `docs/data-dictionary.md`
 6. `api/openapi.yaml`
 7. Authenticated runtime catalog: `GET /functions/v1/agent-reporting?report=catalog`
+8. HTML / analytical settlement reports: `docs/html-reporting.md`, then `skills/agent-reporting-html/SKILL.md` and `skills/reporting-html-shadcn/SKILL.md`
 
 The six reporting-source schemas and 107 physical columns were verified on **2026-09-14**. The deployed catalog is the runtime contract. If it conflicts with the repository, stop and report the contradiction instead of guessing.
 
@@ -33,6 +34,7 @@ The six reporting-source schemas and 107 physical columns were verified on **202
 ## Non-negotiable analysis rules
 
 - Settlements run Tuesday through Monday. Use an explicit period; never infer the current cycle from `To Report` alone.
+- For HTML reports and analytical settlement/fleet-history answers (trends, rankings, dashboards), always fetch **at least three calendar months** ending today or at the user-named end date. The named week or day is UI focus only, not the sole data window. Paginate until complete. See `docs/html-reporting.md`.
 - Stored `Gross`, `Total Expenses`, and `Net` are authoritative. `tonu` is an additional/Compass income component already included in Gross; expense components are already included in Total Expenses.
 - Settlement Truck 1, 2, and 3 are owner-allocation buckets for Carlos, Jorge, and CDT—not physical trucks. Include them in the matching owner's general settlement totals; exclude them from physical-truck counts/rankings.
 - `DriverPay` and `returns` are driver-row sources; count distinct truck identifiers for truck totals.
@@ -45,9 +47,15 @@ The six reporting-source schemas and 107 physical columns were verified on **202
 *Evidence: approved business rule confirmed 2026-09-11; `returns.CDL` and `drivers.Date of Hire` physical columns verified on 2026-09-11.*
 - Planned Schedule_Teams and exact Ninox in-yard/on-road metrics are not available from these Supabase tables. State the limitation; do not approximate from similar fields.
 
+## HTML reports
+
+When producing standalone HTML from `agent-reporting`, follow `docs/html-reporting.md` and the portable skills `skills/agent-reporting-html` and `skills/reporting-html-shadcn`. Copy `skills/reporting-html-shadcn/assets/report-ui.css`; do not invent one-off styles.
+
+Every HTML report must include weekly and monthly review modes, truck and owner rankings, fuel spend by owner, a KPI strip, an evidence footer, and the shared light minimal theme.
+
 ## Required answer evidence
 
-State source report/table, normalized filters, exact period, result and row/distinct count, pagination completeness, `as_of`, source-sync freshness limitation, and material grain/null/bucket/join/sensitivity caveats. Never present a truncated page or incomplete financial period as a complete total.
+State source report/table, normalized filters, exact period, result and row/distinct count, pagination completeness, `as_of`, source-sync freshness limitation, and material grain/null/bucket/join/sensitivity caveats. Never present a truncated page or incomplete financial period as a complete total. HTML reports put the same evidence in the footer.
 
 ## User-correction feedback
 

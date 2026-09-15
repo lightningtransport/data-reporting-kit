@@ -25,9 +25,11 @@ Anyone may read the public knowledge during this phase. An approved Hermes agent
 ```bash
 hermes skills tap add lightningtransport/data-reporting-kit
 hermes skills install lightningtransport/data-reporting-kit/skills/itpros-supabase-reporting --yes
+hermes skills install lightningtransport/data-reporting-kit/skills/agent-reporting-html --yes
+hermes skills install lightningtransport/data-reporting-kit/skills/reporting-html-shadcn --yes
 ```
 
-Start a new session after installation. Follow `AGENTS.md`, `docs/agent-reporting.md`, `docs/data-dictionary.md`, `docs/question-routing.md`, `docs/metric-definitions.md`, and `api/openapi.yaml`.
+Start a new session after installation. Follow `AGENTS.md`, `docs/agent-reporting.md`, `docs/data-dictionary.md`, `docs/question-routing.md`, `docs/metric-definitions.md`, `docs/html-reporting.md`, and `api/openapi.yaml`. The twice-daily `data-reporting-kit-sync` job copies the reporting skill and sibling HTML skills together.
 
 ## Future privacy change
 
