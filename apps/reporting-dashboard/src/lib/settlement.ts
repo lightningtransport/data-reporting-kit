@@ -43,6 +43,7 @@ export type SettlementMeta = {
   fuel_pagination_complete?: boolean
   fuel_fetched_count?: number
   fuel_total_count?: number
+  error?: string
 }
 
 export type SettlementPayload = {

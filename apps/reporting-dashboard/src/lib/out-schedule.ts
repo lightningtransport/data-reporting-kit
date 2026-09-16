@@ -1,8 +1,6 @@
 export const SCHEDULE_TEAMS_URL =
   "https://lightningtransport.ninoxdb.com/share/p10ce94o8paa2q4a1z4nw0emznn2ubhriza6?locale=en&utcoffset=-240"
 
-const LIVE_REVALIDATE_SECONDS = 120
-
 export type OutScheduleRow = {
   id: string
   truck: string
@@ -139,7 +137,7 @@ export function emptyOutSchedulePayload(error?: string): OutSchedulePayload {
       filters: {
         source: "ninox-schedule-teams-share",
         url: SCHEDULE_TEAMS_URL,
-        revalidate_seconds: LIVE_REVALIDATE_SECONDS,
+        note: "live query only; no embedded snapshot",
       },
       error,
     },
@@ -151,7 +149,7 @@ export async function getOutSchedule(): Promise<OutSchedulePayload> {
   try {
     const response = await fetch(SCHEDULE_TEAMS_URL, {
       headers: { Accept: "application/json" },
-      next: { revalidate: LIVE_REVALIDATE_SECONDS },
+      cache: "no-store",
     })
     if (!response.ok) {
       return emptyOutSchedulePayload(`Schedule_Teams HTTP ${response.status}`)
@@ -178,10 +176,10 @@ export async function getOutSchedule(): Promise<OutSchedulePayload> {
         filters: {
           source: "ninox-schedule-teams-share",
           url: SCHEDULE_TEAMS_URL,
-          revalidate_seconds: LIVE_REVALIDATE_SECONDS,
           sort: "Out Date asc, Truck asc",
           fields:
             "Truck, Out Date, Team, Owner, Dispatch, Flatbed, solo (+ Day derived)",
+          note: "live query only; no embedded snapshot",
         },
       },
       rows,

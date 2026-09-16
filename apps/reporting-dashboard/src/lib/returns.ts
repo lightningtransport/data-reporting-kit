@@ -4,7 +4,6 @@ const DEFAULT_ENDPOINT =
 const MAX_PAGES = 40
 const PAGE_SIZE = 1000
 const FETCH_CONCURRENCY = 6
-const LIVE_REVALIDATE_SECONDS = 300
 
 export type ReturnRow = {
   id: number
@@ -67,7 +66,7 @@ async function fetchOffset(
   url.searchParams.set("offset", String(offset))
   const response = await fetch(url, {
     headers: { "x-agent-key": key, Accept: "application/json" },
-    next: { revalidate: LIVE_REVALIDATE_SECONDS },
+    cache: "no-store",
   })
   if (response.status === 416) {
     return {
@@ -202,8 +201,7 @@ export async function getReturns(): Promise<ReturnsPayload> {
         filters: {
           report: "returns",
           include_sensitive: false,
-          revalidate_seconds: LIVE_REVALIDATE_SECONDS,
-          note: "Current expected-return list; driver-row grain; Phone/CDL omitted",
+          note: "Current expected-return list; driver-row grain; Phone/CDL omitted; live query only",
         },
         distinct_trucks: distinctTrucks,
       },

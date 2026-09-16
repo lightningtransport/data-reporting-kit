@@ -52,7 +52,7 @@ class HtmlReportingKitTests(unittest.TestCase):
         self.assertIn("Popover", owner)
         self.assertIn("Command", owner)
         self.assertNotRegex(texts, r"<select[^>]*multiple")
-        self.assertTrue((ROOT / "apps/reporting-dashboard/src/data/settlement-summary.json").is_file())
+        self.assertFalse((ROOT / "apps/reporting-dashboard/src/data/settlement-summary.json").exists())
         self.assertTrue((ROOT / "apps/reporting-dashboard/vercel.json").is_file())
         html = (ROOT / "docs/html-reporting.md").read_text(encoding="utf-8")
         agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
@@ -60,7 +60,7 @@ class HtmlReportingKitTests(unittest.TestCase):
         self.assertIn("https://lightning-settlement-dashboard.vercel.app", agents)
         self.assertNotIn("PENDING_VERCEL_PRODUCTION_URL", html)
         self.assertNotIn("PENDING_VERCEL_PRODUCTION_URL", agents)
-        self.assertRegex(html, r"link (that |the )?live URL", re.I)
+        self.assertRegex(html, r"link the (matching )?live URL", re.I)
         self.assertIn("Liquidaciones", texts)
         self.assertIn("Datos técnicos", texts)
         self.assertIn("Ocultar asignaciones 1/2/3", texts)
@@ -83,6 +83,11 @@ class HtmlReportingKitTests(unittest.TestCase):
         self.assertIn("Full Week", dashboard)
         self.assertNotIn("period_from", dashboard)
         self.assertNotIn("Diario (rev.)", dashboard)
+        self.assertIn("Solo consulta live", dashboard)
+        data_ts = (ROOT / "apps/reporting-dashboard/src/lib/data.ts").read_text(encoding="utf-8")
+        self.assertNotIn("settlement-summary.json", data_ts)
+        self.assertNotIn("getEmbeddedSettlementSummary", data_ts)
+        self.assertIn('cache: "no-store"', data_ts)
 
     def test_dashboard_loads_twelve_month_settlements(self):
         data_ts = (ROOT / "apps/reporting-dashboard/src/lib/data.ts").read_text(encoding="utf-8")
@@ -90,53 +95,38 @@ class HtmlReportingKitTests(unittest.TestCase):
         self.assertIn("DASHBOARD_HISTORY_MONTHS = 12", settlement_ts)
         self.assertIn('report: "settlements"', data_ts)
         self.assertIn("next_offset", data_ts)
-        self.assertIn("LIVE_REVALIDATE_SECONDS = 300", data_ts)
+        self.assertIn('cache: "no-store"', data_ts)
         self.assertIn("Promise.all", data_ts)
-        self.assertIn("next: { revalidate: LIVE_REVALIDATE_SECONDS }", data_ts)
-        self.assertNotIn('cache: "no-store"', data_ts)
+        self.assertNotIn("LIVE_REVALIDATE_SECONDS", data_ts)
+        self.assertNotIn('next: { revalidate:', data_ts)
         self.assertIn("logLoadFailure", data_ts)
+        self.assertIn("emptySettlementPayload", data_ts)
         page_ts = (ROOT / "apps/reporting-dashboard/src/app/page.tsx").read_text(encoding="utf-8")
-        self.assertIn("revalidate = 300", page_ts)
+        self.assertIn('dynamic = "force-dynamic"', page_ts)
+        self.assertIn("revalidate = 0", page_ts)
         self.assertIn("maxDuration = 60", page_ts)
-        self.assertNotIn("force-dynamic", page_ts)
         route_ts = (
             ROOT / "apps/reporting-dashboard/src/app/api/reporting/settlement-summary/route.ts"
         ).read_text(encoding="utf-8")
-        self.assertIn("revalidate = 300", route_ts)
+        self.assertIn('dynamic = "force-dynamic"', route_ts)
+        self.assertIn("revalidate = 0", route_ts)
         self.assertIn("maxDuration = 60", route_ts)
-        self.assertNotIn("force-dynamic", route_ts)
         self.assertIn("LOW_GROSS_THRESHOLD = 11000", settlement_ts)
         self.assertIn("if (NON_PHYSICAL.has(truck)) continue", settlement_ts)
         agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
         self.assertRegex(agents, r"twelve calendar months|12 months")
 
-    def test_embedded_settlement_window_covers_three_months(self):
-        payload = json.loads(
-            (ROOT / "apps/reporting-dashboard/src/data/settlement-summary.json").read_text(
-                encoding="utf-8"
-            )
+    def test_dashboard_has_no_embedded_settlement_snapshot(self):
+        self.assertFalse(
+            (ROOT / "apps/reporting-dashboard/src/data/settlement-summary.json").exists()
         )
-        weeks = sorted({row["pf"] for row in payload["rows"]})
-        self.assertGreaterEqual(len(weeks), 12)
-        self.assertLessEqual(weeks[0], "2026-06-02")
-        self.assertGreaterEqual(weeks[-1], "2026-09-01")
-        self.assertTrue(payload["meta"]["pagination_complete"])
-        sample = payload["rows"][0]
-        for key in ("d", "c", "lo", "ltr", "tl", "pp"):
-            self.assertIn(key, sample)
-        physical = {
-            str(row["t"])
-            for row in payload["rows"]
-            if row["pf"] == weeks[-1] and str(row["t"]) not in {"1", "2", "3"}
-        }
-        buckets = {
-            str(row["t"])
-            for row in payload["rows"]
-            if row["pf"] == weeks[-1] and str(row["t"]) in {"1", "2", "3"}
-        }
-        self.assertTrue(physical)
-        self.assertTrue(buckets)
-        self.assertTrue(physical.isdisjoint(buckets))
+        data_ts = (ROOT / "apps/reporting-dashboard/src/lib/data.ts").read_text(encoding="utf-8")
+        self.assertNotIn("getEmbeddedSettlementSummary", data_ts)
+        self.assertNotIn("settlement-summary.json", data_ts)
+        self.assertIn("emptySettlementPayload", data_ts)
+        html = (ROOT / "docs/html-reporting.md").read_text(encoding="utf-8")
+        self.assertIn("live queries only", html)
+        self.assertIn("no embedded settlements snapshot", html)
 
     def test_new_guidance_files_do_not_embed_secrets(self):
         paths = [
