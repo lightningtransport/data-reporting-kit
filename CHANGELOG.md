@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.7.0 - 2026-09-16
+
+- Reporting dashboard adds **Out Schedule** (`/out-schedule`) and **Trucks Return** (`/trucks-return`) beside Liquidaciones, with a shared top-right **Vistas** menu.
+- Out Schedule loads the live Ninox Schedule_Teams share (server-side) using the share’s actual fields (Truck, Out Date, Team, Owner, Dispatch, Flatbed, solo); Trucks Return paginates `agent-reporting` `returns` without Phone/CDL.
+- Fixed Base UI DropdownMenu so **Vistas** wraps items in `DropdownMenuGroup` (otherwise the menu crashed and the new routes were unreachable from Liquidaciones).
+- Grok/Cursor docs and packaged HTML skills deep-link the matching dashboard URLs instead of one-off HTML.
+- Skills: `agent-reporting-html` 0.2.2, `reporting-html-shadcn` 0.3.2, `itpros-supabase-reporting` 0.9.2.
+
 ## 3.6.0 - 2026-09-15
 
 - Live dashboard no longer refetches ~6k settlement rows and ~43k fuel rows on every browser load: settlements and fuel paginate in parallel, every server-side data page plus the HTML and JSON route revalidate every 5 minutes, and the functions allow 60s. A loading state shows while the first live fetch runs; sanitized server logs identify configuration, settlement, or optional fuel fallback without recording keys or operational rows.

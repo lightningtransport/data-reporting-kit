@@ -3,7 +3,7 @@ name: reporting-html-shadcn
 description: >-
   Use when a Grok Bot or Cursor agent builds Lightning reporting HTML dashboards
   so every screen reuses the same shadcn-like components and styles.
-version: 0.3.1
+version: 0.3.2
 license: Proprietary
 platforms: [linux, macos, windows]
 metadata:
@@ -26,7 +26,7 @@ For other static files only: small HTML that reuses [`assets/report-ui.css`](ass
 
 ## Source of truth
 
-1. Settlement dashboard: edit [`apps/reporting-dashboard`](../../apps/reporting-dashboard) (Next.js + real shadcn/ui), including slim **Liquidaciones** header, truck focus card, and **Resumen** from 12 months of `settlements`. Grok bots must link https://lightning-settlement-dashboard.vercel.app.
+1. Reporting dashboard: edit [`apps/reporting-dashboard`](../../apps/reporting-dashboard) (Next.js + real shadcn/ui), including slim **Liquidaciones** header, truck focus card, **Resumen** from 12 months of `settlements`, plus **Out Schedule** and **Trucks Return** views with a top-right **Vistas** menu. Grok bots must link https://lightning-settlement-dashboard.vercel.app (or `/out-schedule` / `/trucks-return` as appropriate).
 2. Other static HTML only: copy [`assets/report-ui.css`](assets/report-ui.css) to the workspace `reports/assets/report-ui.css` (skill-cache fallback: `skills/reporting-html-shadcn/assets/report-ui.css`). Do not invent a second visual language.
 3. Match the confirmed settlement look: clean minimal **light** theme, more whitespace, clear hierarchy, soft borders, no heavy shadows.
 

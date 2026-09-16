@@ -1,6 +1,14 @@
 # Lightning reporting dashboard
 
-Next.js App Router + shadcn/ui dashboard for the `settlements` ledger (**Resumen** + analysis). This is the deployable settlement screen for Grok Bot and Cursor agents. Visible copy is Spanish operational wording; kit evidence lives under **Datos técnicos**.
+Next.js App Router + shadcn/ui app for Grok Bot and Cursor agents. Views:
+
+| Path | View | Data |
+|---|---|---|
+| `/` | Liquidaciones | `settlements` + `fuel` (≥12 months) |
+| `/out-schedule` | Out Schedule | live Ninox Schedule_Teams share |
+| `/trucks-return` | Trucks Return | `returns` (no Phone/CDL) |
+
+A top-right **Vistas** menu switches between them. Visible copy is Spanish operational wording where applicable; kit evidence lives under **Datos técnicos**.
 
 ## Local
 
@@ -10,7 +18,7 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Without `AGENT_REPORTING_KEY`, the app serves the embedded fallback snapshot (may be shorter than 12 months). With the key, it paginates live `settlements` for ≥12 months and buckets `fuel` gallons onto settlement weeks.
+Open [http://localhost:3000](http://localhost:3000). Without `AGENT_REPORTING_KEY`, Liquidaciones serves the embedded fallback snapshot (may be shorter than 12 months) and Trucks Return shows a configuration error. Out Schedule always uses the public Schedule_Teams share. With the key, Liquidaciones paginates live `settlements` for ≥12 months and buckets `fuel` gallons onto settlement weeks; Trucks Return paginates `returns`.
 
 ## Vercel deploy
 
@@ -31,4 +39,10 @@ Git integration also works: connecting this GitHub repo and using Root Directory
 
 ## Grok / Cursor
 
-When answering questions about this screen, **link** [https://lightning-settlement-dashboard.vercel.app](https://lightning-settlement-dashboard.vercel.app). Do not generate a replacement one-off HTML file. Keep UI changes in this app.
+Link the matching deep URL:
+
+- Liquidaciones: https://lightning-settlement-dashboard.vercel.app
+- Out Schedule: https://lightning-settlement-dashboard.vercel.app/out-schedule
+- Trucks Return: https://lightning-settlement-dashboard.vercel.app/trucks-return
+
+Do not generate a replacement one-off HTML file. Keep UI changes in this app.

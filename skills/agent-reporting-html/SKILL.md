@@ -5,7 +5,7 @@ description: >-
   reports — auto-configure from this kit, fetch ≥12 months for the
   settlement dashboard and ≥3 months for other HTML/analytical settlement
   history, and ship the confirmed report sections.
-version: 0.2.1
+version: 0.2.2
 license: Proprietary
 platforms: [linux, macos, windows]
 metadata:
@@ -45,9 +45,13 @@ A Grok Bot or Cursor agent is building or updating HTML reports from the `agent-
 
 ## HTML every time
 
-The settlement dashboard is [`apps/reporting-dashboard`](../../apps/reporting-dashboard). Link the live URL https://lightning-settlement-dashboard.vercel.app. Do not replace it with a native multi `<select>` or a one-off HTML file.
+The reporting dashboard is [`apps/reporting-dashboard`](../../apps/reporting-dashboard). Link the matching live URL; do not replace it with a native multi `<select>` or a one-off HTML file.
 
-Always apply the confirmed report sections:
+- Liquidaciones: https://lightning-settlement-dashboard.vercel.app
+- Out Schedule: https://lightning-settlement-dashboard.vercel.app/out-schedule
+- Trucks Return: https://lightning-settlement-dashboard.vercel.app/trucks-return
+
+Always apply the confirmed Liquidaciones sections:
 
 - Slim **Liquidaciones** header plus a **Camión** focus card immediately under filters when searching a truck.
 - **Resumen** from `settlements` (owner matrix, physical averages, $11k Gross count, net+/−, LTR, Tolls+PrePass). Compass = `tonu` (already in Gross). Visible copy is Spanish operational wording.
@@ -57,11 +61,13 @@ Always apply the confirmed report sections:
 - Fuel spend by owner from stored Fuel Expenses; gallons/MPG from `fuel`.
 - KPI strip: Gross, Gastos, Net, Combustible, physical trucks, millas.
 - Evidence in a closed **Datos técnicos** accordion: source report(s), normalized filters, exact period/window, row/distinct count, pagination completeness, `as_of`, source-freshness limitation, material caveats.
-- Real shadcn/ui in the Next app; Popover + Command for owner multi-select.
+- Real shadcn/ui in the Next app; Popover + Command for owner multi-select; top-right **Vistas** menu for Liquidaciones / Out Schedule / Trucks Return.
 - Do not display Full Week or Other Deductions+Previous.
+
+For Out Schedule / Trucks Return UI questions, link the deep URLs above. Out Schedule uses live Schedule_Teams; Trucks Return uses `returns` without Phone/CDL.
 
 ## Don't
 
 - Don't ship a one-off date slice without the 3-month backdrop for HTML or analytical settlement/fleet history.
 - Don't invent metrics or recompute stored Gross / Total Expenses / Net for headlines.
-- Don't treat Schedule_Teams or exact in-yard/on-road metrics as available from these Supabase tables.
+- Don't treat exact in-yard/on-road metrics as available from these Supabase tables; planned Schedule_Teams UI is the `/out-schedule` dashboard view.
