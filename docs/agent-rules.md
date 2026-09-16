@@ -53,4 +53,12 @@ Every answer states source, normalized filters, exact period, result, row/distin
 
 ## 7. HTML reports
 
-The settlement dashboard is `apps/reporting-dashboard` (Next.js + real shadcn/ui). Grok Bot and Cursor agents link https://lightning-settlement-dashboard.vercel.app and do not generate one-off HTML replacements. Required sections: slim **Liquidaciones** header, truck focus card under filters, **Resumen** from `settlements`, weekly/monthly review, truck and owner rankings (preview + Ver más for the full physical-truck selection), fuel spend by owner, KPI strip, closed **Datos técnicos** evidence accordion. Owner/equipo uses a shadcn Popover + Command multi-select, not a native multi `<select>`. Historical dispatch uses `settlements.Dispatch`. Do not show Full Week or Other Deductions+Previous. Visible copy is Spanish operational wording; kit evidence stays in the accordion.
+The reporting dashboard is `apps/reporting-dashboard` (Next.js + real shadcn/ui). Grok Bot and Cursor agents **link the matching live URL** and do not generate one-off HTML replacements:
+
+| Question type | URL |
+|---|---|
+| Liquidaciones / settlement dashboard | https://lightning-settlement-dashboard.vercel.app |
+| Out Schedule / planned departures / Schedule_Teams UI | https://lightning-settlement-dashboard.vercel.app/out-schedule |
+| Trucks Return / current expected returns UI | https://lightning-settlement-dashboard.vercel.app/trucks-return |
+
+Liquidaciones required sections: slim **Liquidaciones** header, truck focus card under filters, **Resumen** from `settlements`, weekly/monthly review, truck and owner rankings (preview + Ver más for the full physical-truck selection), fuel spend by owner, KPI strip, closed **Datos técnicos** evidence accordion. Owner/equipo uses a shadcn Popover + Command multi-select, not a native multi `<select>`. Historical dispatch uses `settlements.Dispatch`. Do not show Full Week or Other Deductions+Previous. Visible copy is Spanish operational wording; kit evidence stays in the accordion. Out Schedule and Trucks Return share the same shell and top-right **Vistas** menu.

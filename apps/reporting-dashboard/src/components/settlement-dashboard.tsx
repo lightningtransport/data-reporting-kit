@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react"
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 
+import { DashboardShell } from "@/components/dashboard-shell"
 import { ExecutiveSummary } from "@/components/executive-summary"
 import { OwnerMultiSelect } from "@/components/owner-multi-select"
 import {
@@ -70,31 +71,6 @@ function KpiCard({ label, value }: { label: string; value: string }) {
         <CardTitle className="font-mono text-xl tabular-nums">{value}</CardTitle>
       </CardHeader>
     </Card>
-  )
-}
-
-function LightningLogo() {
-  return (
-    <svg
-      aria-label="Lightning Transportation & Logistics"
-      role="img"
-      viewBox="0 0 1536 894"
-      className="h-auto w-28 shrink-0 sm:w-32"
-    >
-      <title>Lightning Transportation & Logistics</title>
-      <filter id="remove-logo-black" colorInterpolationFilters="sRGB">
-        <feColorMatrix
-          type="matrix"
-          values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 1 1 1 0 0"
-        />
-      </filter>
-      <image
-        href="/lightning-transport-logo.png"
-        width="1536"
-        height="894"
-        filter="url(#remove-logo-black)"
-      />
-    </svg>
   )
 }
 
@@ -176,23 +152,11 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
   const searchingTruck = truckQuery.trim().length > 0
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 md:px-6 md:py-8">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
-        <div className="flex items-center gap-3">
-          <LightningLogo />
-          <div className="border-l border-border pl-3">
-            <p className="text-secondary text-xs font-semibold tracking-[0.16em] uppercase">
-              Operaciones
-            </p>
-            <h1 className="font-heading text-xl font-semibold tracking-tight">Liquidaciones</h1>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <p className="text-muted-foreground text-sm">{scope}</p>
-          {data.meta.live ? null : <Badge variant="secondary">Copia</Badge>}
-        </div>
-      </header>
-
+    <DashboardShell
+      title="Liquidaciones"
+      subtitle={scope}
+      live={Boolean(data.meta.live)}
+    >
       <Card>
         <CardContent className="pt-(--card-spacing)">
           <FieldGroup className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -578,7 +542,7 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
           </div>
         </details>
       </footer>
-    </div>
+    </DashboardShell>
   )
 }
 

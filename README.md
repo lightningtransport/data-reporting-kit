@@ -6,7 +6,7 @@ Versioned, agent-readable instructions and source for the active Lightning Supab
 
 Every agent must read [`AGENTS.md`](AGENTS.md). The runtime contract is available from the authenticated `agent-reporting` catalog route.
 
-Grok Bot and Cursor agents: the settlement dashboard lives in [`apps/reporting-dashboard`](apps/reporting-dashboard). Link [https://lightning-settlement-dashboard.vercel.app](https://lightning-settlement-dashboard.vercel.app) when answering questions about that screen; do not generate a replacement one-off HTML file. Conventions: [`docs/html-reporting.md`](docs/html-reporting.md). Copy [`skills/reporting-html-shadcn/assets/report-ui.css`](skills/reporting-html-shadcn/assets/report-ui.css) only for other static reports that are not this dashboard.
+Grok Bot and Cursor agents: the reporting dashboard lives in [`apps/reporting-dashboard`](apps/reporting-dashboard). Link [https://lightning-settlement-dashboard.vercel.app](https://lightning-settlement-dashboard.vercel.app) for Liquidaciones, `/out-schedule` for Out Schedule, and `/trucks-return` for Trucks Return; do not generate a replacement one-off HTML file. Conventions: [`docs/html-reporting.md`](docs/html-reporting.md). Copy [`skills/reporting-html-shadcn/assets/report-ui.css`](skills/reporting-html-shadcn/assets/report-ui.css) only for other static reports that are not this dashboard.
 
 ## What this kit provides
 
@@ -15,7 +15,7 @@ Grok Bot and Cursor agents: the settlement dashboard lives in [`apps/reporting-d
 - Source and OpenAPI contract for the custom-key `agent-reporting` Edge Function.
 - Source for the separate membership/JWT `reporting-query` Edge Function.
 - A portable Hermes reporting skill, correction-feedback contract, and access lifecycle guidance.
-- A Next.js + shadcn/ui settlement dashboard (`apps/reporting-dashboard`) for Grok Bot / Cursor agents, with weekly/monthly review, rankings, fuel-by-owner, KPIs, and an evidence footer.
+- A Next.js + shadcn/ui reporting dashboard (`apps/reporting-dashboard`) for Grok Bot / Cursor agents, with Liquidaciones (weekly/monthly review, rankings, fuel-by-owner, KPIs), Out Schedule, Trucks Return, a shared view menu, and evidence footers.
 - A private ChatGPT Plugin package: reusable reporting skill plus remote, read-only MCP connector; see [`docs/chatgpt-plugin.md`](docs/chatgpt-plugin.md).
 
 ## Active interfaces

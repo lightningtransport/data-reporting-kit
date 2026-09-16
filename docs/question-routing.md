@@ -5,17 +5,17 @@ Read `AGENTS.md` first. Use the smallest `agent-reporting` report that answers t
 | User question | `agent-reporting` report | Required filters / analysis |
 |---|---|---|
 | Current truck facts or fleet list | `trucks` | Use current owner/dispatcher/mechanic fields only. The settlement-only 1/2/3 allocation rule does not filter or classify this source. |
-| Who/trucks are expected to return? | `returns` | Inclusive `return_from`/`return_to`. Count distinct `Truck` for trucks; rows represent drivers. |
+| Who/trucks are expected to return? | `returns` | Inclusive `return_from`/`return_to`. Count distinct `Truck` for trucks; rows represent drivers. For the operational UI, **link** https://lightning-settlement-dashboard.vercel.app/trucks-return. |
 | Historical assignment for a truck/driver | `driver_pay` | Anchor with `truck_number` or `driver_id`; review dates, transfers, and terminations. |
 | Which trucks left in a historical period? | `driver_pay` | Filter `out_from`/`out_to` only; count distinct `Truck_Number`. |
-| How many trucks are leaving this current week? | `driver_pay` + live Ninox `Schedule_Teams` | Use the same Monday–Sunday `Out Date` window for both sources. Union distinct truck numbers; report DriverPay-only, Schedule_Teams-only, overlap, and final total. Fetch Schedule_Teams immediately from its documented live JSON URL. |
+| How many trucks are leaving this current week? | `driver_pay` + live Ninox `Schedule_Teams` | Use the same Monday–Sunday `Out Date` window for both sources. Union distinct truck numbers; report DriverPay-only, Schedule_Teams-only, overlap, and final total. Fetch Schedule_Teams immediately from its documented live JSON URL. For the planned-schedule UI, also **link** https://lightning-settlement-dashboard.vercel.app/out-schedule. |
 | Which trucks returned historically? | `driver_pay` | Filter `return_from`/`return_to` only; count distinct `Truck_Number`. |
 | Weekly headline gross/expense/net | `settlement_summary` | Supply `period_from` (and normally the same Tuesday in `period_to`) or a truck. |
 | Full weekly expenses/components | `settlements` | Supply `period_from` or truck; use explicit period for owner/dispatch totals. |
 | Historic fuel transactions, gallons, or fuel spending | `fuel` | Anchor with `truck_number`, `store_from`, or `ninox_id`. Use `Adjusted SubTotal` when populated for adjusted-spend totals; calculate aggregate price per gallon as applicable spend ÷ gallons. |
 | HTML settlement/fleet dashboard or analytical history (trends, rankings) | `settlements` plus `fuel` (optional `settlement_summary` for headlines) | Use the Next.js app `apps/reporting-dashboard` and **link** https://lightning-settlement-dashboard.vercel.app. Dashboard fetch ≥12 months of `settlements` (paginate). Other analytical HTML ≥3 months. Fuel gallons for dashboard MPG use `store_from`/`store_to`; settlement fuel dollars use stored `Fuel Expenses`. Named date is UI focus only. Follow `docs/html-reporting.md`. |
 | Current driver profile / hire date | `drivers` | Prefer exact `driver_id`; use `hire_from` / `hire_to` for Date of Hire ranges. Any `AGENT_API_KEY` can request the documented sensitive fields with `include_sensitive=true` unless its explicit `AGENT_ALLOW_SENSITIVE_<n>` control is set to `false`. |
-| Planned teams/departures | unsupported | Requires live Ninox Schedule_Teams; do not substitute DriverPay history. |
+| Planned teams/departures / Out Schedule UI | live Ninox `Schedule_Teams` (+ dashboard) | **Link** https://lightning-settlement-dashboard.vercel.app/out-schedule. Do not substitute DriverPay history for the planned list. |
 | Exact trucks in yard/off duty/on road | unsupported | Supabase lacks `days_in_yard_` and numeric insurance-choice fields required by the Ninox definition. |
 
 ## Date rules
