@@ -7,7 +7,7 @@ Next.js App Router + shadcn/ui app for Grok Bot and Cursor agents. Views:
 | `/` | Liquidaciones | `settlements` + `fuel` (≥12 months) |
 | `/out-schedule` | Out Schedule | live Ninox Schedule_Teams share |
 | `/trucks-return` | Trucks Return | `returns` (no Phone/CDL) |
-| `/diesel` | Diesel | live `fuel` (≥12 months), month + owner filters |
+| `/diesel` | Diesel | live `fuel` (focus month first; 12-month trend cached ~3 min) |
 
 A top-right **Vistas** menu switches between them. Visible copy is Spanish operational wording where applicable; kit evidence lives under **Datos técnicos**.
 
