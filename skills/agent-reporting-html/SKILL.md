@@ -5,7 +5,7 @@ description: >-
   reports — auto-configure from this kit, fetch ≥12 months for the
   settlement dashboard and ≥3 months for other HTML/analytical settlement
   history, and ship the confirmed report sections.
-version: 0.2.3
+version: 0.2.4
 license: Proprietary
 platforms: [linux, macos, windows]
 metadata:
@@ -50,6 +50,7 @@ The reporting dashboard is [`apps/reporting-dashboard`](../../apps/reporting-das
 - Liquidaciones: https://lightning-settlement-dashboard.vercel.app
 - Out Schedule: https://lightning-settlement-dashboard.vercel.app/out-schedule
 - Trucks Return: https://lightning-settlement-dashboard.vercel.app/trucks-return
+- Diesel: https://lightning-settlement-dashboard.vercel.app/diesel
 
 Always apply the confirmed Liquidaciones sections:
 
@@ -61,12 +62,12 @@ Always apply the confirmed Liquidaciones sections:
 - Fuel spend by owner from stored Fuel Expenses; gallons/MPG from `fuel`.
 - KPI strip: Gross, Gastos, Net, Combustible, physical trucks, millas.
 - Evidence in a closed **Datos técnicos** accordion: source report(s), normalized filters, exact period/window, row/distinct count, pagination completeness, `as_of`, source-freshness limitation, material caveats.
-- Real shadcn/ui in the Next app; Popover + Command for owner multi-select; top-right **Vistas** menu for Liquidaciones / Out Schedule / Trucks Return.
+- Real shadcn/ui in the Next app; Popover + Command for owner multi-select; top-right **Vistas** menu for Liquidaciones / Out Schedule / Trucks Return / Diesel.
 - Do not display Full Week or Other Deductions+Previous.
 
-When the user asks to **see** / open / show Out Schedule or Trucks Return (or the planned departures / expected returns screens), answer with the matching live dashboard URL above. Do not generate a replacement one-off HTML file.
+When the user asks to **see** / open / show Out Schedule, Trucks Return, or Diesel (planned departures / expected returns / fuel screens), answer with the matching live dashboard URL above. Do not generate a replacement one-off HTML file.
 
-For Out Schedule / Trucks Return UI questions, link the deep URLs above. Out Schedule uses live Schedule_Teams; Trucks Return uses `returns` without Phone/CDL.
+For Out Schedule / Trucks Return / Diesel UI questions, link the deep URLs above. Out Schedule uses live Schedule_Teams; Trucks Return uses `returns` without Phone/CDL; Diesel uses live `fuel` by month and historical `fuel.owner`.
 
 ## Don't
 

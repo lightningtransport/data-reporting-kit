@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Lightning Reporting | Lightning Transportation",
   description:
-    "Liquidaciones, Out Schedule y Trucks Return — Lightning Transportation.",
+    "Liquidaciones, Out Schedule, Trucks Return y Diesel — Lightning Transportation.",
 }
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

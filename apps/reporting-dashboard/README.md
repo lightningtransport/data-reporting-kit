@@ -7,6 +7,7 @@ Next.js App Router + shadcn/ui app for Grok Bot and Cursor agents. Views:
 | `/` | Liquidaciones | `settlements` + `fuel` (≥12 months) |
 | `/out-schedule` | Out Schedule | live Ninox Schedule_Teams share |
 | `/trucks-return` | Trucks Return | `returns` (no Phone/CDL) |
+| `/diesel` | Diesel | live `fuel` (≥12 months), month + owner filters |
 
 A top-right **Vistas** menu switches between them. Visible copy is Spanish operational wording where applicable; kit evidence lives under **Datos técnicos**.
 
@@ -18,7 +19,7 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Requires server-only `AGENT_REPORTING_KEY` for Liquidaciones and Trucks Return (live `agent-reporting` only; **no embedded snapshot**). Out Schedule always uses the public Schedule_Teams share live. Without the key, Liquidaciones and Trucks Return show an explicit configuration error.
+Open [http://localhost:3000](http://localhost:3000). Requires server-only `AGENT_REPORTING_KEY` for Liquidaciones, Trucks Return, and Diesel (live `agent-reporting` only; **no embedded snapshot**). Out Schedule always uses the public Schedule_Teams share live. Without the key, those three views show an explicit configuration error.
 
 ## Vercel deploy
 
@@ -44,5 +45,6 @@ Link the matching deep URL:
 - Liquidaciones: https://lightning-settlement-dashboard.vercel.app
 - Out Schedule: https://lightning-settlement-dashboard.vercel.app/out-schedule
 - Trucks Return: https://lightning-settlement-dashboard.vercel.app/trucks-return
+- Diesel: https://lightning-settlement-dashboard.vercel.app/diesel
 
 Do not generate a replacement one-off HTML file. Keep UI changes in this app.

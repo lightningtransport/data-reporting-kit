@@ -16,7 +16,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-export type DashboardView = "liquidaciones" | "out-schedule" | "trucks-return"
+export type DashboardView =
+  | "liquidaciones"
+  | "out-schedule"
+  | "trucks-return"
+  | "diesel"
 
 const VIEWS: Array<{
   id: DashboardView
@@ -41,6 +45,12 @@ const VIEWS: Array<{
     href: "/trucks-return",
     label: "Trucks Return",
     description: "Retornos esperados",
+  },
+  {
+    id: "diesel",
+    href: "/diesel",
+    label: "Diesel",
+    description: "Combustible por mes / owner",
   },
 ]
 
@@ -72,6 +82,7 @@ function LightningLogo() {
 function viewFromPath(pathname: string): DashboardView {
   if (pathname.startsWith("/out-schedule")) return "out-schedule"
   if (pathname.startsWith("/trucks-return")) return "trucks-return"
+  if (pathname.startsWith("/diesel")) return "diesel"
   return "liquidaciones"
 }
 
