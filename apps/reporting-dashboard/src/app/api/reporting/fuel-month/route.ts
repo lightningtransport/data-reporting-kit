@@ -1,13 +1,11 @@
 import { NextResponse } from "next/server"
 
 import { getFuelMonthRows } from "@/lib/fuel"
-import {
-  DIESEL_MONTH_REVALIDATE_SECONDS,
-  dieselCacheControl,
-} from "@/lib/reporting-cache"
+import { dieselCacheControl } from "@/lib/reporting-cache"
 
 export const maxDuration = 60
-export const revalidate = DIESEL_MONTH_REVALIDATE_SECONDS
+/** Keep in sync with DIESEL_MONTH_REVALIDATE_SECONDS */
+export const revalidate = 120
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -37,12 +35,12 @@ export async function GET(request: Request) {
         as_of: result.asOf,
         source_freshness: result.freshness,
         pagination_complete: result.complete,
-        cache_revalidate_seconds: DIESEL_MONTH_REVALIDATE_SECONDS,
+        cache_revalidate_seconds: 120,
       },
     },
     {
       headers: {
-        "Cache-Control": dieselCacheControl(DIESEL_MONTH_REVALIDATE_SECONDS),
+        "Cache-Control": dieselCacheControl(120),
       },
     }
   )

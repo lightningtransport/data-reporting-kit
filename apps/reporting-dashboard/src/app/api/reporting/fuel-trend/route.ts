@@ -1,13 +1,11 @@
 import { NextResponse } from "next/server"
 
 import { getFuelTrend } from "@/lib/fuel"
-import {
-  DIESEL_TREND_REVALIDATE_SECONDS,
-  dieselCacheControl,
-} from "@/lib/reporting-cache"
+import { dieselCacheControl } from "@/lib/reporting-cache"
 
 export const maxDuration = 60
-export const revalidate = DIESEL_TREND_REVALIDATE_SECONDS
+/** Keep in sync with DIESEL_TREND_REVALIDATE_SECONDS */
+export const revalidate = 180
 
 export async function GET() {
   const payload = await getFuelTrend()
@@ -19,7 +17,7 @@ export async function GET() {
   }
   return NextResponse.json(payload, {
     headers: {
-      "Cache-Control": dieselCacheControl(DIESEL_TREND_REVALIDATE_SECONDS),
+      "Cache-Control": dieselCacheControl(180),
     },
   })
 }
