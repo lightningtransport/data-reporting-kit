@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react"
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 
+import { DieselMonthlyTrendChart } from "@/components/diesel-charts"
 import { DashboardShell } from "@/components/dashboard-shell"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -43,6 +44,13 @@ function monthLabel(ym: string): string {
   const [year, month] = ym.split("-")
   const name = MONTH_NAMES[Number(month) - 1] ?? month
   return `${name.charAt(0).toUpperCase()}${name.slice(1)} ${year}`
+}
+
+function shortMonthLabel(ym: string): string {
+  const [year, month] = ym.split("-")
+  const name = MONTH_NAMES[Number(month) - 1] ?? month
+  const short = name.slice(0, 3)
+  return `${short.charAt(0).toUpperCase()}${short.slice(1)} ${year.slice(2)}`
 }
 
 function currentMonthKey(): string {
@@ -148,6 +156,38 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
       return true
     })
   }, [data.rows, month, owner, truckQuery])
+
+  const monthlyTrend = useMemo(() => {
+    const query = truckQuery.trim().toLowerCase()
+    const byMonth: Record<string, { gallons: number; spend: number }> = {}
+    for (const key of months) {
+      byMonth[key] = { gallons: 0, spend: 0 }
+    }
+    for (const row of data.rows) {
+      if (owner !== "all" && row.owner !== owner) continue
+      if (
+        query &&
+        !row.unit.toLowerCase().includes(query) &&
+        !row.product.toLowerCase().includes(query) &&
+        !row.city.toLowerCase().includes(query)
+      ) {
+        continue
+      }
+      const key = row.storeDate.slice(0, 7)
+      if (!key) continue
+      if (!byMonth[key]) byMonth[key] = { gallons: 0, spend: 0 }
+      if (row.gallons != null) byMonth[key].gallons += row.gallons
+      if (row.adjustedSubTotal != null) byMonth[key].spend += row.adjustedSubTotal
+    }
+    return Object.keys(byMonth)
+      .sort()
+      .map((key) => ({
+        month: key,
+        label: shortMonthLabel(key),
+        gallons: byMonth[key].gallons,
+        spend: byMonth[key].spend,
+      }))
+  }, [data.rows, months, owner, truckQuery])
 
   const kpi = useMemo(() => aggregateFuelRows(filtered), [filtered])
   const byOwner = useMemo(() => ownerTotals(filtered), [filtered])
@@ -261,6 +301,23 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
           }
         />
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Tendencia mensual</CardTitle>
+          <CardDescription>
+            Galones (barras) y gasto ajustado (línea) · respeta owner y búsqueda ·
+            no el mes de foco
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {monthlyTrend.every((point) => point.gallons === 0 && point.spend === 0) ? (
+            <p className="text-muted-foreground text-sm">Sin datos en la ventana</p>
+          ) : (
+            <DieselMonthlyTrendChart data={monthlyTrend} />
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

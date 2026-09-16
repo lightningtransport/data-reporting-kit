@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.8.1 - 2026-09-16
+
+- Diesel monthly trend chart: gallons (bars) and adjusted spend (line) across the loaded window; respects owner and search filters.
+
 ## 3.8.0 - 2026-09-16
 
 - Added **Diesel** dashboard view at `/diesel`: live paginated `fuel` (≥12 months), month navigation (current + prior), exact historical `fuel.owner` filter, owner summary, transaction table, KPIs (gallons, adjusted spend, $/gal), and **Datos técnicos**.
