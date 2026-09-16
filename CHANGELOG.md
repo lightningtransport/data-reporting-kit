@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.8.5 - 2026-09-16
+
+- Diesel uses shared Next/Vercel data cache (month 120s, trend 180s), CDN `stale-while-revalidate`, and browser sessionStorage so reopen/second viewer hits warm real fuel data instead of a cold agent-reporting walk.
+
 ## 3.8.4 - 2026-09-16
 
 - Diesel first paint loads only the focus month; 12-month chart trend loads in the background via `/api/reporting/fuel-trend` (2-minute in-process cache).

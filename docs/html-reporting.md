@@ -64,9 +64,9 @@ Not established (do not display or approximate): Ninox “Full Week” / “No F
 ### Diesel (`/diesel`)
 
 1. Live `fuel` for the focus month first (fast KPIs/owner/detail); ≥12-month trend loads asynchronously via `/api/reporting/fuel-trend`.
-2. Month navigation, exact historical `fuel.owner` filter, and product filter (default diesel excluding DEF).
-3. KPIs from monthly aggregates (not the capped detail table).
-4. Monthly trend chart once the background trend arrives; respects owner/product.
+2. Shared caches (real live rows only): Next/Vercel data cache (month ~120s, trend ~180s), CDN `s-maxage` + `stale-while-revalidate`, and browser `sessionStorage` for instant reopen of the trend while revalidating.
+3. Month navigation, exact historical `fuel.owner` filter, and product filter (default diesel excluding DEF).
+4. KPIs from monthly aggregates (not the capped detail table).
 5. Transaction detail capped per focus month via `/api/reporting/fuel-month`. **Datos técnicos**. Do not count fuel rows as trucks or replace settlement Fuel Expenses.
 
 ## Business-rule reminders that affect HTML

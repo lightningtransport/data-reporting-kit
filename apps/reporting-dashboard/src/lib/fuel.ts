@@ -1,3 +1,10 @@
+import { unstable_cache } from "next/cache"
+
+import {
+  DIESEL_MONTH_REVALIDATE_SECONDS,
+  DIESEL_TREND_REVALIDATE_SECONDS,
+} from "@/lib/reporting-cache"
+
 const DEFAULT_ENDPOINT =
   "https://aaqquwhdglueqlnbifvn.supabase.co/functions/v1/agent-reporting"
 
@@ -417,7 +424,42 @@ function credentials() {
   }
 }
 
-export async function getFuelMonthRows(ym: string): Promise<{
+export type FuelTrendPayload = {
+  meta: {
+    as_of: string
+    source_freshness: string
+    total_count: number
+    fetched_count: number
+    pagination_complete: boolean
+    live: boolean
+    months: string[]
+    distinct_trucks: number
+    cache_revalidate_seconds: number
+    error?: string
+  }
+  monthly: FuelMonthSeries[]
+  owners: string[]
+  products: string[]
+}
+
+function buildMonthlyFromRows(
+  rows: FuelRow[],
+  months: string[]
+): FuelMonthSeries[] {
+  const byMonth: Record<string, FuelRow[]> = {}
+  for (const key of months) byMonth[key] = []
+  for (const row of rows) {
+    const key = monthKey(row.storeDate)
+    if (!key) continue
+    if (!byMonth[key]) byMonth[key] = []
+    byMonth[key].push(row)
+  }
+  return Object.keys(byMonth)
+    .sort()
+    .map((key) => freezeMonth(key, accumulateMonth(byMonth[key])))
+}
+
+async function loadFuelMonthUncached(ym: string): Promise<{
   rows: FuelRow[]
   series: FuelMonthSeries
   totalCount: number
@@ -491,59 +533,19 @@ export async function getFuelMonthRows(ym: string): Promise<{
   }
 }
 
-export type FuelTrendPayload = {
-  meta: {
-    as_of: string
-    source_freshness: string
-    total_count: number
-    fetched_count: number
-    pagination_complete: boolean
-    live: boolean
-    months: string[]
-    distinct_trucks: number
-    error?: string
-  }
-  monthly: FuelMonthSeries[]
-  owners: string[]
-  products: string[]
+/** Focus-month rows + aggregates. Shared Vercel/Next data cache (TTL). */
+export async function getFuelMonthRows(ym: string) {
+  return unstable_cache(
+    async () => loadFuelMonthUncached(ym),
+    ["diesel-fuel-month", ym],
+    {
+      revalidate: DIESEL_MONTH_REVALIDATE_SECONDS,
+      tags: ["diesel-fuel", `diesel-fuel-month-${ym}`],
+    }
+  )()
 }
 
-type TrendCache = {
-  expiresAt: number
-  payload: FuelTrendPayload
-}
-
-declare global {
-  // eslint-disable-next-line no-var
-  var __dieselFuelTrendCache: TrendCache | undefined
-}
-
-const TREND_CACHE_MS = 120_000
-
-function buildMonthlyFromRows(
-  rows: FuelRow[],
-  months: string[]
-): FuelMonthSeries[] {
-  const byMonth: Record<string, FuelRow[]> = {}
-  for (const key of months) byMonth[key] = []
-  for (const row of rows) {
-    const key = monthKey(row.storeDate)
-    if (!key) continue
-    if (!byMonth[key]) byMonth[key] = []
-    byMonth[key].push(row)
-  }
-  return Object.keys(byMonth)
-    .sort()
-    .map((key) => freezeMonth(key, accumulateMonth(byMonth[key])))
-}
-
-/** Full-window monthly aggregates for the chart. Cached briefly in-process. */
-export async function getFuelTrend(): Promise<FuelTrendPayload> {
-  const cached = globalThis.__dieselFuelTrendCache
-  if (cached && cached.expiresAt > Date.now()) {
-    return cached.payload
-  }
-
+async function loadFuelTrendUncached(): Promise<FuelTrendPayload> {
   const auth = credentials()
   if (!auth) {
     return {
@@ -556,6 +558,7 @@ export async function getFuelTrend(): Promise<FuelTrendPayload> {
         live: false,
         months: [],
         distinct_trucks: 0,
+        cache_revalidate_seconds: DIESEL_TREND_REVALIDATE_SECONDS,
         error: "AGENT_REPORTING_KEY is not configured",
       },
       monthly: [],
@@ -583,7 +586,7 @@ export async function getFuelTrend(): Promise<FuelTrendPayload> {
     const products = [
       ...new Set(rows.map((row) => row.product).filter(Boolean)),
     ].sort((a, b) => a.localeCompare(b))
-    const payload: FuelTrendPayload = {
+    return {
       meta: {
         as_of: result.asOf || new Date().toISOString(),
         source_freshness:
@@ -595,17 +598,14 @@ export async function getFuelTrend(): Promise<FuelTrendPayload> {
           result.complete && rows.length === (result.totalCount || rows.length),
         live: true,
         months,
-        distinct_trucks: new Set(rows.map((row) => row.unit).filter(Boolean)).size,
+        distinct_trucks: new Set(rows.map((row) => row.unit).filter(Boolean))
+          .size,
+        cache_revalidate_seconds: DIESEL_TREND_REVALIDATE_SECONDS,
       },
       monthly,
       owners,
       products,
     }
-    globalThis.__dieselFuelTrendCache = {
-      expiresAt: Date.now() + TREND_CACHE_MS,
-      payload,
-    }
-    return payload
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown fuel error"
     return {
@@ -618,6 +618,7 @@ export async function getFuelTrend(): Promise<FuelTrendPayload> {
         live: false,
         months: [],
         distinct_trucks: 0,
+        cache_revalidate_seconds: DIESEL_TREND_REVALIDATE_SECONDS,
         error: message.slice(0, 240),
       },
       monthly: [],
@@ -627,98 +628,87 @@ export async function getFuelTrend(): Promise<FuelTrendPayload> {
   }
 }
 
-/** Fast first paint: only the focus month (KPIs + capped detail). Trend loads client-side. */
+/**
+ * Full-window monthly aggregates for the chart.
+ * Cached via Next/Vercel Data Cache so the whole team shares warm responses.
+ */
+export async function getFuelTrend(): Promise<FuelTrendPayload> {
+  const today = new Date().toISOString().slice(0, 10)
+  return unstable_cache(
+    async () => loadFuelTrendUncached(),
+    ["diesel-fuel-trend", today.slice(0, 10)],
+    {
+      revalidate: DIESEL_TREND_REVALIDATE_SECONDS,
+      tags: ["diesel-fuel", "diesel-fuel-trend"],
+    }
+  )()
+}
+
+/** Fast first paint: cached focus month. Trend loads client-side (also cached). */
 export async function getFuel(detailMonth?: string): Promise<FuelPayload> {
-  const auth = credentials()
-  if (!auth) {
-    return emptyFuelPayload("AGENT_REPORTING_KEY is not configured")
+  const today = new Date().toISOString().slice(0, 10)
+  const storeFrom = dieselHistoryStart(today)
+  const months = listMonthKeys(storeFrom, today)
+  const focus =
+    detailMonth && months.includes(detailMonth)
+      ? detailMonth
+      : months.includes(today.slice(0, 7))
+        ? today.slice(0, 7)
+        : (months[months.length - 1] ?? today.slice(0, 7))
+
+  const monthPack = await getFuelMonthRows(focus)
+  if (monthPack.error && monthPack.rows.length === 0) {
+    return emptyFuelPayload(monthPack.error)
   }
 
-  try {
-    const today = new Date().toISOString().slice(0, 10)
-    const storeFrom = dieselHistoryStart(today)
-    const months = listMonthKeys(storeFrom, today)
-    const focus =
-      detailMonth && months.includes(detailMonth)
-        ? detailMonth
-        : months.includes(today.slice(0, 7))
-          ? today.slice(0, 7)
-          : (months[months.length - 1] ?? today.slice(0, 7))
+  const focusSeries = monthPack.series
+  const owners = Object.keys(focusSeries.byOwner).sort((a, b) =>
+    a.localeCompare(b)
+  )
+  const products = [
+    ...new Set(monthPack.rows.map((row) => row.product).filter(Boolean)),
+  ].sort((a, b) => a.localeCompare(b))
 
-    const { storeFrom: from, storeTo: to } = monthBounds(focus, today)
-    const full = await fetchAllFuel(auth.endpoint, auth.key, {
-      report: "fuel",
-      store_from: from,
-      store_to: to,
-    })
-    const mapped = full.rows
-      .map(mapFuel)
-      .filter((row): row is FuelRow => row !== null)
-      .sort(
-        (a, b) =>
-          b.storeDate.localeCompare(a.storeDate) ||
-          a.unit.localeCompare(b.unit) ||
-          a.id - b.id
-      )
-    const focusSeries = freezeMonth(focus, accumulateMonth(mapped))
-    const owners = Object.keys(focusSeries.byOwner).sort((a, b) =>
-      a.localeCompare(b)
-    )
-    const products = [
-      ...new Set(mapped.map((row) => row.product).filter(Boolean)),
-    ].sort((a, b) => a.localeCompare(b))
-    const detailTruncated = mapped.length > DIESEL_DETAIL_ROW_CAP
-    const rows = detailTruncated ? mapped.slice(0, DIESEL_DETAIL_ROW_CAP) : mapped
+  const monthly = months.map((ym) =>
+    ym === focus
+      ? focusSeries
+      : freezeMonth(ym, {
+          all: emptyMutable(),
+          diesel: emptyMutable(),
+          def: emptyMutable(),
+          byOwner: {},
+        })
+  )
 
-    const monthly = months.map((ym) =>
-      ym === focus
-        ? focusSeries
-        : freezeMonth(ym, {
-            all: emptyMutable(),
-            diesel: emptyMutable(),
-            def: emptyMutable(),
-            byOwner: {},
-          })
-    )
-
-    return {
-      meta: {
-        as_of: full.asOf || new Date().toISOString(),
-        source_freshness:
-          full.freshness ||
-          "unknown: source tables do not expose a sync timestamp",
-        total_count: full.totalCount || mapped.length,
-        fetched_count: mapped.length,
-        pagination_complete:
-          full.complete && mapped.length === (full.totalCount || mapped.length),
-        live: true,
-        dataset: "fuel",
-        filters: {
-          report: "fuel",
-          store_from: storeFrom,
-          store_to: today,
-          history_months: DIESEL_HISTORY_MONTHS,
-          detail_month: focus,
-          detail_row_cap: DIESEL_DETAIL_ROW_CAP,
-          note: "Fast path: focus month only; chart trend via /api/reporting/fuel-trend",
-          trend_pending: true,
-        },
-        distinct_trucks: new Set(mapped.map((row) => row.unit).filter(Boolean)).size,
-        months,
+  return {
+    meta: {
+      as_of: monthPack.asOf,
+      source_freshness: monthPack.freshness,
+      total_count: monthPack.totalCount,
+      fetched_count: monthPack.totalCount,
+      pagination_complete: monthPack.complete,
+      live: true,
+      dataset: "fuel",
+      filters: {
+        report: "fuel",
+        store_from: storeFrom,
+        store_to: today,
+        history_months: DIESEL_HISTORY_MONTHS,
         detail_month: focus,
-        detail_row_count: mapped.length,
-        detail_truncated: detailTruncated,
+        detail_row_cap: DIESEL_DETAIL_ROW_CAP,
+        note: "Focus month via Next data cache; 12-month trend via /api/reporting/fuel-trend",
+        trend_pending: true,
+        cache_revalidate_seconds: DIESEL_MONTH_REVALIDATE_SECONDS,
       },
-      monthly,
-      owners,
-      products,
-      rows,
-    }
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown fuel error"
-    console.error("[reporting-dashboard] fuel unavailable", {
-      message: message.slice(0, 240),
-    })
-    return emptyFuelPayload(message.slice(0, 240))
+      distinct_trucks: focusSeries.all.trucks,
+      months,
+      detail_month: focus,
+      detail_row_count: monthPack.totalCount,
+      detail_truncated: monthPack.truncated,
+    },
+    monthly,
+    owners,
+    products,
+    rows: monthPack.rows,
   }
 }

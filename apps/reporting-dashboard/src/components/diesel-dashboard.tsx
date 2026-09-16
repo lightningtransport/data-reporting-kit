@@ -39,7 +39,14 @@ import {
   type FuelMonthSeries,
   type FuelPayload,
   type FuelRow,
+  type FuelTrendPayload,
 } from "@/lib/fuel"
+import {
+  DIESEL_MONTH_REVALIDATE_SECONDS,
+  DIESEL_TREND_REVALIDATE_SECONDS,
+  DIESEL_TREND_SESSION_KEY,
+  DIESEL_TREND_SESSION_MAX_AGE_MS,
+} from "@/lib/reporting-cache"
 import { MONTH_NAMES } from "@/lib/settlement"
 
 function monthLabel(ym: string): string {
@@ -115,10 +122,10 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
   const [truckQuery, setTruckQuery] = useState("")
   const [monthly, setMonthly] = useState<FuelMonthSeries[]>(data.monthly)
   const [owners, setOwners] = useState<string[]>(data.owners)
-  const [trendReady, setTrendReady] = useState(
-    data.meta.filters.trend_pending !== true
-  )
+  const [trendReady, setTrendReady] = useState(false)
+  const [trendUpdating, setTrendUpdating] = useState(true)
   const [trendError, setTrendError] = useState("")
+  const [trendFromCache, setTrendFromCache] = useState(false)
   const [detailRows, setDetailRows] = useState<FuelRow[]>(data.rows)
   const [detailMeta, setDetailMeta] = useState({
     total: data.meta.detail_row_count,
@@ -129,12 +136,34 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
 
   useEffect(() => {
     let cancelled = false
-    fetch("/api/reporting/fuel-trend", { cache: "no-store" })
+    try {
+      const raw = sessionStorage.getItem(DIESEL_TREND_SESSION_KEY)
+      if (raw) {
+        const stored = JSON.parse(raw) as {
+          savedAt?: number
+          payload?: FuelTrendPayload
+        }
+        const age = Date.now() - Number(stored.savedAt ?? 0)
+        if (
+          stored.payload?.monthly?.length &&
+          age >= 0 &&
+          age < DIESEL_TREND_SESSION_MAX_AGE_MS
+        ) {
+          setMonthly(stored.payload.monthly)
+          if (stored.payload.owners?.length) setOwners(stored.payload.owners)
+          setTrendReady(true)
+          setTrendFromCache(true)
+        }
+      }
+    } catch {
+      // ignore bad session cache
+    }
+
+    setTrendUpdating(true)
+    fetch("/api/reporting/fuel-trend")
       .then(async (response) => {
-        const payload = (await response.json()) as {
-          monthly?: FuelMonthSeries[]
-          owners?: string[]
-          meta?: { error?: string; months?: string[] }
+        const payload = (await response.json()) as FuelTrendPayload & {
+          meta?: { error?: string }
         }
         if (!response.ok) {
           throw new Error(payload.meta?.error || `HTTP ${response.status}`)
@@ -143,14 +172,25 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
         if (payload.monthly?.length) setMonthly(payload.monthly)
         if (payload.owners?.length) setOwners(payload.owners)
         setTrendReady(true)
+        setTrendFromCache(false)
         setTrendError("")
+        try {
+          sessionStorage.setItem(
+            DIESEL_TREND_SESSION_KEY,
+            JSON.stringify({ savedAt: Date.now(), payload })
+          )
+        } catch {
+          // quota / private mode
+        }
       })
       .catch((error: unknown) => {
         if (cancelled) return
-        setTrendReady(false)
         setTrendError(
           error instanceof Error ? error.message : "No se pudo cargar la tendencia"
         )
+      })
+      .finally(() => {
+        if (!cancelled) setTrendUpdating(false)
       })
     return () => {
       cancelled = true
@@ -170,9 +210,7 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
     }
     let cancelled = false
     setDetailMeta((prev) => ({ ...prev, loading: true, error: "" }))
-    fetch(`/api/reporting/fuel-month?month=${encodeURIComponent(month)}`, {
-      cache: "no-store",
-    })
+    fetch(`/api/reporting/fuel-month?month=${encodeURIComponent(month)}`)
       .then(async (response) => {
         const payload = (await response.json()) as {
           rows?: FuelRow[]
@@ -454,7 +492,13 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
           <CardTitle>Tendencia mensual</CardTitle>
           <CardDescription>
             Galones (barras) y gasto ajustado (línea) · respeta owner y producto
-            {!trendReady ? " · cargando historial…" : ""}
+            {trendUpdating
+              ? trendFromCache
+                ? " · caché local · actualizando…"
+                : " · cargando historial…"
+              : trendFromCache
+                ? ""
+                : ""}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -636,10 +680,12 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
               <strong>{data.meta.source_freshness}</strong>.
             </p>
             <p>
-              Caveats: first paint = solo mes de foco. Tendencia 12 meses carga en
-              segundo plano (/api/reporting/fuel-trend, cache in-process 2 min).
-              Tabla de detalle acotada a 400 filas. Gasto = Adjusted SubTotal.
-              Default producto = diésel sin DEF.
+              Caveats: first paint = mes de foco (Next/Vercel data cache{" "}
+              {DIESEL_MONTH_REVALIDATE_SECONDS}s). Tendencia 12 meses = data cache{" "}
+              {DIESEL_TREND_REVALIDATE_SECONDS}s + CDN s-maxage + sessionStorage
+              stale-while-revalidate en este navegador. No inventa filas: solo
+              reusa consultas live recientes de agent-reporting. Tabla detalle
+              acotada a 400 filas. Default producto = diésel sin DEF.
             </p>
           </div>
         </details>
