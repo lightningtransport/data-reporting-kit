@@ -157,6 +157,21 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
       subtitle={scope}
       live={Boolean(data.meta.live)}
     >
+      {data.meta.error ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>No se pudo cargar Liquidaciones</CardTitle>
+            <CardDescription>
+              Solo consulta live de agent-reporting (settlements). No hay snapshot
+              embebido.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="text-muted-foreground text-sm">
+            {data.meta.error}
+          </CardContent>
+        </Card>
+      ) : null}
+
       <Card>
         <CardContent className="pt-(--card-spacing)">
           <FieldGroup className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -536,8 +551,8 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
               Facturado Compass es tonu y ya está en Gross. Peajes+PrePass =
               Tolls+PrePass (sin BestPass). Galones/MPG salen de fuel, no de Fuel
               Expenses. Full Week y Other Deductions+Previous no están en estas
-              tablas. as_of es hora de request, no sync Ninox. Fallback embebido si
-              no hay AGENT_REPORTING_KEY.
+              tablas. as_of es hora de request, no sync Ninox. Solo live
+              agent-reporting; no hay snapshot embebido.
             </p>
           </div>
         </details>

@@ -11,7 +11,7 @@ The live reporting screens live in [`apps/reporting-dashboard`](../apps/reportin
 - **Live URL:** https://lightning-settlement-dashboard.vercel.app
 - **Deep links:** `/` Liquidaciones · `/out-schedule` Out Schedule · `/trucks-return` Trucks Return
 - **Grok bots:** when answering questions about these screens, **link the matching live URL**. Keep the app in sync from this repository. Do not generate a one-off HTML replacement.
-- Deploy: set Vercel Root Directory to `apps/reporting-dashboard`. See [`apps/reporting-dashboard/README.md`](../apps/reporting-dashboard/README.md). Live settlement/returns data uses server-only `AGENT_REPORTING_KEY` (never `NEXT_PUBLIC_*`, never git). Out Schedule fetches the documented live Ninox Schedule_Teams share server-side (`revalidate` ≈ 120s). Settlements HTML/JSON reuse the live payload for up to five minutes (`revalidate = 300`). The embedded settlements JSON is fallback only and may be shorter than 12 months; production must not stay on the snapshot when the key is configured.
+- Deploy: set Vercel Root Directory to `apps/reporting-dashboard`. See [`apps/reporting-dashboard/README.md`](../apps/reporting-dashboard/README.md). All dashboard views use **live queries only** (`cache: "no-store"`, `force-dynamic`): Liquidaciones and Trucks Return via server-only `AGENT_REPORTING_KEY` (never `NEXT_PUBLIC_*`, never git); Out Schedule via the documented live Ninox Schedule_Teams share. There is **no embedded settlements snapshot**. If the key is missing or a live fetch fails, the UI shows an explicit error instead of a copia.
 
 ## Portable skills (other static reports)
 

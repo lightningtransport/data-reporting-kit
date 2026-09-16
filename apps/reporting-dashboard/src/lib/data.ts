@@ -1,7 +1,5 @@
-import embedded from "@/data/settlement-summary.json"
 import {
   DASHBOARD_HISTORY_MONTHS,
-  normalizeSettlementRow,
   type FuelWeek,
   type SettlementPayload,
   type SettlementRow,
@@ -13,7 +11,6 @@ const DEFAULT_ENDPOINT =
 const MAX_PAGES = 80
 const PAGE_SIZE = 1000
 const FETCH_CONCURRENCY = 6
-const LIVE_REVALIDATE_SECONDS = 300
 
 function logLoadFailure(stage: "configuration" | "settlements" | "fuel", error: unknown) {
   const name = error instanceof Error ? error.name : "UnknownError"
@@ -23,11 +20,11 @@ function logLoadFailure(stage: "configuration" | "settlements" | "fuel", error: 
     name,
     message: message.slice(0, 240),
   }
-  if (stage === "settlements") {
+  if (stage === "settlements" || stage === "configuration") {
     console.error("[reporting-dashboard] live data unavailable", details)
     return
   }
-  console.warn("[reporting-dashboard] live data fallback", details)
+  console.warn("[reporting-dashboard] optional live fuel unavailable", details)
 }
 
 function num(value: unknown): number {
@@ -35,32 +32,31 @@ function num(value: unknown): number {
   return Number.isFinite(parsed) ? parsed : 0
 }
 
-export function getEmbeddedSettlementSummary(): SettlementPayload {
-  const raw = embedded as {
-    meta?: SettlementPayload["meta"]
-    rows?: Array<Partial<SettlementRow>>
-    fuelByWeek?: Record<string, FuelWeek>
-  }
-  const rows = (raw.rows ?? [])
-    .map((row) => normalizeSettlementRow(row))
-    .filter((row): row is SettlementRow => row !== null)
+export function emptySettlementPayload(error?: string): SettlementPayload {
   return {
     meta: {
-      as_of: String(raw.meta?.as_of ?? ""),
-      source_freshness: String(raw.meta?.source_freshness ?? "embedded-snapshot"),
-      total_count: Number(raw.meta?.total_count ?? rows.length),
-      fetched_count: Number(raw.meta?.fetched_count ?? rows.length),
-      filters: raw.meta?.filters ?? { dataset: "embedded-settlements-fallback" },
-      pagination_complete: Boolean(raw.meta?.pagination_complete),
-      period_from_values: [...new Set(rows.map((row) => row.pf))].sort(),
+      as_of: new Date().toISOString(),
+      source_freshness: error
+        ? "unavailable: live agent-reporting settlements required"
+        : "empty",
+      total_count: 0,
+      fetched_count: 0,
+      filters: {
+        dataset: "settlements",
+        history_months: DASHBOARD_HISTORY_MONTHS,
+        note: "No embedded snapshot; dashboard uses live agent-reporting only",
+      },
+      pagination_complete: false,
+      period_from_values: [],
       live: false,
-      dataset: "settlements-embedded-fallback",
+      dataset: "settlements",
       fuel_pagination_complete: false,
       fuel_fetched_count: 0,
       fuel_total_count: 0,
+      error,
     },
-    rows,
-    fuelByWeek: raw.fuelByWeek ?? {},
+    rows: [],
+    fuelByWeek: {},
   }
 }
 
@@ -140,7 +136,7 @@ async function fetchOffset<T>(
   url.searchParams.set("offset", String(offset))
   const response = await fetch(url, {
     headers: { "x-agent-key": key, Accept: "application/json" },
-    next: { revalidate: LIVE_REVALIDATE_SECONDS },
+    cache: "no-store",
   })
   if (response.status === 416) {
     return {
@@ -303,8 +299,7 @@ export async function fetchLiveSettlements(): Promise<SettlementPayload> {
         period_to: today,
         dataset: "settlements",
         history_months: DASHBOARD_HISTORY_MONTHS,
-        html_revalidate_seconds: LIVE_REVALIDATE_SECONDS,
-        note: "Paginated settlements plus fuel gallons bucketed onto settlement weeks",
+        note: "Paginated live settlements plus fuel gallons bucketed onto settlement weeks",
       },
       pagination_complete: settlements.complete && rows.length === (settlements.totalCount || rows.length),
       period_from_values: [...new Set(rows.map((row) => row.pf))].sort(),
@@ -321,13 +316,15 @@ export async function fetchLiveSettlements(): Promise<SettlementPayload> {
 
 export async function getSettlementSummary(): Promise<SettlementPayload> {
   if (!process.env.AGENT_REPORTING_KEY) {
-    logLoadFailure("configuration", new Error("AGENT_REPORTING_KEY is not configured"))
-    return getEmbeddedSettlementSummary()
+    const error = "AGENT_REPORTING_KEY is not configured"
+    logLoadFailure("configuration", new Error(error))
+    return emptySettlementPayload(error)
   }
   try {
     return await fetchLiveSettlements()
   } catch (error) {
     logLoadFailure("settlements", error)
-    return getEmbeddedSettlementSummary()
+    const message = error instanceof Error ? error.message : "Unknown settlements error"
+    return emptySettlementPayload(message.slice(0, 240))
   }
 }

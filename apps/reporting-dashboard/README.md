@@ -18,7 +18,7 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Without `AGENT_REPORTING_KEY`, Liquidaciones serves the embedded fallback snapshot (may be shorter than 12 months) and Trucks Return shows a configuration error. Out Schedule always uses the public Schedule_Teams share. With the key, Liquidaciones paginates live `settlements` for ≥12 months and buckets `fuel` gallons onto settlement weeks; Trucks Return paginates `returns`.
+Open [http://localhost:3000](http://localhost:3000). Requires server-only `AGENT_REPORTING_KEY` for Liquidaciones and Trucks Return (live `agent-reporting` only; **no embedded snapshot**). Out Schedule always uses the public Schedule_Teams share live. Without the key, Liquidaciones and Trucks Return show an explicit configuration error.
 
 ## Vercel deploy
 

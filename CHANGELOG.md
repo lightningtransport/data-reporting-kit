@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.7.1 - 2026-09-16
+
+- Dashboard data is **live query only**: removed the embedded `settlement-summary.json` snapshot fallback. Liquidaciones, Out Schedule, and Trucks Return use `force-dynamic` + `cache: "no-store"`. Missing key or fetch failure shows an explicit error, not a copia.
+
 ## 3.7.0 - 2026-09-16
 
 - Reporting dashboard adds **Out Schedule** (`/out-schedule`) and **Trucks Return** (`/trucks-return`) beside Liquidaciones, with a shared top-right **Vistas** menu.
