@@ -1,7 +1,7 @@
 ---
 name: itpros-supabase-reporting
 description: Answer Lightning reports through the approved reporting APIs.
-version: 0.9.3
+version: 0.9.4
 author: Ibrain Ortega, Hermes Agent
 license: Proprietary
 platforms: [linux, macos, windows]
@@ -58,12 +58,13 @@ The reporting dashboard is [`apps/reporting-dashboard`](../../apps/reporting-das
 - Liquidaciones: https://lightning-settlement-dashboard.vercel.app
 - Out Schedule: https://lightning-settlement-dashboard.vercel.app/out-schedule
 - Trucks Return: https://lightning-settlement-dashboard.vercel.app/trucks-return
+- Diesel: https://lightning-settlement-dashboard.vercel.app/diesel
 
-When the user asks to see Out Schedule or Trucks Return (planned departures / expected returns UI), **link that URL**. Do not generate one-off HTML.
+When the user asks to see Out Schedule, Trucks Return, or Diesel (planned departures / expected returns / fuel UI), **link that URL**. Do not generate one-off HTML.
 
 Sibling skills: [`agent-reporting-html`](../agent-reporting-html/SKILL.md) and [`reporting-html-shadcn`](../reporting-html-shadcn/SKILL.md). Copy [`../reporting-html-shadcn/assets/report-ui.css`](../reporting-html-shadcn/assets/report-ui.css) only for other static reports (local skill-cache fallback: `$HERMES_HOME/cache/data-reporting-kit/skills/reporting-html-shadcn/assets/report-ui.css`). Do not invent one-off styles.
 
-Every Liquidaciones view must include the slim **Liquidaciones** header, truck focus card under filters, **Resumen**, weekly/monthly review modes, truck and owner rankings with Ver más for the full physical selection, fuel spend by owner, a KPI strip, a closed **Datos técnicos** evidence accordion, and the shared light minimal theme. Do not show Full Week or Other Deductions+Previous. Out Schedule and Trucks Return share the same shell and **Vistas** menu. Write other static candidates in the agent's workspace (`reports/candidates/`), not in this knowledge repository.
+Every Liquidaciones view must include the slim **Liquidaciones** header, truck focus card under filters, **Resumen**, weekly/monthly review modes, truck and owner rankings with Ver más for the full physical selection, fuel spend by owner, a KPI strip, a closed **Datos técnicos** evidence accordion, and the shared light minimal theme. Do not show Full Week or Other Deductions+Previous. Out Schedule, Trucks Return, and Diesel share the same shell and **Vistas** menu. Write other static candidates in the agent's workspace (`reports/candidates/`), not in this knowledge repository.
 
 ## User-correction webhook — required shared feedback event
 

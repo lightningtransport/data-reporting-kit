@@ -1,5 +1,14 @@
 # Changelog
 
+## 3.8.1 - 2026-09-16
+
+- Diesel monthly trend chart: gallons (bars) and adjusted spend (line) across the loaded window; respects owner and search filters.
+
+## 3.8.0 - 2026-09-16
+
+- Added **Diesel** dashboard view at `/diesel`: live paginated `fuel` (≥12 months), month navigation (current + prior), exact historical `fuel.owner` filter, owner summary, transaction table, KPIs (gallons, adjusted spend, $/gal), and **Datos técnicos**.
+- Shared **Vistas** menu and Grok deep-link docs/skills include Diesel (`agent-reporting-html` 0.2.4, `reporting-html-shadcn` 0.3.4, `itpros-supabase-reporting` 0.9.4).
+
 ## 3.7.1 - 2026-09-16
 
 - Dashboard data is **live query only**: removed the embedded `settlement-summary.json` snapshot fallback. Liquidaciones, Out Schedule, and Trucks Return use `force-dynamic` + `cache: "no-store"`. Missing key or fetch failure shows an explicit error, not a copia.

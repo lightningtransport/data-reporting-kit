@@ -9,9 +9,9 @@ Read `AGENTS.md` first. These rules are for **Grok Bot and Cursor agents** that 
 The live reporting screens live in [`apps/reporting-dashboard`](../apps/reporting-dashboard): Next.js App Router + **real shadcn/ui** (Button, Tabs, Card, Badge, Input, Table, Checkbox, Select, Popover + Command multi-select, DropdownMenu). Do not rebuild them as a native `<select multiple>` or a hand-rolled CSS imitation.
 
 - **Live URL:** https://lightning-settlement-dashboard.vercel.app
-- **Deep links:** `/` Liquidaciones · `/out-schedule` Out Schedule · `/trucks-return` Trucks Return
+- **Deep links:** `/` Liquidaciones · `/out-schedule` Out Schedule · `/trucks-return` Trucks Return · `/diesel` Diesel
 - **Grok bots:** when answering questions about these screens, **link the matching live URL**. Keep the app in sync from this repository. Do not generate a one-off HTML replacement.
-- Deploy: set Vercel Root Directory to `apps/reporting-dashboard`. See [`apps/reporting-dashboard/README.md`](../apps/reporting-dashboard/README.md). All dashboard views use **live queries only** (`cache: "no-store"`, `force-dynamic`): Liquidaciones and Trucks Return via server-only `AGENT_REPORTING_KEY` (never `NEXT_PUBLIC_*`, never git); Out Schedule via the documented live Ninox Schedule_Teams share. There is **no embedded settlements snapshot**. If the key is missing or a live fetch fails, the UI shows an explicit error instead of a copia.
+- Deploy: set Vercel Root Directory to `apps/reporting-dashboard`. See [`apps/reporting-dashboard/README.md`](../apps/reporting-dashboard/README.md). All dashboard views use **live queries only** (`cache: "no-store"`, `force-dynamic`): Liquidaciones, Trucks Return, and Diesel via server-only `AGENT_REPORTING_KEY` (never `NEXT_PUBLIC_*`, never git); Out Schedule via the documented live Ninox Schedule_Teams share. There is **no embedded settlements snapshot**. If the key is missing or a live fetch fails, the UI shows an explicit error instead of a copia.
 
 ## Portable skills (other static reports)
 
@@ -60,6 +60,14 @@ Not established (do not display or approximate): Ninox “Full Week” / “No F
 1. Table of current `returns` rows: Truck, Insurance, Driver Name, Return Date (never Phone/CDL).
 2. Light filters, distinct-truck count, **Datos técnicos**.
 3. Driver-row grain: teams usually produce two rows per truck.
+
+### Diesel (`/diesel`)
+
+1. Live `fuel` transactions for ≥12 months (`store_from` / `store_to`).
+2. Month navigation (current + prior months in the window) and exact historical `fuel.owner` filter.
+3. KPIs: gallons, adjusted spend (sum populated `Adjusted SubTotal`), transactions, distinct trucks, aggregate $/gal.
+4. Monthly trend chart (gallons + adjusted spend across the ≥12-month window; respects owner/search, not the focus month).
+5. Owner summary table plus transaction detail; **Datos técnicos**. Do not count fuel rows as trucks or replace settlement Fuel Expenses.
 
 ## Business-rule reminders that affect HTML
 

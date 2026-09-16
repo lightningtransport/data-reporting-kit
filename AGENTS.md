@@ -11,7 +11,7 @@ This repository is the canonical reporting contract for Lightning Transportation
 5. `docs/data-dictionary.md`
 6. `api/openapi.yaml`
 7. Authenticated runtime catalog: `GET /functions/v1/agent-reporting?report=catalog`
-8. Reporting dashboard (Grok Bot / Cursor): `docs/html-reporting.md` and `apps/reporting-dashboard` (Liquidaciones `/`, Out Schedule `/out-schedule`, Trucks Return `/trucks-return`). HTML skills: `skills/agent-reporting-html/SKILL.md`, `skills/reporting-html-shadcn/SKILL.md`
+8. Reporting dashboard (Grok Bot / Cursor): `docs/html-reporting.md` and `apps/reporting-dashboard` (Liquidaciones `/`, Out Schedule `/out-schedule`, Trucks Return `/trucks-return`, Diesel `/diesel`). HTML skills: `skills/agent-reporting-html/SKILL.md`, `skills/reporting-html-shadcn/SKILL.md`
 
 The six reporting-source schemas and 107 physical columns were verified on **2026-09-14**. The deployed catalog is the runtime contract. If it conflicts with the repository, stop and report the contradiction instead of guessing.
 
@@ -59,12 +59,13 @@ The reporting dashboard is the Next.js + shadcn/ui app in `apps/reporting-dashbo
 | Liquidaciones | `/` | Settlement / fleet financial dashboard questions |
 | Out Schedule | `/out-schedule` | Planned departures / Out Schedule / Schedule_Teams UI |
 | Trucks Return | `/trucks-return` | Current expected returns / Trucks Return UI |
+| Diesel | `/diesel` | Fuel / diesel gallons and spend by month and owner |
 
-The top-right view menu switches between these screens on any route. Liquidaciones reads paginated `settlements` (plus `fuel` gallons for the focus window) for ≥12 months, shows **Resumen** (owner matrix, physical-truck KPIs, dispatch/owner filters), a truck focus card under search, and must not present a truncated truck ranking as the full fleet: preview plus **Ver más** lists every physical truck in the selection. Out Schedule reads the live Ninox Schedule_Teams share. Trucks Return paginates `returns` (no Phone/CDL).
+The top-right view menu switches between these screens on any route. Liquidaciones reads paginated `settlements` (plus `fuel` gallons for the focus window) for ≥12 months, shows **Resumen** (owner matrix, physical-truck KPIs, dispatch/owner filters), a truck focus card under search, and must not present a truncated truck ranking as the full fleet: preview plus **Ver más** lists every physical truck in the selection. Out Schedule reads the live Ninox Schedule_Teams share. Trucks Return paginates `returns` (no Phone/CDL). Diesel paginates live `fuel` (≥12 months), with month navigation and historical `fuel.owner` filter.
 
 Other HTML reports still follow the ≥3-month window and confirmed sections. Do not invent a second visual language; prefer real shadcn components in `apps/reporting-dashboard`.
 
-Every Liquidaciones view must include **Resumen**, weekly and monthly review modes, truck and owner rankings, fuel spend by owner, a KPI strip, a closed **Datos técnicos** evidence accordion, and the shared light theme. Visible copy is Spanish operational wording. Do not display Ninox Full Week or Other Deductions+Previous: those fields are not in `public.settlements`. Out Schedule and Trucks Return use the same shell, shadcn Table/Badge, filters, row counts, and **Datos técnicos** accordion.
+Every Liquidaciones view must include **Resumen**, weekly and monthly review modes, truck and owner rankings, fuel spend by owner, a KPI strip, a closed **Datos técnicos** evidence accordion, and the shared light theme. Visible copy is Spanish operational wording. Do not display Ninox Full Week or Other Deductions+Previous: those fields are not in `public.settlements`. Out Schedule, Trucks Return, and Diesel use the same shell, shadcn Table/Badge, filters, row counts, and **Datos técnicos** accordion.
 
 ## Required answer evidence
 
