@@ -101,6 +101,18 @@ function ownerTotals(rows: FuelRow[]): Array<{
     .sort((a, b) => b.gallons - a.gallons || a.owner.localeCompare(b.owner))
 }
 
+function matchesProduct(row: FuelRow, product: string): boolean {
+  if (product === "all") return true
+  const name = row.product.toLowerCase()
+  if (product === "diesel") {
+    return name.includes("diesel") && !name.includes("def")
+  }
+  if (product === "def") {
+    return name.includes("def")
+  }
+  return row.product === product
+}
+
 export function DieselDashboard({ data }: { data: FuelPayload }) {
   const months = useMemo(() => {
     const fromData = data.meta.months.length ? data.meta.months : []
@@ -118,12 +130,25 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
     [data.rows]
   )
 
+  const productItems = useMemo(() => {
+    const exact = [
+      ...new Set(data.rows.map((row) => row.product).filter(Boolean)),
+    ].sort((a, b) => a.localeCompare(b))
+    return [
+      { value: "diesel", label: "Diésel (sin DEF)" },
+      { value: "def", label: "DEF" },
+      { value: "all", label: "Todos los productos" },
+      ...exact.map((value) => ({ value, label: value })),
+    ]
+  }, [data.rows])
+
   const defaultMonth = months.includes(currentMonthKey())
     ? currentMonthKey()
     : (months[months.length - 1] ?? currentMonthKey())
 
   const [month, setMonth] = useState(defaultMonth)
   const [owner, setOwner] = useState("all")
+  const [product, setProduct] = useState("diesel")
   const [truckQuery, setTruckQuery] = useState("")
 
   const monthItems = useMemo(
@@ -145,6 +170,7 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
     return data.rows.filter((row) => {
       if (!row.storeDate.startsWith(month)) return false
       if (owner !== "all" && row.owner !== owner) return false
+      if (!matchesProduct(row, product)) return false
       if (
         query &&
         !row.unit.toLowerCase().includes(query) &&
@@ -155,7 +181,7 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
       }
       return true
     })
-  }, [data.rows, month, owner, truckQuery])
+  }, [data.rows, month, owner, product, truckQuery])
 
   const monthlyTrend = useMemo(() => {
     const query = truckQuery.trim().toLowerCase()
@@ -165,6 +191,7 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
     }
     for (const row of data.rows) {
       if (owner !== "all" && row.owner !== owner) continue
+      if (!matchesProduct(row, product)) continue
       if (
         query &&
         !row.unit.toLowerCase().includes(query) &&
@@ -187,15 +214,18 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
         gallons: byMonth[key].gallons,
         spend: byMonth[key].spend,
       }))
-  }, [data.rows, months, owner, truckQuery])
+  }, [data.rows, months, owner, product, truckQuery])
 
   const kpi = useMemo(() => aggregateFuelRows(filtered), [filtered])
   const byOwner = useMemo(() => ownerTotals(filtered), [filtered])
 
+  const productLabel =
+    productItems.find((item) => item.value === product)?.label ?? product
+
   return (
     <DashboardShell
       title="Diesel"
-      subtitle={`${monthLabel(month)} · ${kpi.transactions} tx · ${kpi.distinctTrucks} camiones`}
+      subtitle={`${monthLabel(month)} · ${productLabel} · ${kpi.transactions} tx · ${kpi.distinctTrucks} camiones`}
       live={Boolean(data.meta.live)}
     >
       {data.meta.error ? (
@@ -212,7 +242,7 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
 
       <Card>
         <CardContent className="pt-(--card-spacing)">
-          <FieldGroup className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <FieldGroup className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
             <Field>
               <FieldLabel>Mes</FieldLabel>
               <div className="flex w-full items-center gap-2">
@@ -278,6 +308,29 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
               </Select>
             </Field>
             <Field>
+              <FieldLabel>Producto</FieldLabel>
+              <Select
+                items={productItems}
+                value={product}
+                onValueChange={(value) => {
+                  if (typeof value === "string") setProduct(value)
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {productItems.map((item) => (
+                      <SelectItem key={item.value} value={item.value}>
+                        {item.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field>
               <FieldLabel>Camión / producto / ciudad</FieldLabel>
               <Input
                 value={truckQuery}
@@ -306,8 +359,8 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
         <CardHeader>
           <CardTitle>Tendencia mensual</CardTitle>
           <CardDescription>
-            Galones (barras) y gasto ajustado (línea) · respeta owner y búsqueda ·
-            no el mes de foco
+            Galones (barras) y gasto ajustado (línea) · respeta owner, producto y
+            búsqueda · no el mes de foco
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -463,8 +516,9 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
             </p>
             <p>
               Filtros UI: mes=<strong>{month}</strong>, owner=
-              <strong>{owner}</strong>, search=&quot;{truckQuery}&quot; ·
-              selección=<strong>{filtered.length}</strong> tx.
+              <strong>{owner}</strong>, producto=<strong>{product}</strong>,
+              search=&quot;{truckQuery}&quot; · selección=
+              <strong>{filtered.length}</strong> tx.
             </p>
             <p>
               as_of=<strong>{data.meta.as_of}</strong> · source_freshness=
@@ -474,8 +528,9 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
               Caveats: grano transacción (no contar filas como camiones). Gasto
               ajustado = suma de Adjusted SubTotal poblado; no sustituye SubTotal
               cuando Adjusted es null. $/gal agregado = gasto ajustado ÷ galones.
-              Ventana ≥12 meses con store_from/store_to. Solo live agent-reporting;
-              sin snapshot.
+              Default de producto = diésel sin DEF (Premium Diesel #2). Ventana
+              ≥12 meses con store_from/store_to. Solo live agent-reporting; sin
+              snapshot.
             </p>
           </div>
         </details>

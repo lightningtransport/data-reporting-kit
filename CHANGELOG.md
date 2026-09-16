@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.8.2 - 2026-09-16
+
+- Diesel product filter defaults to diesel excluding DEF so month/owner KPIs match Premium Diesel #2 adjusted-spend totals (DEF available as a separate product choice).
+
 ## 3.8.1 - 2026-09-16
 
 - Diesel monthly trend chart: gallons (bars) and adjusted spend (line) across the loaded window; respects owner and search filters.
