@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.8.3 - 2026-09-16
+
+- Fix Diesel production hang: ship monthly aggregates instead of ~43k fuel rows to the browser, load detail per focus month (capped), and keep product default diesel-without-DEF.
+
 ## 3.8.2 - 2026-09-16
 
 - Diesel product filter defaults to diesel excluding DEF so month/owner KPIs match Premium Diesel #2 adjusted-spend totals (DEF available as a separate product choice).

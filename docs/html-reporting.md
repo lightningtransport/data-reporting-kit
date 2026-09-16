@@ -65,9 +65,9 @@ Not established (do not display or approximate): Ninox “Full Week” / “No F
 
 1. Live `fuel` transactions for ≥12 months (`store_from` / `store_to`).
 2. Month navigation (current + prior months in the window), exact historical `fuel.owner` filter, and product filter (default diesel excluding DEF).
-3. KPIs: gallons, adjusted spend (sum populated `Adjusted SubTotal`), transactions, distinct trucks, aggregate $/gal.
-4. Monthly trend chart (gallons + adjusted spend across the ≥12-month window; respects owner/product/search, not the focus month).
-5. Owner summary table plus transaction detail; **Datos técnicos**. Do not count fuel rows as trucks or replace settlement Fuel Expenses.
+3. KPIs: gallons, adjusted spend (sum populated `Adjusted SubTotal`), transactions, distinct trucks, aggregate $/gal — from server monthly aggregates (not the capped detail table).
+4. Monthly trend chart (gallons + adjusted spend across the ≥12-month window; respects owner/product).
+5. Owner summary from monthly aggregates; transaction detail capped per focus month via `/api/reporting/fuel-month`. **Datos técnicos**. Do not count fuel rows as trucks or replace settlement Fuel Expenses.
 
 ## Business-rule reminders that affect HTML
 
