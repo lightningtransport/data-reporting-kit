@@ -419,6 +419,7 @@ function credentials() {
 
 export async function getFuelMonthRows(ym: string): Promise<{
   rows: FuelRow[]
+  series: FuelMonthSeries
   totalCount: number
   truncated: boolean
   asOf: string
@@ -426,10 +427,17 @@ export async function getFuelMonthRows(ym: string): Promise<{
   complete: boolean
   error?: string
 }> {
+  const emptySeries = freezeMonth(ym, {
+    all: emptyMutable(),
+    diesel: emptyMutable(),
+    def: emptyMutable(),
+    byOwner: {},
+  })
   const auth = credentials()
   if (!auth) {
     return {
       rows: [],
+      series: emptySeries,
       totalCount: 0,
       truncated: false,
       asOf: new Date().toISOString(),
@@ -455,9 +463,11 @@ export async function getFuelMonthRows(ym: string): Promise<{
           a.unit.localeCompare(b.unit) ||
           a.id - b.id
       )
+    const series = freezeMonth(ym, accumulateMonth(rows))
     const truncated = rows.length > DIESEL_DETAIL_ROW_CAP
     return {
       rows: truncated ? rows.slice(0, DIESEL_DETAIL_ROW_CAP) : rows,
+      series,
       totalCount: rows.length,
       truncated,
       asOf: result.asOf || new Date().toISOString(),
@@ -470,6 +480,7 @@ export async function getFuelMonthRows(ym: string): Promise<{
     const message = error instanceof Error ? error.message : "Unknown fuel error"
     return {
       rows: [],
+      series: emptySeries,
       totalCount: 0,
       truncated: false,
       asOf: new Date().toISOString(),
@@ -480,11 +491,149 @@ export async function getFuelMonthRows(ym: string): Promise<{
   }
 }
 
+export type FuelTrendPayload = {
+  meta: {
+    as_of: string
+    source_freshness: string
+    total_count: number
+    fetched_count: number
+    pagination_complete: boolean
+    live: boolean
+    months: string[]
+    distinct_trucks: number
+    error?: string
+  }
+  monthly: FuelMonthSeries[]
+  owners: string[]
+  products: string[]
+}
+
+type TrendCache = {
+  expiresAt: number
+  payload: FuelTrendPayload
+}
+
+declare global {
+  // eslint-disable-next-line no-var
+  var __dieselFuelTrendCache: TrendCache | undefined
+}
+
+const TREND_CACHE_MS = 120_000
+
+function buildMonthlyFromRows(
+  rows: FuelRow[],
+  months: string[]
+): FuelMonthSeries[] {
+  const byMonth: Record<string, FuelRow[]> = {}
+  for (const key of months) byMonth[key] = []
+  for (const row of rows) {
+    const key = monthKey(row.storeDate)
+    if (!key) continue
+    if (!byMonth[key]) byMonth[key] = []
+    byMonth[key].push(row)
+  }
+  return Object.keys(byMonth)
+    .sort()
+    .map((key) => freezeMonth(key, accumulateMonth(byMonth[key])))
+}
+
+/** Full-window monthly aggregates for the chart. Cached briefly in-process. */
+export async function getFuelTrend(): Promise<FuelTrendPayload> {
+  const cached = globalThis.__dieselFuelTrendCache
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.payload
+  }
+
+  const auth = credentials()
+  if (!auth) {
+    return {
+      meta: {
+        as_of: new Date().toISOString(),
+        source_freshness: "unavailable",
+        total_count: 0,
+        fetched_count: 0,
+        pagination_complete: false,
+        live: false,
+        months: [],
+        distinct_trucks: 0,
+        error: "AGENT_REPORTING_KEY is not configured",
+      },
+      monthly: [],
+      owners: [],
+      products: [],
+    }
+  }
+
+  try {
+    const today = new Date().toISOString().slice(0, 10)
+    const storeFrom = dieselHistoryStart(today)
+    const months = listMonthKeys(storeFrom, today)
+    const result = await fetchAllFuel(auth.endpoint, auth.key, {
+      report: "fuel",
+      store_from: storeFrom,
+      store_to: today,
+    })
+    const rows = result.rows
+      .map(mapFuel)
+      .filter((row): row is FuelRow => row !== null)
+    const monthly = buildMonthlyFromRows(rows, months)
+    const owners = [
+      ...new Set(monthly.flatMap((item) => Object.keys(item.byOwner))),
+    ].sort((a, b) => a.localeCompare(b))
+    const products = [
+      ...new Set(rows.map((row) => row.product).filter(Boolean)),
+    ].sort((a, b) => a.localeCompare(b))
+    const payload: FuelTrendPayload = {
+      meta: {
+        as_of: result.asOf || new Date().toISOString(),
+        source_freshness:
+          result.freshness ||
+          "unknown: source tables do not expose a sync timestamp",
+        total_count: result.totalCount || rows.length,
+        fetched_count: rows.length,
+        pagination_complete:
+          result.complete && rows.length === (result.totalCount || rows.length),
+        live: true,
+        months,
+        distinct_trucks: new Set(rows.map((row) => row.unit).filter(Boolean)).size,
+      },
+      monthly,
+      owners,
+      products,
+    }
+    globalThis.__dieselFuelTrendCache = {
+      expiresAt: Date.now() + TREND_CACHE_MS,
+      payload,
+    }
+    return payload
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown fuel error"
+    return {
+      meta: {
+        as_of: new Date().toISOString(),
+        source_freshness: "unavailable",
+        total_count: 0,
+        fetched_count: 0,
+        pagination_complete: false,
+        live: false,
+        months: [],
+        distinct_trucks: 0,
+        error: message.slice(0, 240),
+      },
+      monthly: [],
+      owners: [],
+      products: [],
+    }
+  }
+}
+
+/** Fast first paint: only the focus month (KPIs + capped detail). Trend loads client-side. */
 export async function getFuel(detailMonth?: string): Promise<FuelPayload> {
   const auth = credentials()
   if (!auth) {
     return emptyFuelPayload("AGENT_REPORTING_KEY is not configured")
   }
+
   try {
     const today = new Date().toISOString().slice(0, 10)
     const storeFrom = dieselHistoryStart(today)
@@ -496,79 +645,52 @@ export async function getFuel(detailMonth?: string): Promise<FuelPayload> {
           ? today.slice(0, 7)
           : (months[months.length - 1] ?? today.slice(0, 7))
 
-    const monthResults = []
-    for (let i = 0; i < months.length; i += 4) {
-      const batch = months.slice(i, i + 4)
-      const part = await Promise.all(
-        batch.map(async (ym) => {
-          const { storeFrom: from, storeTo: to } = monthBounds(ym, today)
-          const result = await fetchAllFuel(auth.endpoint, auth.key, {
-            report: "fuel",
-            store_from: from,
-            store_to: to,
-          })
-          const mapped = result.rows
-            .map(mapFuel)
-            .filter((row): row is FuelRow => row !== null)
-          return {
-            ym,
-            mapped,
-            totalCount: result.totalCount || mapped.length,
-            asOf: result.asOf,
-            freshness: result.freshness,
-            complete:
-              result.complete && mapped.length === (result.totalCount || mapped.length),
-          }
-        })
+    const { storeFrom: from, storeTo: to } = monthBounds(focus, today)
+    const full = await fetchAllFuel(auth.endpoint, auth.key, {
+      report: "fuel",
+      store_from: from,
+      store_to: to,
+    })
+    const mapped = full.rows
+      .map(mapFuel)
+      .filter((row): row is FuelRow => row !== null)
+      .sort(
+        (a, b) =>
+          b.storeDate.localeCompare(a.storeDate) ||
+          a.unit.localeCompare(b.unit) ||
+          a.id - b.id
       )
-      monthResults.push(...part)
-    }
-
-    const monthly = monthResults.map((item) =>
-      freezeMonth(item.ym, accumulateMonth(item.mapped))
+    const focusSeries = freezeMonth(focus, accumulateMonth(mapped))
+    const owners = Object.keys(focusSeries.byOwner).sort((a, b) =>
+      a.localeCompare(b)
     )
-    const owners = [
-      ...new Set(
-        monthly.flatMap((item) => Object.keys(item.byOwner)).filter(Boolean)
-      ),
-    ].sort((a, b) => a.localeCompare(b))
     const products = [
-      ...new Set(
-        monthResults.flatMap((item) => item.mapped.map((row) => row.product)).filter(Boolean)
-      ),
+      ...new Set(mapped.map((row) => row.product).filter(Boolean)),
     ].sort((a, b) => a.localeCompare(b))
+    const detailTruncated = mapped.length > DIESEL_DETAIL_ROW_CAP
+    const rows = detailTruncated ? mapped.slice(0, DIESEL_DETAIL_ROW_CAP) : mapped
 
-    const focusPack = monthResults.find((item) => item.ym === focus)
-    const focusRows = [...(focusPack?.mapped ?? [])].sort(
-      (a, b) =>
-        b.storeDate.localeCompare(a.storeDate) ||
-        a.unit.localeCompare(b.unit) ||
-        a.id - b.id
+    const monthly = months.map((ym) =>
+      ym === focus
+        ? focusSeries
+        : freezeMonth(ym, {
+            all: emptyMutable(),
+            diesel: emptyMutable(),
+            def: emptyMutable(),
+            byOwner: {},
+          })
     )
-    const detailTruncated = focusRows.length > DIESEL_DETAIL_ROW_CAP
-    const rows = detailTruncated
-      ? focusRows.slice(0, DIESEL_DETAIL_ROW_CAP)
-      : focusRows
-
-    const fetchedCount = monthResults.reduce((sum, item) => sum + item.mapped.length, 0)
-    const totalCount = monthResults.reduce((sum, item) => sum + item.totalCount, 0)
-    const complete = monthResults.every((item) => item.complete)
-    const asOf =
-      monthResults.map((item) => item.asOf).find(Boolean) || new Date().toISOString()
-    const freshness =
-      monthResults.map((item) => item.freshness).find(Boolean) ||
-      "unknown: source tables do not expose a sync timestamp"
-    const distinctTrucks = new Set(
-      monthResults.flatMap((item) => item.mapped.map((row) => row.unit).filter(Boolean))
-    ).size
 
     return {
       meta: {
-        as_of: asOf,
-        source_freshness: freshness,
-        total_count: totalCount || fetchedCount,
-        fetched_count: fetchedCount,
-        pagination_complete: complete,
+        as_of: full.asOf || new Date().toISOString(),
+        source_freshness:
+          full.freshness ||
+          "unknown: source tables do not expose a sync timestamp",
+        total_count: full.totalCount || mapped.length,
+        fetched_count: mapped.length,
+        pagination_complete:
+          full.complete && mapped.length === (full.totalCount || mapped.length),
         live: true,
         dataset: "fuel",
         filters: {
@@ -578,12 +700,13 @@ export async function getFuel(detailMonth?: string): Promise<FuelPayload> {
           history_months: DIESEL_HISTORY_MONTHS,
           detail_month: focus,
           detail_row_cap: DIESEL_DETAIL_ROW_CAP,
-          note: "Live fuel; monthly aggregates for chart; detail rows capped per focus month",
+          note: "Fast path: focus month only; chart trend via /api/reporting/fuel-trend",
+          trend_pending: true,
         },
-        distinct_trucks: distinctTrucks,
+        distinct_trucks: new Set(mapped.map((row) => row.unit).filter(Boolean)).size,
         months,
         detail_month: focus,
-        detail_row_count: focusRows.length,
+        detail_row_count: mapped.length,
         detail_truncated: detailTruncated,
       },
       monthly,

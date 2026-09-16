@@ -24,6 +24,7 @@ export async function GET(request: Request) {
   }
   return NextResponse.json({
     rows: result.rows,
+    series: result.series,
     meta: {
       month,
       total_count: result.totalCount,

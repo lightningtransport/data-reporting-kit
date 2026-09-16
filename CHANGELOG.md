@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.8.4 - 2026-09-16
+
+- Diesel first paint loads only the focus month; 12-month chart trend loads in the background via `/api/reporting/fuel-trend` (2-minute in-process cache).
+
 ## 3.8.3 - 2026-09-16
 
 - Fix Diesel production hang: ship monthly aggregates instead of ~43k fuel rows to the browser, load detail per focus month (capped), and keep product default diesel-without-DEF.

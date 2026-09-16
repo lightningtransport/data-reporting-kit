@@ -36,6 +36,7 @@ import { moneyExact, num } from "@/lib/format"
 import {
   pickProductAgg,
   type FuelAgg,
+  type FuelMonthSeries,
   type FuelPayload,
   type FuelRow,
 } from "@/lib/fuel"
@@ -112,6 +113,12 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
   const [owner, setOwner] = useState("all")
   const [product, setProduct] = useState("diesel")
   const [truckQuery, setTruckQuery] = useState("")
+  const [monthly, setMonthly] = useState<FuelMonthSeries[]>(data.monthly)
+  const [owners, setOwners] = useState<string[]>(data.owners)
+  const [trendReady, setTrendReady] = useState(
+    data.meta.filters.trend_pending !== true
+  )
+  const [trendError, setTrendError] = useState("")
   const [detailRows, setDetailRows] = useState<FuelRow[]>(data.rows)
   const [detailMeta, setDetailMeta] = useState({
     total: data.meta.detail_row_count,
@@ -119,6 +126,36 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
     loading: false,
     error: "",
   })
+
+  useEffect(() => {
+    let cancelled = false
+    fetch("/api/reporting/fuel-trend", { cache: "no-store" })
+      .then(async (response) => {
+        const payload = (await response.json()) as {
+          monthly?: FuelMonthSeries[]
+          owners?: string[]
+          meta?: { error?: string; months?: string[] }
+        }
+        if (!response.ok) {
+          throw new Error(payload.meta?.error || `HTTP ${response.status}`)
+        }
+        if (cancelled) return
+        if (payload.monthly?.length) setMonthly(payload.monthly)
+        if (payload.owners?.length) setOwners(payload.owners)
+        setTrendReady(true)
+        setTrendError("")
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return
+        setTrendReady(false)
+        setTrendError(
+          error instanceof Error ? error.message : "No se pudo cargar la tendencia"
+        )
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   useEffect(() => {
     if (month === data.meta.detail_month) {
@@ -139,6 +176,7 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
       .then(async (response) => {
         const payload = (await response.json()) as {
           rows?: FuelRow[]
+          series?: FuelMonthSeries
           meta?: { total_count?: number; truncated?: boolean }
           error?: string
         }
@@ -147,6 +185,23 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
         }
         if (cancelled) return
         setDetailRows(payload.rows ?? [])
+        if (payload.series) {
+          setMonthly((prev) => {
+            const next = [...prev]
+            const idx = next.findIndex((item) => item.month === month)
+            if (idx >= 0) next[idx] = payload.series!
+            else next.push(payload.series!)
+            return next.sort((a, b) => a.month.localeCompare(b.month))
+          })
+          const ownerNames = Object.keys(payload.series.byOwner)
+          if (ownerNames.length) {
+            setOwners((prev) =>
+              [...new Set([...prev, ...ownerNames])].sort((a, b) =>
+                a.localeCompare(b)
+              )
+            )
+          }
+        }
         setDetailMeta({
           total: Number(payload.meta?.total_count ?? payload.rows?.length ?? 0),
           truncated: Boolean(payload.meta?.truncated),
@@ -176,9 +231,9 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
   const ownerItems = useMemo(
     () => [
       { value: "all", label: "Todos" },
-      ...data.owners.map((value) => ({ value, label: value })),
+      ...owners.map((value) => ({ value, label: value })),
     ],
-    [data.owners]
+    [owners]
   )
   const productItems = useMemo(
     () => [
@@ -190,7 +245,7 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
   )
 
   const monthIndex = months.indexOf(month)
-  const focusSeries = data.monthly.find((item) => item.month === month)
+  const focusSeries = monthly.find((item) => item.month === month)
 
   const kpi = useMemo(() => {
     if (!focusSeries) {
@@ -206,7 +261,7 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
   }, [focusSeries, product, owner])
 
   const monthlyTrend = useMemo(() => {
-    return data.monthly.map((item) => {
+    return monthly.map((item) => {
       const agg = pickProductAgg(item, product, owner)
       return {
         month: item.month,
@@ -215,7 +270,7 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
         spend: agg.spend,
       }
     })
-  }, [data.monthly, product, owner])
+  }, [monthly, product, owner])
 
   const byOwner = useMemo(() => {
     if (!focusSeries) return []
@@ -399,14 +454,26 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
           <CardTitle>Tendencia mensual</CardTitle>
           <CardDescription>
             Galones (barras) y gasto ajustado (línea) · respeta owner y producto
+            {!trendReady ? " · cargando historial…" : ""}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {monthlyTrend.every((point) => point.gallons === 0 && point.spend === 0) ? (
+          {trendError ? (
+            <p className="text-destructive text-sm">{trendError}</p>
+          ) : null}
+          {!trendReady && !trendError ? (
+            <p className="text-muted-foreground text-sm">
+              KPIs del mes listos · cargando los 12 meses del gráfico…
+            </p>
+          ) : null}
+          {trendReady &&
+          monthlyTrend.every((point) => point.gallons === 0 && point.spend === 0) ? (
             <p className="text-muted-foreground text-sm">Sin datos en la ventana</p>
-          ) : (
+          ) : null}
+          {trendReady &&
+          !monthlyTrend.every((point) => point.gallons === 0 && point.spend === 0) ? (
             <DieselMonthlyTrendChart data={monthlyTrend} />
-          )}
+          ) : null}
         </CardContent>
       </Card>
 
@@ -569,10 +636,10 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
               <strong>{data.meta.source_freshness}</strong>.
             </p>
             <p>
-              Caveats: KPIs/gráfico/owner = agregados mensuales server-side.
-              Tabla de detalle acotada a 400 filas por mes. Gasto = Adjusted
-              SubTotal poblado. Default producto = diésel sin DEF. Ventana ≥12
-              meses.
+              Caveats: first paint = solo mes de foco. Tendencia 12 meses carga en
+              segundo plano (/api/reporting/fuel-trend, cache in-process 2 min).
+              Tabla de detalle acotada a 400 filas. Gasto = Adjusted SubTotal.
+              Default producto = diésel sin DEF.
             </p>
           </div>
         </details>
