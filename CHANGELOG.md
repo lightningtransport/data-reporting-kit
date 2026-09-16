@@ -6,7 +6,9 @@
 - Out Schedule loads the live Ninox Schedule_Teams share (server-side) using the share’s actual fields (Truck, Out Date, Team, Owner, Dispatch, Flatbed, solo); Trucks Return paginates `agent-reporting` `returns` without Phone/CDL.
 - Fixed Base UI DropdownMenu so **Vistas** wraps items in `DropdownMenuGroup` (otherwise the menu crashed and the new routes were unreachable from Liquidaciones).
 - Grok/Cursor docs and packaged HTML skills deep-link the matching dashboard URLs instead of one-off HTML.
-- Skills: `agent-reporting-html` 0.2.2, `reporting-html-shadcn` 0.3.2, `itpros-supabase-reporting` 0.9.2.
+- Force dynamic Trucks Return fetches at request time so an empty build-time payload is not baked when the key is runtime-only.
+- `docs/agent-rules.md` and `docs/metric-definitions.md` deep-link Out Schedule / Trucks Return for Grok sync.
+- Skills: `agent-reporting-html` 0.2.3, `reporting-html-shadcn` 0.3.3, `itpros-supabase-reporting` 0.9.3.
 
 ## 3.6.0 - 2026-09-15
 

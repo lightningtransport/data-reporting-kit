@@ -3,7 +3,7 @@ name: reporting-html-shadcn
 description: >-
   Use when a Grok Bot or Cursor agent builds Lightning reporting HTML dashboards
   so every screen reuses the same shadcn-like components and styles.
-version: 0.3.2
+version: 0.3.3
 license: Proprietary
 platforms: [linux, macos, windows]
 metadata:
