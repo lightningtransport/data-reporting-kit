@@ -30,25 +30,25 @@ const MATRIX: Array<{
   money?: boolean
   copyOnlyIfPresent?: boolean
 }> = [
-  { key: "g", label: "Gross facturado", money: true },
+  { key: "g", label: "Gross billed", money: true },
   {
     key: "c",
-    label: "Facturado Compass",
-    hint: "Incluido en Gross",
+    label: "Compass billed",
+    hint: "Already in Gross",
     money: true,
     copyOnlyIfPresent: true,
   },
-  { key: "e", label: "Gastos", money: true },
+  { key: "e", label: "Expenses", money: true },
   { key: "n", label: "Net", money: true },
-  { key: "lo", label: "Préstamos de camión", money: true, copyOnlyIfPresent: true },
-  { key: "f", label: "Combustible", money: true },
-  { key: "dp", label: "Pago a conductores", money: true },
-  { key: "ltr", label: "Reparaciones", money: true, copyOnlyIfPresent: true },
-  { key: "tp", label: "Peajes + PrePass", money: true, copyOnlyIfPresent: true },
-  { key: "m", label: "Millas" },
+  { key: "lo", label: "Truck loans", money: true, copyOnlyIfPresent: true },
+  { key: "f", label: "Fuel", money: true },
+  { key: "dp", label: "Driver pay", money: true },
+  { key: "ltr", label: "Repairs", money: true, copyOnlyIfPresent: true },
+  { key: "tp", label: "Tolls + PrePass", money: true, copyOnlyIfPresent: true },
+  { key: "m", label: "Miles" },
 ]
 
-const COPY_GAP_HINT = "No está en esta copia"
+const COPY_GAP_HINT = "Not in this snapshot"
 
 function formatValue(
   row: OwnerExec,
@@ -149,48 +149,48 @@ export function ExecutiveSummary({
   return (
     <section className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
-        <h2 className="font-heading text-xl tracking-tight">Resumen</h2>
-        <p className="text-muted-foreground text-sm">Totales de {scope}.</p>
+        <h2 className="font-heading text-xl tracking-tight">Summary</h2>
+        <p className="text-muted-foreground text-sm">Totals for {scope}.</p>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        <Kpi label="Gross promedio" value={avg(physical.avgGross, money)} />
-        <Kpi label="Gastos promedio" value={avg(physical.avgExp, money)} />
-        <Kpi label="Pago promedio" value={avg(physical.avgPay, money)} />
+        <Kpi label="Avg Gross" value={avg(physical.avgGross, money)} />
+        <Kpi label="Avg expenses" value={avg(physical.avgExp, money)} />
+        <Kpi label="Avg driver pay" value={avg(physical.avgPay, money)} />
         <Kpi
-          label="Ingreso por milla"
+          label="Revenue per mile"
           value={avg(physical.rpm, (value) => moneyExact(value))}
         />
-        <Kpi label="Millas promedio" value={avg(physical.avgMiles, num)} />
-        <Kpi label="Millas" value={num(physical.miles)} />
+        <Kpi label="Avg miles" value={avg(physical.avgMiles, num)} />
+        <Kpi label="Miles" value={num(physical.miles)} />
         {mpg != null ? <Kpi label="MPG" value={num(mpg)} /> : null}
-        {gallons != null ? <Kpi label="Galones" value={num(gallons)} /> : null}
+        {gallons != null ? <Kpi label="Gallons" value={num(gallons)} /> : null}
         <Kpi
-          label={`Gross bajo ${money(LOW_GROSS_THRESHOLD)}`}
+          label={`Gross under ${money(LOW_GROSS_THRESHOLD)}`}
           value={String(physical.lowGross)}
         />
         <Kpi
-          label="Net negativo"
+          label="Negative Net"
           value={String(physical.netNeg)}
-          hint={`${physical.netPos} con net positivo`}
+          hint={`${physical.netPos} with positive Net`}
         />
-        <Kpi label="Camiones" value={String(physical.count)} />
+        <Kpi label="Trucks" value={String(physical.count)} />
         {showRepairKpi ? (
-          <Kpi label="Reparaciones" value={money(total.ltr)} />
+          <Kpi label="Repairs" value={money(total.ltr)} />
         ) : null}
         {showTollKpi ? (
-          <Kpi label="Peajes + PrePass" value={money(total.tp)} />
+          <Kpi label="Tolls + PrePass" value={money(total.tp)} />
         ) : null}
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Por equipo</CardTitle>
+          <CardTitle>By team</CardTitle>
           <CardDescription>
-            Incluye asignaciones 1, 2 y 3 en su equipo. Desliza la tabla para ver
-            todos los equipos.
+            Includes allocation buckets 1, 2, and 3 in their team. Scroll the
+            table to see every team.
             {copyGaps.length > 0
-              ? " Compass, préstamos, reparaciones y peajes no vienen en esta copia; no son $0."
+              ? " Compass, loans, repairs, and tolls are not in this snapshot; blank does not mean $0."
               : null}
           </CardDescription>
         </CardHeader>
@@ -200,7 +200,7 @@ export function ExecutiveSummary({
               <TableHeader>
                 <TableRow>
                   <TableHead className="bg-background sticky left-0 z-20 min-w-44 shadow-[4px_0_8px_-6px_rgba(0,0,0,0.35)]">
-                    Métrica
+                    Metric
                   </TableHead>
                   {columns.map((column) => (
                     <TableHead

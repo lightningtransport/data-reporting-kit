@@ -45,8 +45,8 @@ export function TruckRankCard({
   const preview = trucks.slice(0, TRUCK_RANK_PREVIEW)
   const headers =
     primary === "g"
-      ? ["#", "Camión", "Equipo", "Gross", "Net"]
-      : ["#", "Camión", "Equipo", "Net", "Gross"]
+      ? ["#", "Truck", "Team", "Gross", "Net"]
+      : ["#", "Truck", "Team", "Net", "Gross"]
 
   return (
     <Card>
@@ -54,7 +54,7 @@ export function TruckRankCard({
         <div className="flex flex-col gap-1">
           <CardTitle>{title}</CardTitle>
           <CardDescription>
-            {description} · {trucks.length} camiones en la selección
+            {description} · {trucks.length} trucks in selection
           </CardDescription>
         </div>
         <TruckListDialog title={title} trucks={trucks} primary={primary} />
@@ -87,25 +87,25 @@ function TruckListDialog({
   }, [query, trucks])
   const headers =
     primary === "g"
-      ? ["#", "Camión", "Equipo", "Gross", "Net"]
-      : ["#", "Camión", "Equipo", "Net", "Gross"]
+      ? ["#", "Truck", "Team", "Gross", "Net"]
+      : ["#", "Truck", "Team", "Net", "Gross"]
 
   return (
     <Dialog>
       <DialogTrigger render={<Button variant="outline" size="sm" />}>
-        Ver más
+        Show all
       </DialogTrigger>
       <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
-            Lista completa de la selección ({trucks.length}), no un recorte.
+            Full selection ({trucks.length}), not a preview.
           </DialogDescription>
         </DialogHeader>
         <Input
           type="search"
           value={query}
-            placeholder="Buscar camión o equipo"
+          placeholder="Search truck or team"
           onChange={(event) => setQuery(event.target.value)}
         />
         <div className="max-h-[60vh] overflow-auto rounded-lg border">
@@ -140,7 +140,7 @@ function RankBody({
         {trucks.length === 0 ? (
           <TableRow>
             <TableCell colSpan={headers.length} className="text-muted-foreground">
-              Sin datos
+              No data
             </TableCell>
           </TableRow>
         ) : (
@@ -152,7 +152,7 @@ function RankBody({
                 {truck.np ? (
                   <>
                     {" "}
-                    <Badge variant="outline">No físico</Badge>
+                    <Badge variant="outline">Non-physical</Badge>
                   </>
                 ) : null}
               </TableCell>

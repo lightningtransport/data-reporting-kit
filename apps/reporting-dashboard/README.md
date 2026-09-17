@@ -4,12 +4,12 @@ Next.js App Router + shadcn/ui app for Grok Bot and Cursor agents. Views:
 
 | Path | View | Data |
 |---|---|---|
-| `/` | Liquidaciones | `settlements` + `fuel` (≥12 months) |
+| `/` | Settlements | `settlements` + `fuel` (≥12 months) |
 | `/out-schedule` | Out Schedule | live Ninox Schedule_Teams share |
 | `/trucks-return` | Trucks Return | `returns` (no Phone/CDL) |
 | `/diesel` | Diesel | live `fuel` (focus month first; 12-month trend cached ~3 min) |
 
-A top-right **Vistas** menu switches between them. Visible copy is Spanish operational wording where applicable; kit evidence lives under **Datos técnicos**.
+A top-right **Views** menu switches between them. Visible copy is English operational wording; kit evidence lives under **Technical details**. Each route has its own loading screen (Settlements / Out Schedule / Trucks Return / Diesel).
 
 ## Local
 
@@ -19,7 +19,7 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Requires server-only `AGENT_REPORTING_KEY` for Liquidaciones, Trucks Return, and Diesel (live `agent-reporting` only; **no embedded snapshot**). Out Schedule always uses the public Schedule_Teams share live. Without the key, those three views show an explicit configuration error.
+Open [http://localhost:3000](http://localhost:3000). Requires server-only `AGENT_REPORTING_KEY` for Settlements, Trucks Return, and Diesel (live `agent-reporting` only; **no embedded snapshot**). Out Schedule always uses the public Schedule_Teams share live. Without the key, those three views show an explicit configuration error.
 
 ## Vercel deploy
 
@@ -42,7 +42,7 @@ Git integration also works: connecting this GitHub repo and using Root Directory
 
 Link the matching deep URL:
 
-- Liquidaciones: https://lightning-settlement-dashboard.vercel.app
+- Settlements: https://lightning-settlement-dashboard.vercel.app
 - Out Schedule: https://lightning-settlement-dashboard.vercel.app/out-schedule
 - Trucks Return: https://lightning-settlement-dashboard.vercel.app/trucks-return
 - Diesel: https://lightning-settlement-dashboard.vercel.app/diesel

@@ -25,9 +25,9 @@ Settlement periods run Tuesday through Monday. Attribute historical owner/dispat
 
 ### HTML and analytical history window
 
-For HTML reports and analytical settlement/fleet-history answers, the query window is **at least three calendar months** ending today or at the user-named end date. The live Liquidaciones dashboard query window is **at least twelve calendar months**. The named week or day selects the UI focus, not the only rows to load.
+For HTML reports and analytical settlement/fleet-history answers, the query window is **at least three calendar months** ending today or at the user-named end date. The live Settlements dashboard query window is **at least twelve calendar months**. The named week or day selects the UI focus, not the only rows to load.
 
-- `history_start` = three calendar months before the end date for non-dashboard HTML; twelve months for Liquidaciones in `apps/reporting-dashboard`.
+- `history_start` = three calendar months before the end date for non-dashboard HTML; twelve months for Settlements in `apps/reporting-dashboard`.
 - Out Schedule and Trucks Return are current operational screens (live Schedule_Teams share and `returns`); they are not multi-month settlement history. When the user asks to see those reports, **link** https://lightning-settlement-dashboard.vercel.app/out-schedule or https://lightning-settlement-dashboard.vercel.app/trucks-return.
 - Settlements: `period_from` = Tuesday on or before `history_start`; `period_to` = Tuesday of the latest included week (inclusive bounds on `From`).
 - Fuel: `store_from` = `history_start`. Attribute fuel spend by stored `fuel.owner`, not current `trucks.owner`.

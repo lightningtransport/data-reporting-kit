@@ -3,7 +3,7 @@ name: reporting-html-shadcn
 description: >-
   Use when a Grok Bot or Cursor agent builds Lightning reporting HTML dashboards
   so every screen reuses the same shadcn-like components and styles.
-version: 0.3.4
+version: 0.3.5
 license: Proprietary
 platforms: [linux, macos, windows]
 metadata:
@@ -20,13 +20,13 @@ A Grok Bot or Cursor agent is changing Lightning reporting UI. The **settlement 
 
 ## Goal
 
-For the settlement dashboard: Next.js App Router + shadcn/ui (Button, Tabs, Card, Badge, Input, Table, Checkbox, Select, Popover + Command multi-select). Owner/equipo is never a native `<select multiple>`.
+For the settlement dashboard: Next.js App Router + shadcn/ui (Button, Tabs, Card, Badge, Input, Table, Checkbox, Select, Popover + Command multi-select). Owner/team is never a native `<select multiple>`.
 
 For other static files only: small HTML that reuses [`assets/report-ui.css`](assets/report-ui.css).
 
 ## Source of truth
 
-1. Reporting dashboard: edit [`apps/reporting-dashboard`](../../apps/reporting-dashboard) (Next.js + real shadcn/ui), including slim **Liquidaciones** header, truck focus card, **Resumen** from 12 months of `settlements`, plus **Out Schedule**, **Trucks Return**, and **Diesel** views with a top-right **Vistas** menu. Grok bots must link https://lightning-settlement-dashboard.vercel.app (or `/out-schedule` / `/trucks-return` / `/diesel` as appropriate).
+1. Reporting dashboard: edit [`apps/reporting-dashboard`](../../apps/reporting-dashboard) (Next.js + real shadcn/ui), including slim **Settlements** header, truck focus card, **Summary** from 12 months of `settlements`, plus **Out Schedule**, **Trucks Return**, and **Diesel** views with a top-right **Views** menu. Grok bots must link https://lightning-settlement-dashboard.vercel.app (or `/out-schedule` / `/trucks-return` / `/diesel` as appropriate).
 2. Other static HTML only: copy [`assets/report-ui.css`](assets/report-ui.css) to the workspace `reports/assets/report-ui.css` (skill-cache fallback: `skills/reporting-html-shadcn/assets/report-ui.css`). Do not invent a second visual language.
 3. Match the confirmed settlement look: clean minimal **light** theme, more whitespace, clear hierarchy, soft borders, no heavy shadows.
 
@@ -41,25 +41,25 @@ For other static files only: small HTML that reuses [`assets/report-ui.css`](ass
 Use these patterns every time (names stable):
 
 - **PageShell** — max-width container, padded background; `body.report-body` + `.page-shell`
-- **ReportHeader** — short title + focused period; live vs **Copia** only; `.report-header`
-- **Toolbar** — Periodo tabs (Semana / Mes), week/month controls, Equipo multi-select, Camión search with immediate focus card, Despacho chips; `.toolbar`, `.tabs`, `.week-nav`, `.field`, `.chk`
+- **ReportHeader** — short title + focused period; live vs **Snapshot** only; `.report-header`
+- **Toolbar** — Period tabs (Weekly / Monthly), week/month controls, Team multi-select, Truck search with immediate focus card, Dispatch chips; `.toolbar`, `.tabs`, `.week-nav`, `.field`, `.chk`
 - **KpiStrip** — card grid: Gross, Expenses, Net, Fuel, physical trucks, miles; `.kpi-strip`, `.kpi`
 - **Card** — bordered rounded surface, light padding, `.card` + `.card-title` + optional `.card-hint`
 - **ChartCard** — Card + `.chart-box` for fixed chart height
 - **DataTable** — sticky header, tabular nums, hover row, non-physical bucket badge (`.tag-np`)
 - **RankList** — ordered top-N trucks/owners
-- **EvidenceFooter** — closed **Datos técnicos** accordion with filters, `as_of`, `source_freshness`, pagination complete, caveats; one human line outside
+- **EvidenceFooter** — closed **Technical details** accordion with filters, `as_of`, `source_freshness`, pagination complete, caveats; one human line outside
 
 Map mentally to shadcn: Card, Badge, Button, Tabs, Input, Select, Table, Separator.
 
 ## Content rules (always)
 
-- Spanish primary labels; short English secondary only if useful, unless the user asks for another language.
+- English primary labels for dashboard UI; keep domain terms that match stored/API fields (Owner, Dispatch, Gross, Net, Fuel Expenses).
 - Focus period in the toolbar; data payload always includes **≥3 months** history for trends/rankings. See [`agent-reporting-html`](../agent-reporting-html/SKILL.md) and [`docs/html-reporting.md`](../../docs/html-reporting.md).
 - Fuel spend by owner (focused week + month) using stored `fuel.owner`.
 - Top trucks/owners by Gross and Net from stored settlement values.
 - Settlement trucks `1` / `2` / `3`: label non-physical; exclude from physical rankings; include in owner totals.
-- Evidence accordion (**Datos técnicos**, closed by default) on every report.
+- Evidence accordion (**Technical details**, closed by default) on every report.
 
 ## Process
 

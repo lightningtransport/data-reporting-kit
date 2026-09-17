@@ -37,12 +37,12 @@ export function OwnerMultiSelect({
   const selectedSet = new Set(selected)
   const label =
     selected.length === owners.length
-      ? "Todos"
+      ? "All"
       : selected.length === 0
-        ? "Ninguno"
+        ? "None"
         : selected.length === 1
           ? selected[0]
-          : `${selected.length} equipos`
+          : `${selected.length} teams`
 
   function toggle(owner: string) {
     if (selectedSet.has(owner)) {
@@ -70,24 +70,24 @@ export function OwnerMultiSelect({
       </PopoverTrigger>
       <PopoverContent align="start" className="w-72 p-0">
         <PopoverHeader className="sr-only">
-          <PopoverTitle>Equipo</PopoverTitle>
+          <PopoverTitle>Team</PopoverTitle>
         </PopoverHeader>
         <Command>
-          <CommandInput placeholder="Buscar equipo…" />
+          <CommandInput placeholder="Search team…" />
           <div className="flex gap-2 border-b px-2 py-2">
             <Button
               size="xs"
               variant="outline"
               onClick={() => onChange(owners)}
             >
-              Todos
+              All
             </Button>
             <Button size="xs" variant="ghost" onClick={() => onChange([])}>
-              Ninguno
+              None
             </Button>
           </div>
           <CommandList>
-            <CommandEmpty>Sin equipos.</CommandEmpty>
+            <CommandEmpty>No teams found.</CommandEmpty>
             <CommandGroup>
               {owners.map((owner) => {
                 const isSelected = selectedSet.has(owner)

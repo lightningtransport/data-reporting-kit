@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.8.6 - 2026-09-16
+
+- Dashboard UI is English-only: **Settlements** (was Liquidaciones), **Summary**, **Technical details**, **Views**, **Show all**, **Snapshot**. Route-aware loading screens for Settlements / Out Schedule / Trucks Return / Diesel via shared `ReportLoading`.
+- Kit contract updated so Grok/Cursor stop regenerating Spanish copy (`AGENTS.md`, `docs/html-reporting.md`, `docs/agent-rules.md`, dashboard README).
+- Skills: `agent-reporting-html` 0.2.5, `reporting-html-shadcn` 0.3.5, `itpros-supabase-reporting` 0.9.5.
+
 ## 3.8.5 - 2026-09-16
 
 - Diesel uses shared Next/Vercel data cache (month 120s, trend 180s), CDN `stale-while-revalidate`, and browser sessionStorage so reopen/second viewer hits warm real fuel data instead of a cold agent-reporting walk.

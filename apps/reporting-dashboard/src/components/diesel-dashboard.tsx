@@ -186,7 +186,7 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
       .catch((error: unknown) => {
         if (cancelled) return
         setTrendError(
-          error instanceof Error ? error.message : "No se pudo cargar la tendencia"
+          error instanceof Error ? error.message : "Couldn't load the trend"
         )
       })
       .finally(() => {
@@ -254,7 +254,7 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
           total: 0,
           truncated: false,
           loading: false,
-          error: error instanceof Error ? error.message : "Error al cargar mes",
+          error: error instanceof Error ? error.message : "Couldn't load month",
         })
       })
     return () => {
@@ -268,16 +268,16 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
   )
   const ownerItems = useMemo(
     () => [
-      { value: "all", label: "Todos" },
+      { value: "all", label: "All" },
       ...owners.map((value) => ({ value, label: value })),
     ],
     [owners]
   )
   const productItems = useMemo(
     () => [
-      { value: "diesel", label: "Diésel (sin DEF)" },
+      { value: "diesel", label: "Diesel (excl. DEF)" },
       { value: "def", label: "DEF" },
-      { value: "all", label: "Todos los productos" },
+      { value: "all", label: "All products" },
     ],
     []
   )
@@ -363,9 +363,9 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
       {data.meta.error ? (
         <Card>
           <CardHeader>
-            <CardTitle>No se pudo cargar Diesel</CardTitle>
+            <CardTitle>Couldn't load Diesel</CardTitle>
             <CardDescription>
-              Solo consulta live de agent-reporting (fuel). No hay snapshot embebido.
+              Live agent-reporting (fuel) only. There is no embedded snapshot.
             </CardDescription>
           </CardHeader>
           <CardContent className="text-muted-foreground text-sm">{data.meta.error}</CardContent>
@@ -376,7 +376,7 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
         <CardContent className="pt-(--card-spacing)">
           <FieldGroup className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
             <Field>
-              <FieldLabel>Mes</FieldLabel>
+              <FieldLabel>Month</FieldLabel>
               <div className="flex w-full items-center gap-2">
                 <Button
                   variant="outline"
@@ -463,11 +463,11 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
               </Select>
             </Field>
             <Field>
-              <FieldLabel>Camión / producto / ciudad</FieldLabel>
+              <FieldLabel>Truck / product / city</FieldLabel>
               <Input
                 value={truckQuery}
                 onChange={(event) => setTruckQuery(event.target.value)}
-                placeholder="Buscar"
+                placeholder="Search"
               />
             </Field>
           </FieldGroup>
@@ -475,10 +475,10 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
       </Card>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-        <KpiCard label="Galones" value={num(kpi.gallons)} />
-        <KpiCard label="Gasto ajustado" value={moneyExact(kpi.adjustedSpend)} />
-        <KpiCard label="Transacciones" value={String(kpi.transactions)} />
-        <KpiCard label="Camiones" value={String(kpi.distinctTrucks)} />
+        <KpiCard label="Gallons" value={num(kpi.gallons)} />
+        <KpiCard label="Adjusted spend" value={moneyExact(kpi.adjustedSpend)} />
+        <KpiCard label="Transactions" value={String(kpi.transactions)} />
+        <KpiCard label="Trucks" value={String(kpi.distinctTrucks)} />
         <KpiCard
           label="$ / gal"
           value={
@@ -489,13 +489,13 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Tendencia mensual</CardTitle>
+          <CardTitle>Monthly trend</CardTitle>
           <CardDescription>
-            Galones (barras) y gasto ajustado (línea) · respeta owner y producto
+            Gallons (bars) and adjusted spend (line) · respects owner and product
             {trendUpdating
               ? trendFromCache
-                ? " · caché local · actualizando…"
-                : " · cargando historial…"
+                ? " · local cache · updating…"
+                : " · loading history…"
               : trendFromCache
                 ? ""
                 : ""}
@@ -507,12 +507,12 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
           ) : null}
           {!trendReady && !trendError ? (
             <p className="text-muted-foreground text-sm">
-              KPIs del mes listos · cargando los 12 meses del gráfico…
+              Month KPIs ready · loading the 12-month chart…
             </p>
           ) : null}
           {trendReady &&
           monthlyTrend.every((point) => point.gallons === 0 && point.spend === 0) ? (
-            <p className="text-muted-foreground text-sm">Sin datos en la ventana</p>
+            <p className="text-muted-foreground text-sm">No data in this window</p>
           ) : null}
           {trendReady &&
           !monthlyTrend.every((point) => point.gallons === 0 && point.spend === 0) ? (
@@ -523,9 +523,9 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Por owner</CardTitle>
+          <CardTitle>By owner</CardTitle>
           <CardDescription>
-            Atribución histórica fuel.owner · mes {monthLabel(month)}
+            Historical fuel.owner attribution · {monthLabel(month)}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -534,8 +534,8 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
               <TableHeader>
                 <TableRow>
                   <TableHead>Owner</TableHead>
-                  <TableHead className="text-right">Galones</TableHead>
-                  <TableHead className="text-right">Gasto aj.</TableHead>
+                  <TableHead className="text-right">Gallons</TableHead>
+                  <TableHead className="text-right">Adj. spend</TableHead>
                   <TableHead className="text-right">Tx</TableHead>
                   <TableHead className="text-right">Camiones</TableHead>
                 </TableRow>
@@ -544,7 +544,7 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
                 {byOwner.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="text-muted-foreground">
-                      Sin filas
+                      No rows
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -576,8 +576,8 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
         <CardHeader>
           <CardTitle>Transacciones</CardTitle>
           <CardDescription>
-            Detalle del mes de foco · muestra hasta 400 filas
-            {detailMeta.loading ? " · cargando…" : ""}
+            Focus-month detail · up to 400 rows
+            {detailMeta.loading ? " · loading…" : ""}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -603,7 +603,7 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
                 {filteredDetail.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={9} className="text-muted-foreground">
-                      {detailMeta.loading ? "Cargando…" : "Sin filas"}
+                      {detailMeta.loading ? "Loading…" : "No rows"}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -645,22 +645,22 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
             </Table>
           </div>
           <p className="text-muted-foreground mt-3 text-sm">
-            Mostrando {filteredDetail.length}
+            Showing {filteredDetail.length}
             {detailMeta.truncated || detailMeta.total > filteredDetail.length
-              ? ` (mes tiene ${detailMeta.total} tx; tabla limitada)`
+              ? ` (month has ${detailMeta.total} tx; table capped)`
               : ""}{" "}
-            · KPIs usan el total agregado del mes, no solo estas filas
+            · KPIs use the full month aggregate, not only these rows
           </p>
         </CardContent>
       </Card>
 
       <footer className="text-muted-foreground flex flex-col gap-2 text-sm">
         <p>
-          Diesel = transacciones live de fuel. Owner es histórico de la
-          transacción, no el master actual de trucks.
+          Diesel uses live fuel transactions. Owner is historical on the
+          transaction, not the current trucks master.
         </p>
         <details>
-          <summary className="cursor-pointer text-foreground">Datos técnicos</summary>
+          <summary className="cursor-pointer text-foreground">Technical details</summary>
           <div className="mt-3 flex flex-col gap-2">
             <p>
               Dataset: <strong>{data.meta.dataset}</strong> · total_count=
@@ -671,8 +671,8 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
               (ventana)=<strong>{data.meta.distinct_trucks}</strong>.
             </p>
             <p>
-              Filtros UI: mes=<strong>{month}</strong>, owner=
-              <strong>{owner}</strong>, producto=<strong>{product}</strong>,
+              UI filters: mes=<strong>{month}</strong>, owner=
+              <strong>{owner}</strong>, product=<strong>{product}</strong>,
               search=&quot;{truckQuery}&quot;.
             </p>
             <p>
@@ -680,12 +680,12 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
               <strong>{data.meta.source_freshness}</strong>.
             </p>
             <p>
-              Caveats: first paint = mes de foco (Next/Vercel data cache{" "}
-              {DIESEL_MONTH_REVALIDATE_SECONDS}s). Tendencia 12 meses = data cache{" "}
+              Caveats: first paint = focus month (Next/Vercel data cache{" "}
+              {DIESEL_MONTH_REVALIDATE_SECONDS}s). 12-month trend = data cache{" "}
               {DIESEL_TREND_REVALIDATE_SECONDS}s + CDN s-maxage + sessionStorage
-              stale-while-revalidate en este navegador. No inventa filas: solo
-              reusa consultas live recientes de agent-reporting. Tabla detalle
-              acotada a 400 filas. Default producto = diésel sin DEF.
+              stale-while-revalidate in this browser. Does not invent rows: only
+              reuses recent live agent-reporting queries. Detail table capped at
+              400 rows. Default product = diesel excluding DEF.
             </p>
           </div>
         </details>

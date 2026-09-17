@@ -55,18 +55,18 @@ export type SettlementPayload = {
 export const NON_PHYSICAL = new Set(["1", "2", "3"])
 
 export const MONTH_NAMES = [
-  "ene",
-  "feb",
-  "mar",
-  "abr",
-  "may",
-  "jun",
-  "jul",
-  "ago",
-  "sep",
-  "oct",
-  "nov",
-  "dic",
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
 ] as const
 
 export function monthLabel(ym: string): string {
