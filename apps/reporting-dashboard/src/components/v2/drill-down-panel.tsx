@@ -20,33 +20,68 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { money, moneyExact, num, pct } from "@/lib/format"
+import type { TruckDrawerFilter } from "@/lib/v2/filters"
 import type {
   PeriodComparison,
   TeamPerformanceRow,
   TruckAggregate,
   TruckPeriodRow,
 } from "@/lib/v2/metrics"
+import { cn } from "cn"
 
 const panelMotionClass =
-  "data-open:motion-safe:slide-in-from-right data-closed:motion-safe:slide-out-to-right motion-reduce:data-open:animate-none motion-reduce:data-closed:animate-none fixed inset-y-0 top-0 right-0 left-auto flex h-dvh max-h-dvh w-full max-w-full translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-none border-l p-0 sm:max-w-lg"
+  "data-open:motion-safe:slide-in-from-right data-closed:motion-safe:slide-out-to-right motion-reduce:data-open:animate-none motion-reduce:data-closed:animate-none fixed inset-y-0 top-0 right-0 left-auto flex h-dvh max-h-dvh w-full max-w-full translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-none border-l p-0 sm:max-w-lg md:max-w-xl"
 
-function ComparisonText({ comparison }: { comparison: PeriodComparison }) {
-  if (comparison.status !== "ok" || comparison.absolute == null) {
+function ComparisonOnce({
+  grossComparison,
+  netComparison,
+}: {
+  grossComparison: PeriodComparison
+  netComparison: PeriodComparison
+}) {
+  const usable =
+    netComparison.status === "ok" && netComparison.absolute != null
+      ? netComparison
+      : grossComparison.status === "ok" && grossComparison.absolute != null
+        ? grossComparison
+        : null
+  if (!usable || usable.absolute == null) {
     return (
-      <span className="text-muted-foreground">
-        vs prior: Not available
-        {comparison.reason ? ` · ${comparison.reason}` : ""}
+      <p className="text-muted-foreground text-xs">
+        Key change vs prior: Not available
+      </p>
+    )
+  }
+  const sign = usable.absolute > 0 ? "+" : ""
+  const label =
+    usable === netComparison ? "Net vs prior" : "Gross vs prior"
+  return (
+    <p className="text-xs tabular-nums">
+      Key change vs prior ({label}): {sign}
+      {money(usable.absolute)}
+      {usable.pct != null ? ` (${sign}${pct(usable.pct)})` : ""}
+    </p>
+  )
+}
+
+function RpmCell({
+  rpm,
+  status,
+}: {
+  rpm: number | null
+  status: "ok" | "unavailable" | "check_data"
+}) {
+  if (status === "unavailable" || rpm == null) {
+    return <span className="text-muted-foreground">Unavailable</span>
+  }
+  if (status === "check_data") {
+    return (
+      <span className="text-amber-800 dark:text-amber-200">
+        ${rpm.toFixed(2)} · Check data
       </span>
     )
   }
-  const sign = comparison.absolute > 0 ? "+" : ""
-  return (
-    <span className="tabular-nums">
-      vs prior: {sign}
-      {money(comparison.absolute)}
-      {comparison.pct != null ? ` (${sign}${pct(comparison.pct)})` : ""}
-    </span>
-  )
+  return <span>${rpm.toFixed(2)}</span>
 }
 
 export function TeamDrillDownPanel({
@@ -54,10 +89,12 @@ export function TeamDrillDownPanel({
   team,
   metrics,
   trucks,
+  truckFilter,
+  onTruckFilterChange,
   grossComparison,
   netComparison,
   periodLabel,
-  filterSummary,
+  viewLabel,
   onClose,
   onSelectTruck,
 }: {
@@ -65,10 +102,12 @@ export function TeamDrillDownPanel({
   team: string | null
   metrics: TeamPerformanceRow | null
   trucks: TruckAggregate[]
+  truckFilter: TruckDrawerFilter
+  onTruckFilterChange: (filter: TruckDrawerFilter) => void
   grossComparison: PeriodComparison
   netComparison: PeriodComparison
   periodLabel: string
-  filterSummary: string
+  viewLabel: string
   onClose: () => void
   onSelectTruck: (truck: string, trigger?: HTMLElement) => void
 }) {
@@ -78,10 +117,27 @@ export function TeamDrillDownPanel({
 
   useEffect(() => {
     if (!open) return
-    // Move keyboard focus into the panel after open (Dialog also traps focus).
     const id = window.setTimeout(() => headingRef.current?.focus(), 0)
     return () => window.clearTimeout(id)
   }, [open, team])
+
+  const filtered =
+    truckFilter === "all"
+      ? trucks
+      : truckFilter === "low_gross"
+        ? trucks.filter((t) => t.flags.includes("low_gross"))
+        : trucks.filter((t) => t.flags.includes("negative_net"))
+
+  const why: string[] = []
+  if (metrics) {
+    if (metrics.negativeNetTrucks > 0) {
+      why.push(`${metrics.negativeNetTrucks} negative-net trucks`)
+    }
+    if (metrics.lowGrossTrucks > 0) {
+      why.push(`${metrics.lowGrossTrucks} trucks below gross threshold`)
+    }
+    if (metrics.net < 0) why.push("Team Net is negative")
+  }
 
   return (
     <Dialog
@@ -103,139 +159,181 @@ export function TeamDrillDownPanel({
             tabIndex={-1}
             className="outline-none focus-visible:ring-ring rounded-sm focus-visible:ring-2"
           >
-            {team ? `Team ${team}` : "Team"}
+            {team ?? "Team"}
           </DialogTitle>
           <DialogDescription id={descriptionId}>
-            {periodLabel}. {filterSummary}. Physical-truck metrics only. Press
-            Escape to close.
+            {periodLabel} · {viewLabel}. Physical team performance. Escape
+            closes.
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
           {metrics ? (
             <>
-              <dl className="grid grid-cols-2 gap-3 text-sm">
+              <div className="grid grid-cols-3 gap-3 text-sm">
                 <div>
-                  <dt className="text-muted-foreground text-xs">Gross</dt>
-                  <dd className="font-mono tabular-nums">
-                    {moneyExact(metrics.gross)}
-                  </dd>
-                  <dd className="text-xs">
-                    <ComparisonText comparison={grossComparison} />
-                  </dd>
+                  <p className="text-muted-foreground text-xs">Net</p>
+                  <p className="text-lg tabular-nums font-semibold">
+                    {money(metrics.net)}
+                  </p>
                 </div>
                 <div>
-                  <dt className="text-muted-foreground text-xs">Net</dt>
-                  <dd className="font-mono tabular-nums">
-                    {moneyExact(metrics.net)}
-                  </dd>
-                  <dd className="text-xs">
-                    <ComparisonText comparison={netComparison} />
-                  </dd>
+                  <p className="text-muted-foreground text-xs">Margin</p>
+                  <p className="text-lg tabular-nums font-semibold">
+                    {metrics.margin == null ? "—" : pct(metrics.margin)}
+                  </p>
                 </div>
                 <div>
-                  <dt className="text-muted-foreground text-xs">Margin</dt>
-                  <dd className="font-mono tabular-nums">
-                    {metrics.margin == null
-                      ? "Not available"
-                      : pct(metrics.margin)}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground text-xs">RPM</dt>
-                  <dd className="font-mono tabular-nums">
-                    {metrics.rpm == null
-                      ? "Not available"
-                      : `$${metrics.rpm.toFixed(2)}`}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground text-xs">
-                    Negative-net trucks
-                  </dt>
-                  <dd className="font-mono tabular-nums">
+                  <p className="text-muted-foreground text-xs">Neg. trucks</p>
+                  <p className="text-lg tabular-nums font-semibold">
                     {metrics.negativeNetTrucks}
-                  </dd>
+                  </p>
                 </div>
-                <div>
-                  <dt className="text-muted-foreground text-xs">
-                    Low-gross trucks
-                  </dt>
-                  <dd className="font-mono tabular-nums">
-                    {metrics.lowGrossTrucks}
-                  </dd>
-                </div>
-              </dl>
+              </div>
+              <ComparisonOnce
+                grossComparison={grossComparison}
+                netComparison={netComparison}
+              />
 
-              <div>
-                <h3 className="mb-2 text-sm font-medium">
-                  Physical trucks ({trucks.length})
+              <section aria-labelledby="team-why">
+                <h3 id="team-why" className="text-sm font-semibold">
+                  Why this team needs attention
                 </h3>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
+                {why.length ? (
+                  <ul className="mt-1 list-disc space-y-0.5 pl-5 text-sm">
+                    {why.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-muted-foreground mt-1 text-sm">
+                    No exception flags for this team in the selected period.
+                  </p>
+                )}
+              </section>
+
+              <div
+                className="bg-muted inline-flex flex-wrap rounded-lg p-0.5"
+                role="tablist"
+                aria-label="Truck list filter"
+              >
+                {(
+                  [
+                    ["negative_net", `Negative net`],
+                    ["low_gross", `Low gross`],
+                    ["all", `All ${trucks.length} trucks`],
+                  ] as const
+                ).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    role="tab"
+                    aria-selected={truckFilter === value}
+                    className={cn(
+                      "rounded-md px-2.5 py-1.5 text-xs font-medium",
+                      truckFilter === value
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground"
+                    )}
+                    onClick={() => onTruckFilterChange(value)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="max-h-[50vh] overflow-auto rounded-lg border">
+                <Table>
+                  <TableHeader className="bg-background sticky top-0 z-10">
+                    <TableRow>
+                      <TableHead>Truck</TableHead>
+                      <TableHead className="text-right">Net</TableHead>
+                      <TableHead className="text-right">Gross</TableHead>
+                      <TableHead className="text-right">RPM</TableHead>
+                      <TableHead>Flag</TableHead>
+                      <TableHead className="text-right">
+                        <span className="sr-only">Action</span>
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filtered.length === 0 ? (
                       <TableRow>
-                        <TableHead>Truck</TableHead>
-                        <TableHead className="text-right">Gross</TableHead>
-                        <TableHead className="text-right">Net</TableHead>
-                        <TableHead className="text-right">RPM</TableHead>
+                        <TableCell
+                          colSpan={6}
+                          className="text-muted-foreground text-sm"
+                        >
+                          No trucks in this filter.
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {trucks.map((truck) => (
+                    ) : (
+                      filtered.map((truck) => (
                         <TableRow key={truck.truck}>
-                          <TableCell>
+                          <TableCell className="font-medium tabular-nums">
+                            {truck.truck}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {money(truck.net)}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {money(truck.gross)}
+                          </TableCell>
+                          <TableCell className="text-right text-xs tabular-nums">
+                            <RpmCell
+                              rpm={truck.rpm}
+                              status={truck.rpmStatus}
+                            />
+                          </TableCell>
+                          <TableCell className="text-xs">
+                            {truck.flags.length
+                              ? truck.flags
+                                  .map((f) =>
+                                    f === "negative_net"
+                                      ? "Neg net"
+                                      : f === "low_gross"
+                                        ? "Low gross"
+                                        : "Check data"
+                                  )
+                                  .join(" · ")
+                              : "Stable"}
+                          </TableCell>
+                          <TableCell className="text-right">
                             <button
                               type="button"
                               aria-haspopup="dialog"
-                              aria-label={`Open drill-down for truck ${truck.truck}`}
-                              className="text-foreground hover:underline focus-visible:ring-ring rounded-sm font-medium focus-visible:ring-2 focus-visible:outline-none"
+                              aria-label={`Open truck ${truck.truck}`}
+                              className="text-foreground text-xs font-medium underline-offset-2 hover:underline"
                               onClick={(event) =>
-                                onSelectTruck(truck.truck, event.currentTarget)
+                                onSelectTruck(
+                                  truck.truck,
+                                  event.currentTarget
+                                )
                               }
                             >
-                              {truck.truck}
+                              Review →
                             </button>
                           </TableCell>
-                          <TableCell className="text-right font-mono tabular-nums">
-                            {money(truck.gross)}
-                          </TableCell>
-                          <TableCell className="text-right font-mono tabular-nums">
-                            {money(truck.net)}
-                          </TableCell>
-                          <TableCell className="text-right font-mono tabular-nums">
-                            {truck.rpm == null
-                              ? "Not available"
-                              : `$${truck.rpm.toFixed(2)}`}
-                          </TableCell>
                         </TableRow>
-                      ))}
-                      {trucks.length === 0 ? (
-                        <TableRow>
-                          <TableCell
-                            colSpan={4}
-                            className="text-muted-foreground"
-                          >
-                            No physical trucks in this selection.
-                          </TableCell>
-                        </TableRow>
-                      ) : null}
-                    </TableBody>
-                  </Table>
-                </div>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
               </div>
-
-              <p className="text-muted-foreground text-xs">
-                Definitions: Gross/Net are stored settlement fields. RPM =
-                physical Gross ÷ Driven miles when miles &gt; 0. Low gross =
-                under $11,000. Allocation buckets 1/2/3 are excluded.
-              </p>
             </>
           ) : (
             <p className="text-muted-foreground text-sm">
-              Team metrics unavailable for the active filters.
+              Team metrics unavailable for this selection.
             </p>
           )}
+        </div>
+
+        <div className="border-border/60 shrink-0 border-t px-4 py-3">
+          <Link
+            href="/"
+            className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+          >
+            Open settlements report
+          </Link>
         </div>
       </DialogContent>
     </Dialog>
@@ -245,38 +343,34 @@ export function TeamDrillDownPanel({
 export function TruckDrillDownPanel({
   open,
   truck,
-  periodMetrics,
+  aggregate,
   history,
   periodLabel,
-  filterSummary,
+  onBack,
   onClose,
-  onBackToTeam,
 }: {
   open: boolean
   truck: string | null
-  periodMetrics: TruckAggregate | null
+  aggregate: TruckAggregate | null
   history: TruckPeriodRow[]
   periodLabel: string
-  filterSummary: string
+  onBack: () => void
   onClose: () => void
-  onBackToTeam?: () => void
 }) {
   const titleId = useId()
   const descriptionId = useId()
   const headingRef = useRef<HTMLHeadingElement>(null)
-  const backRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     if (!open) return
-    const id = window.setTimeout(() => {
-      if (onBackToTeam && backRef.current) {
-        backRef.current.focus()
-        return
-      }
-      headingRef.current?.focus()
-    }, 0)
+    const id = window.setTimeout(() => headingRef.current?.focus(), 0)
     return () => window.clearTimeout(id)
-  }, [open, truck, onBackToTeam])
+  }, [open, truck])
+
+  const margin =
+    aggregate && aggregate.gross !== 0
+      ? aggregate.net / aggregate.gross
+      : null
 
   return (
     <Dialog
@@ -292,149 +386,155 @@ export function TruckDrillDownPanel({
         aria-describedby={descriptionId}
       >
         <DialogHeader className="border-border/60 shrink-0 border-b px-4 py-4">
+          <div className="mb-2">
+            <button
+              type="button"
+              className="text-muted-foreground hover:text-foreground text-xs font-medium"
+              onClick={onBack}
+            >
+              ← Back to team
+            </button>
+          </div>
           <DialogTitle
             id={titleId}
             ref={headingRef}
             tabIndex={-1}
             className="outline-none focus-visible:ring-ring rounded-sm focus-visible:ring-2"
           >
-            {truck ? `Truck ${truck}` : "Truck"}
+            Truck {truck ?? "—"}
           </DialogTitle>
           <DialogDescription id={descriptionId}>
-            {periodLabel}. {filterSummary}.
-            {periodMetrics?.owner ? ` Team ${periodMetrics.owner}.` : ""} Press
-            Escape to close
-            {onBackToTeam ? " or use Back to team" : ""}.
+            {periodLabel}
+            {aggregate
+              ? ` · Team ${aggregate.owner}${aggregate.dispatch ? ` · Dispatch ${aggregate.dispatch}` : ""}`
+              : ""}
+            . Escape closes.
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
-          {periodMetrics ? (
-            <dl className="grid grid-cols-2 gap-3 text-sm">
-              <div>
-                <dt className="text-muted-foreground text-xs">Gross</dt>
-                <dd className="font-mono tabular-nums">
-                  {moneyExact(periodMetrics.gross)}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground text-xs">Net</dt>
-                <dd className="font-mono tabular-nums">
-                  {moneyExact(periodMetrics.net)}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground text-xs">Driven miles</dt>
-                <dd className="font-mono tabular-nums">
-                  {num(periodMetrics.miles)}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground text-xs">RPM</dt>
-                <dd className="font-mono tabular-nums">
-                  {periodMetrics.rpm == null
-                    ? "Not available"
-                    : `$${periodMetrics.rpm.toFixed(2)}`}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground text-xs">
-                  Fuel expenses (settlement)
-                </dt>
-                <dd className="font-mono tabular-nums">
-                  {moneyExact(periodMetrics.fuel)}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground text-xs">
-                  Fuel cost / mile
-                </dt>
-                <dd className="font-mono tabular-nums">
-                  {periodMetrics.fuelPerMile == null
-                    ? "Not available"
-                    : `$${periodMetrics.fuelPerMile.toFixed(2)}`}
-                </dd>
-              </div>
-            </dl>
+          {aggregate ? (
+            <>
+              <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
+                <div>
+                  <dt className="text-muted-foreground text-xs">Gross</dt>
+                  <dd className="tabular-nums font-semibold">
+                    {moneyExact(aggregate.gross)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground text-xs">Net</dt>
+                  <dd className="tabular-nums font-semibold">
+                    {moneyExact(aggregate.net)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground text-xs">Margin</dt>
+                  <dd className="tabular-nums font-semibold">
+                    {margin == null ? "—" : pct(margin)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground text-xs">Miles</dt>
+                  <dd className="tabular-nums font-semibold">
+                    {num(aggregate.miles)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground text-xs">RPM</dt>
+                  <dd className="text-sm tabular-nums font-semibold">
+                    <RpmCell
+                      rpm={aggregate.rpm}
+                      status={aggregate.rpmStatus}
+                    />
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground text-xs">
+                    Fuel expense
+                  </dt>
+                  <dd className="tabular-nums font-semibold">
+                    {moneyExact(aggregate.fuel)}
+                  </dd>
+                </div>
+              </dl>
+
+              <section aria-labelledby="truck-why">
+                <h3 id="truck-why" className="text-sm font-semibold">
+                  Why flagged
+                </h3>
+                <ul className="mt-1 list-disc space-y-0.5 pl-5 text-sm">
+                  {aggregate.flags.length === 0 ? (
+                    <li>No exception flags for this period.</li>
+                  ) : (
+                    aggregate.flags.map((flag) => (
+                      <li key={flag}>
+                        {flag === "negative_net"
+                          ? `Negative Net (${moneyExact(aggregate.net)})`
+                          : flag === "low_gross"
+                            ? `Gross below $${num(11000)} threshold`
+                            : aggregate.rpmReason ?? "RPM Check data"}
+                      </li>
+                    ))
+                  )}
+                </ul>
+              </section>
+
+              {history.length > 1 ? (
+                <section aria-labelledby="truck-history">
+                  <h3 id="truck-history" className="mb-2 text-sm font-semibold">
+                    Recent settlement weeks
+                  </h3>
+                  <div className="max-h-48 overflow-auto rounded-lg border">
+                    <Table>
+                      <TableHeader className="bg-background sticky top-0">
+                        <TableRow>
+                          <TableHead>Period</TableHead>
+                          <TableHead className="text-right">Net</TableHead>
+                          <TableHead className="text-right">Gross</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {history.slice(0, 8).map((row) => (
+                          <TableRow key={row.period}>
+                            <TableCell className="text-xs tabular-nums">
+                              {row.period}
+                            </TableCell>
+                            <TableCell className="text-right text-xs tabular-nums">
+                              {money(row.net)}
+                            </TableCell>
+                            <TableCell className="text-right text-xs tabular-nums">
+                              {money(row.gross)}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </section>
+              ) : null}
+            </>
           ) : (
             <p className="text-muted-foreground text-sm">
-              No settlement activity for this truck in the active period.
+              No settlement activity for this truck in the selected period.
             </p>
           )}
+        </div>
 
-          <div>
-            <h3 className="mb-2 text-sm font-medium">
-              Settlement history (loaded window)
-            </h3>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Week start</TableHead>
-                    <TableHead className="text-right">Gross</TableHead>
-                    <TableHead className="text-right">Net</TableHead>
-                    <TableHead className="text-right">Miles</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {history.map((row) => (
-                    <TableRow key={row.period}>
-                      <TableCell className="font-mono text-xs tabular-nums">
-                        {row.period}
-                      </TableCell>
-                      <TableCell className="text-right font-mono tabular-nums">
-                        {money(row.gross)}
-                      </TableCell>
-                      <TableCell className="text-right font-mono tabular-nums">
-                        {money(row.net)}
-                      </TableCell>
-                      <TableCell className="text-right font-mono tabular-nums">
-                        {num(row.miles)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {history.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={4} className="text-muted-foreground">
-                        No history in the loaded settlement window.
-                      </TableCell>
-                    </TableRow>
-                  ) : null}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
-
-          <p className="text-muted-foreground text-xs">
-            Diesel gallon matching is not joined here when settlement and fuel
-            periods cannot be reconciled safely at truck grain. Open Diesel for
-            fuel detail.
-          </p>
-
-          <div className="flex flex-wrap gap-2">
-            {onBackToTeam ? (
-              <button
-                ref={backRef}
-                type="button"
-                className={buttonVariants({ variant: "outline", size: "sm" })}
-                onClick={onBackToTeam}
-              >
-                Back to team
-              </button>
-            ) : null}
-            <Link
-              href="/"
-              className={buttonVariants({ variant: "outline", size: "sm" })}
-            >
-              Open Settlements
-            </Link>
-            <Link
-              href="/diesel"
-              className={buttonVariants({ variant: "outline", size: "sm" })}
-            >
-              Open Diesel
-            </Link>
-          </div>
+        <div className="border-border/60 flex shrink-0 gap-2 border-t px-4 py-3">
+          <button
+            type="button"
+            className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+            onClick={onBack}
+          >
+            Back to team
+          </button>
+          <Link
+            href={truck ? `/?truck=${encodeURIComponent(truck)}` : "/"}
+            className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+          >
+            Open settlements report
+          </Link>
         </div>
       </DialogContent>
     </Dialog>

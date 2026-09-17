@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.8.20 - 2026-09-17
+
+- Reporting dashboard **V2 corrective UX**: compact executive header; Operating/Accounting View segmented control with Accounting “Operating context”; 3 primary KPIs + interpretation strip; Needs Attention priority rail; Gross bars + Net-margin % trend (6/12) with table disclosure; compact reconciliation; Physical team + **dispatch** performance; team/truck drawers with exception filters; RPM Check-data trust band ($0.05–$15/mi; sparse-miles rule) with tests. Ops routes unchanged.
+
 ## 3.8.19 - 2026-09-17
 
 - Reporting dashboard **V2 Phase 3**: drill-down panel keyboard/a11y polish (focus into panel, Escape/close copy, `aria-expanded`/`aria-haspopup`, preserve focus restore across team→truck nesting, reduced-motion-safe panel motion); document `/v2` Executive Overview in `docs/html-reporting.md` and `AGENTS.md`. Cross-source diesel MPG remains omitted when periods cannot be matched safely. Operational routes unchanged.

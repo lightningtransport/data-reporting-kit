@@ -1,19 +1,11 @@
 "use client"
 
 import Link from "next/link"
-import { useEffect, useRef, useTransition } from "react"
+import { useEffect, useMemo, useRef, useTransition } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 
 import { Badge } from "@/components/ui/badge"
-import { Button, buttonVariants } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Eyebrow, KpiValue } from "@/components/kpi-value"
+import { Button } from "@/components/ui/button"
 import {
   Select,
   SelectContent,
@@ -38,22 +30,27 @@ import {
   GrossNetTrendChart,
   toChartTrendPoints,
 } from "@/components/v2/trend-chart"
-import { money, moneyExact, num, pct } from "@/lib/format"
+import { money, moneyExact, pct } from "@/lib/format"
 import {
+  dispatchesFromRows,
   monthsFromWeeks,
   ownersFromRows,
   weeksFromRows,
   type SettlementPayload,
 } from "@/lib/settlement"
 import {
+  formatPeriodLabel,
   isPeriodPartial,
   resolveV2Filters,
   type V2SearchParams,
 } from "@/lib/v2/filters"
 import type { V2DashboardData } from "@/lib/v2/load"
 import {
+  allocationImpact,
   buildGrossNetTrend,
   compareMetric,
+  dispatchPerformance,
+  executiveInterpretation,
   filterRowsForPeriod,
   lensGross,
   lensNet,
@@ -74,53 +71,41 @@ import {
 } from "@/lib/v2/metrics"
 import { cn } from "cn"
 
-function formatMetricMoney(metric: MetricValue): string {
-  if (metric.value == null) {
-    if (metric.status === "empty") return "—"
-    return "Not available"
-  }
+function formatMoney(metric: MetricValue): string {
+  if (metric.value == null) return metric.status === "empty" ? "—" : "Unavailable"
   return money(metric.value)
 }
 
-function formatMetricCount(metric: MetricValue): string {
-  if (metric.value == null) {
-    if (metric.status === "empty") return "—"
-    return "Not available"
-  }
-  return String(metric.value)
-}
-
-function formatRpm(metric: MetricValue): string {
-  if (metric.value == null) return "Not available"
-  return `$${metric.value.toFixed(2)}`
-}
-
-function formatMargin(metric: MetricValue): string {
-  if (metric.value == null) return "Not available"
-  return pct(metric.value)
-}
-
-function ComparisonLine({ comparison }: { comparison: PeriodComparison }) {
+function DirectionLine({
+  comparison,
+  favorableWhen,
+}: {
+  comparison: PeriodComparison
+  favorableWhen: "up" | "down"
+}) {
   if (comparison.status !== "ok" || comparison.absolute == null) {
     return (
-      <p className="text-muted-foreground text-xs">
-        vs prior: Not available
-        {comparison.reason ? ` · ${comparison.reason}` : ""}
-      </p>
+      <p className="text-muted-foreground text-xs">vs prior: Unavailable</p>
     )
   }
+  const up = comparison.absolute > 0
+  const favorable =
+    (favorableWhen === "up" && up) || (favorableWhen === "down" && !up)
+  const arrow = up ? "↑" : comparison.absolute < 0 ? "↓" : "→"
   const sign = comparison.absolute > 0 ? "+" : ""
   return (
     <p
       className={cn(
         "text-xs tabular-nums",
-        comparison.absolute < 0 && "text-destructive",
-        comparison.absolute > 0 && "text-foreground"
+        favorable ? "text-foreground" : "text-destructive"
       )}
     >
-      vs prior: {sign}
+      <span aria-hidden>{arrow}</span> {sign}
       {money(comparison.absolute)}
-      {comparison.pct != null ? ` (${sign}${pct(comparison.pct)})` : ""}
+      {comparison.pct != null ? ` (${sign}${pct(comparison.pct)})` : ""}{" "}
+      <span className="text-muted-foreground">
+        {favorable ? "favorable" : "unfavorable"} vs prior
+      </span>
     </p>
   )
 }
@@ -131,7 +116,7 @@ function LightningMark() {
       aria-label="Lightning Transportation & Logistics"
       role="img"
       viewBox="0 0 1536 894"
-      className="h-auto w-20 shrink-0 sm:w-28"
+      className="h-auto w-14 shrink-0 sm:w-16"
     >
       <title>Lightning Transportation & Logistics</title>
       <filter id="v2-remove-logo-black" colorInterpolationFilters="sRGB">
@@ -161,9 +146,14 @@ export function ExecutiveOverview({ data }: { data: V2DashboardData }) {
     grain: searchParams.get("grain") ?? undefined,
     period: searchParams.get("period") ?? undefined,
     team: searchParams.get("team") ?? undefined,
+    dispatch: searchParams.get("dispatch") ?? undefined,
     lens: searchParams.get("lens") ?? undefined,
     focus: searchParams.get("focus") ?? undefined,
     truck: searchParams.get("truck") ?? undefined,
+    teamscope: searchParams.get("teamscope") ?? undefined,
+    truckfilter: searchParams.get("truckfilter") ?? undefined,
+    trend: searchParams.get("trend") ?? undefined,
+    priorities: searchParams.get("priorities") ?? undefined,
   }
 
   const settlements: SettlementPayload = data.settlements
@@ -173,14 +163,21 @@ export function ExecutiveOverview({ data }: { data: V2DashboardData }) {
   const weeks = weeksFromRows(allRows)
   const months = monthsFromWeeks(weeks)
   const owners = ownersFromRows(allRows)
+  const dispatches = dispatchesFromRows(allRows)
   const incomplete = !settlements.meta.pagination_complete
   const periodPartial = isPeriodPartial(filters.grain, filters.period)
+  const periodHuman = formatPeriodLabel(filters.grain, filters.period)
+
+  const filterOpts = {
+    teams: filters.teams.length ? filters.teams : undefined,
+    dispatches: filters.dispatches.length ? filters.dispatches : undefined,
+  }
 
   const activeRows = filterRowsForPeriod(
     allRows,
     filters.grain,
     filters.period,
-    filters.teams.length ? filters.teams : undefined
+    filterOpts
   )
 
   const priorPeriod =
@@ -192,17 +189,20 @@ export function ExecutiveOverview({ data }: { data: V2DashboardData }) {
     allRows,
     filters.grain,
     priorPeriod,
-    filters.teams.length ? filters.teams : undefined
+    filterOpts
   )
 
   const opts = { incomplete }
+  const isAccounting = filters.lens === "accounting"
   const gross = lensGross(activeRows, filters.lens, opts)
   const net = lensNet(activeRows, filters.lens, opts)
   const margin = operatingMargin(net, gross)
+  const alloc = allocationImpact(activeRows, opts)
   const rpm = revenuePerMile(activeRows, opts)
   const trucks = productiveTrucks(activeRows, opts)
   const reconciliation = reconcileNets(activeRows, opts)
   const teams = teamPerformance(activeRows)
+  const dispatchRows = dispatchPerformance(activeRows)
   const neg = negativeNetExceptions(activeRows)
   const low = lowGrossExceptions(activeRows)
   const gaps =
@@ -220,19 +220,41 @@ export function ExecutiveOverview({ data }: { data: V2DashboardData }) {
     currentPartial: periodPartial,
     previousPartial: priorPartial,
   })
-
-  const trendPoints = buildGrossNetTrend(allRows, filters.grain, filters.lens, {
-    incomplete,
-    teams: filters.teams.length ? filters.teams : undefined,
-    endDate: filters.period || undefined,
-    maxMonths: 12,
+  const interpretation = executiveInterpretation({
+    view: filters.lens,
+    grossCmp,
+    netCmp,
   })
+
+  const trendSourceRows =
+    filters.dispatches.length > 0
+      ? allRows.filter((row) => {
+          const dispatch = (row.d || "").trim() || "(unassigned)"
+          return filters.dispatches.includes(dispatch)
+        })
+      : allRows
+  const trendPoints = buildGrossNetTrend(
+    trendSourceRows,
+    filters.grain,
+    filters.lens,
+    {
+      incomplete,
+      teams: filters.teams.length ? filters.teams : undefined,
+      endDate: filters.period || undefined,
+      maxMonths: 12,
+    }
+  )
   const partialPeriods = new Set(
     trendPoints
       .filter((point) => isPeriodPartial(filters.grain, point.period))
       .map((point) => point.period)
   )
   const chartPoints = toChartTrendPoints(trendPoints, partialPeriods)
+
+  const visibleTeams =
+    filters.teamScope === "all"
+      ? teams
+      : teams.filter((team) => team.needsAttention)
 
   const focusTeam = filters.focusTeam
   const focusTruck = filters.focusTruck
@@ -267,8 +289,35 @@ export function ExecutiveOverview({ data }: { data: V2DashboardData }) {
         null)
       : null
 
-  const periodLabel = `${filters.grain === "week" ? "Week" : "Month"} ${filters.period || "—"}`
-  const filterSummary = `Lens ${filters.lens === "operating" ? "Operating Fleet" : "Accounting Total"}; team filter ${filters.teams.join("|") || "all"}`
+  const attentionCategories = useMemo(() => {
+    const items = [
+      {
+        id: "financial-neg",
+        group: "Financial" as const,
+        label: "Negative-net trucks",
+        count: neg.length,
+        impact: neg.reduce((sum, item) => sum + item.net, 0),
+        urgency: neg.length > 0 ? "high" : "none",
+      },
+      {
+        id: "financial-low",
+        group: "Financial" as const,
+        label: "Low-gross trucks",
+        count: low.length,
+        impact: null as number | null,
+        urgency: low.length > 0 ? "medium" : "none",
+      },
+      {
+        id: "data-returns",
+        group: "Data quality" as const,
+        label: "Return-date gaps",
+        count: gaps.length,
+        impact: null as number | null,
+        urgency: gaps.length > 0 ? "medium" : "none",
+      },
+    ]
+    return items.filter((item) => item.count > 0).slice(0, 3)
+  }, [neg, low, gaps])
 
   function updateParams(patch: Record<string, string | null>) {
     const next = new URLSearchParams(searchParams.toString())
@@ -282,14 +331,12 @@ export function ExecutiveOverview({ data }: { data: V2DashboardData }) {
   }
 
   function rememberTrigger(target: EventTarget | null | undefined) {
-    // Only overwrite when a real trigger is provided so nested team→truck
-    // navigation preserves the original focus restore target.
     if (target instanceof HTMLElement) lastTriggerRef.current = target
   }
 
   function openTeam(team: string, trigger?: EventTarget | null) {
     rememberTrigger(trigger)
-    updateParams({ focus: team, truck: null })
+    updateParams({ focus: team, truck: null, truckfilter: null })
   }
 
   function openTruck(
@@ -304,15 +351,11 @@ export function ExecutiveOverview({ data }: { data: V2DashboardData }) {
   }
 
   function closeTruckPanel() {
-    if (focusTeam) {
-      updateParams({ truck: null })
-      return
-    }
-    updateParams({ truck: null, focus: null })
+    updateParams({ truck: null })
   }
 
   function closeTeamPanel() {
-    updateParams({ focus: null, truck: null })
+    updateParams({ focus: null, truck: null, truckfilter: null })
   }
 
   useEffect(() => {
@@ -326,7 +369,21 @@ export function ExecutiveOverview({ data }: { data: V2DashboardData }) {
 
   const settlementFailed = data.sources.settlements.status === "error"
   const asOf = data.sources.settlements.asOf
-  const freshness = data.sources.settlements.freshness
+  const freshnessRaw = data.sources.settlements.freshness
+  const freshnessUnavailable =
+    !freshnessRaw ||
+    freshnessRaw === "Freshness unknown" ||
+    freshnessRaw.toLowerCase().includes("unknown") ||
+    freshnessRaw.toLowerCase().includes("unavailable")
+
+  const dataStatus =
+    settlementFailed
+      ? "Unavailable"
+      : incomplete
+        ? "Incomplete"
+        : activeRows.length
+          ? "Available"
+          : "Empty"
 
   return (
     <div className="bg-background text-foreground min-h-full">
@@ -337,38 +394,89 @@ export function ExecutiveOverview({ data }: { data: V2DashboardData }) {
         Skip to executive overview
       </a>
 
-      <header className="border-border/60 border-b">
-        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="flex items-center gap-4">
+      <header className="border-border/70 border-b">
+        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-3 sm:px-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
               <LightningMark />
-              <div>
-                <Eyebrow>Lightning Transportation</Eyebrow>
-                <h1 className="font-heading text-xl font-semibold tracking-tight sm:text-2xl">
+              <div className="min-w-0">
+                <h1 className="font-heading truncate text-lg font-semibold tracking-tight sm:text-xl">
                   Executive Overview
                 </h1>
+                <p className="text-muted-foreground text-sm">{periodHuman}</p>
               </div>
             </div>
-            <div className="text-muted-foreground text-right text-xs sm:text-sm">
-              <p>
-                As of{" "}
-                <time dateTime={asOf}>
-                  {asOf ? new Date(asOf).toLocaleString() : "—"}
-                </time>
-              </p>
-              <p>{freshness}</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge
+                variant={dataStatus === "Available" ? "secondary" : "outline"}
+                title={
+                  freshnessUnavailable
+                    ? "The source does not provide a synchronization timestamp. As of reflects request time."
+                    : freshnessRaw
+                }
+              >
+                Data {dataStatus}
+                {freshnessUnavailable ? " · Freshness unavailable" : ""}
+              </Badge>
+              <details className="relative">
+                <summary className="text-muted-foreground hover:text-foreground cursor-pointer list-none text-sm font-medium">
+                  Operational reports
+                </summary>
+                <div className="bg-popover absolute right-0 z-20 mt-1 min-w-44 rounded-lg border p-1 shadow-md">
+                  {[
+                    ["/", "Settlements"],
+                    ["/out-schedule", "Out Schedule"],
+                    ["/trucks-return", "Trucks Return"],
+                    ["/diesel", "Diesel"],
+                  ].map(([href, label]) => (
+                    <Link
+                      key={href}
+                      href={href}
+                      className="hover:bg-muted block rounded-md px-2 py-1.5 text-sm"
+                    >
+                      {label}
+                    </Link>
+                  ))}
+                </div>
+              </details>
             </div>
           </div>
 
           <div
-            className="flex flex-wrap items-end gap-3"
+            className="flex flex-wrap items-end gap-2"
             role="group"
             aria-label="Executive filters"
           >
-            <label className="flex min-w-[8rem] flex-col gap-1 text-sm">
-              <span className="text-muted-foreground text-xs font-medium">
-                Period grain
-              </span>
+            <div
+              className="bg-muted inline-flex rounded-lg p-0.5"
+              role="group"
+              aria-label="View"
+            >
+              {(
+                [
+                  ["operating", "Operating"],
+                  ["accounting", "Accounting"],
+                ] as const
+              ).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={filters.lens === value}
+                  className={cn(
+                    "min-h-9 rounded-md px-3 text-sm font-medium",
+                    filters.lens === value
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground"
+                  )}
+                  onClick={() => updateParams({ lens: value })}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            <label className="flex min-w-[7rem] flex-col gap-1 text-sm">
+              <span className="text-muted-foreground text-xs">Grain</span>
               <Select
                 items={[
                   { value: "week", label: "Week" },
@@ -381,7 +489,7 @@ export function ExecutiveOverview({ data }: { data: V2DashboardData }) {
                   }
                 }}
               >
-                <SelectTrigger aria-label="Period grain" className="w-full">
+                <SelectTrigger aria-label="Grain" className="h-9 w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -393,20 +501,21 @@ export function ExecutiveOverview({ data }: { data: V2DashboardData }) {
               </Select>
             </label>
 
-            <label className="flex min-w-[12rem] flex-col gap-1 text-sm">
-              <span className="text-muted-foreground text-xs font-medium">
-                Selected period
-              </span>
+            <label className="flex min-w-[10rem] flex-col gap-1 text-sm">
+              <span className="text-muted-foreground text-xs">Period</span>
               <Select
                 items={(filters.grain === "week" ? weeks : months).map(
-                  (value) => ({ value, label: value })
+                  (value) => ({
+                    value,
+                    label: formatPeriodLabel(filters.grain, value),
+                  })
                 )}
                 value={filters.period || undefined}
                 onValueChange={(value) => {
                   if (typeof value === "string") updateParams({ period: value })
                 }}
               >
-                <SelectTrigger aria-label="Selected period" className="w-full">
+                <SelectTrigger aria-label="Period" className="h-9 w-full">
                   <SelectValue placeholder="Select period" />
                 </SelectTrigger>
                 <SelectContent>
@@ -414,7 +523,7 @@ export function ExecutiveOverview({ data }: { data: V2DashboardData }) {
                     {(filters.grain === "week" ? weeks : months).map(
                       (value) => (
                         <SelectItem key={value} value={value}>
-                          {value}
+                          {formatPeriodLabel(filters.grain, value)}
                         </SelectItem>
                       )
                     )}
@@ -423,13 +532,11 @@ export function ExecutiveOverview({ data }: { data: V2DashboardData }) {
               </Select>
             </label>
 
-            <label className="flex min-w-[10rem] flex-col gap-1 text-sm">
-              <span className="text-muted-foreground text-xs font-medium">
-                Team
-              </span>
+            <label className="flex min-w-[9rem] flex-col gap-1 text-sm">
+              <span className="text-muted-foreground text-xs">Team</span>
               <Select
                 items={[
-                  { value: "all", label: "All" },
+                  { value: "all", label: "All teams" },
                   ...owners.map((owner) => ({ value: owner, label: owner })),
                 ]}
                 value={filters.teams[0] ?? "all"}
@@ -439,12 +546,12 @@ export function ExecutiveOverview({ data }: { data: V2DashboardData }) {
                   }
                 }}
               >
-                <SelectTrigger aria-label="Team" className="w-full">
+                <SelectTrigger aria-label="Team" className="h-9 w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="all">All teams</SelectItem>
                     {owners.map((owner) => (
                       <SelectItem key={owner} value={owner}>
                         {owner}
@@ -455,44 +562,45 @@ export function ExecutiveOverview({ data }: { data: V2DashboardData }) {
               </Select>
             </label>
 
-            <label className="flex min-w-[12rem] flex-col gap-1 text-sm">
-              <span className="text-muted-foreground text-xs font-medium">
-                Lens
-              </span>
+            <label className="flex min-w-[9rem] flex-col gap-1 text-sm">
+              <span className="text-muted-foreground text-xs">Dispatch</span>
               <Select
                 items={[
-                  { value: "operating", label: "Operating Fleet" },
-                  { value: "accounting", label: "Accounting Total" },
+                  { value: "all", label: "All dispatch" },
+                  ...dispatches.map((d) => ({ value: d, label: d })),
                 ]}
-                value={filters.lens}
+                value={filters.dispatches[0] ?? "all"}
                 onValueChange={(value) => {
-                  if (typeof value === "string") updateParams({ lens: value })
+                  if (typeof value === "string") {
+                    updateParams({
+                      dispatch: value === "all" ? null : value,
+                    })
+                  }
                 }}
               >
-                <SelectTrigger aria-label="Lens" className="w-full">
+                <SelectTrigger aria-label="Dispatch" className="h-9 w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectItem value="operating">Operating Fleet</SelectItem>
-                    <SelectItem value="accounting">Accounting Total</SelectItem>
+                    <SelectItem value="all">All dispatch</SelectItem>
+                    {dispatches.map((d) => (
+                      <SelectItem key={d} value={d}>
+                        {d}
+                      </SelectItem>
+                    ))}
                   </SelectGroup>
                 </SelectContent>
               </Select>
             </label>
 
             {periodPartial ? (
-              <Badge variant="outline" className="mb-1">
+              <Badge variant="outline" className="mb-0.5">
                 Partial period
               </Badge>
             ) : null}
-            {incomplete ? (
-              <Badge variant="destructive" className="mb-1">
-                Incomplete pagination
-              </Badge>
-            ) : null}
             {pending ? (
-              <span className="text-muted-foreground mb-1 text-xs">
+              <span className="text-muted-foreground mb-0.5 text-xs">
                 Updating…
               </span>
             ) : null}
@@ -500,463 +608,541 @@ export function ExecutiveOverview({ data }: { data: V2DashboardData }) {
         </div>
       </header>
 
-      <main id="v2-main" className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+      <main
+        id="v2-main"
+        className="mx-auto max-w-6xl space-y-6 px-4 py-5 sm:px-6"
+      >
         {settlementFailed ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>Settlements unavailable</CardTitle>
-              <CardDescription>
-                {data.sources.settlements.error ??
-                  "Live settlement data could not be loaded."}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button type="button" onClick={() => router.refresh()}>
-                Retry
-              </Button>
-            </CardContent>
-          </Card>
+          <section className="rounded-xl border p-4">
+            <h2 className="font-semibold">Settlements unavailable</h2>
+            <p className="text-muted-foreground mt-1 text-sm">
+              {data.sources.settlements.error ??
+                "Live settlement data could not be loaded."}
+            </p>
+            <Button
+              type="button"
+              className="mt-3"
+              onClick={() => router.refresh()}
+            >
+              Retry
+            </Button>
+          </section>
         ) : null}
 
         {!settlementFailed && activeRows.length === 0 ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>No qualifying records</CardTitle>
-              <CardDescription>
-                No settlement rows match the active period and filters.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() =>
-                  updateParams({
-                    team: null,
-                    period: null,
-                    grain: "week",
-                    lens: "operating",
-                  })
-                }
-              >
-                Reset filters
-              </Button>
-            </CardContent>
-          </Card>
+          <section className="rounded-xl border p-4">
+            <h2 className="font-semibold">No qualifying records</h2>
+            <p className="text-muted-foreground mt-1 text-sm">
+              No settlement rows match the active period and filters.
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              className="mt-3"
+              onClick={() =>
+                updateParams({
+                  team: null,
+                  dispatch: null,
+                  period: null,
+                  grain: "week",
+                  lens: "operating",
+                })
+              }
+            >
+              Reset filters
+            </Button>
+          </section>
         ) : null}
 
         {!settlementFailed && activeRows.length > 0 ? (
           <>
-            <section aria-labelledby="v2-kpi-heading" className="space-y-3">
-              <h2 id="v2-kpi-heading" className="sr-only">
-                Key performance indicators
+            <section aria-labelledby="v2-summary" className="space-y-3">
+              <h2 id="v2-summary" className="text-sm font-semibold tracking-wide uppercase">
+                Executive summary
               </h2>
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <Card size="sm">
-                  <CardHeader>
-                    <CardDescription>
-                      {filters.lens === "operating"
-                        ? "Operating Gross"
-                        : "Accounting Gross"}
-                    </CardDescription>
-                    <KpiValue>{formatMetricMoney(gross)}</KpiValue>
-                  </CardHeader>
-                  <CardContent className="space-y-1">
-                    <ComparisonLine comparison={grossCmp} />
-                    <p className="text-muted-foreground text-xs">
-                      Stored Gross ·{" "}
-                      {filters.lens === "operating"
-                        ? "physical trucks only"
-                        : "includes allocation 1/2/3"}
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card size="sm">
-                  <CardHeader>
-                    <CardDescription>
-                      {filters.lens === "operating"
-                        ? "Operating Net / Margin"
-                        : "Accounting Net / Margin"}
-                    </CardDescription>
-                    <KpiValue>{formatMetricMoney(net)}</KpiValue>
-                  </CardHeader>
-                  <CardContent className="space-y-1">
-                    <p className="text-sm tabular-nums">
-                      Margin {formatMargin(margin)}
-                    </p>
-                    <ComparisonLine comparison={netCmp} />
-                    <p className="text-muted-foreground text-xs">
-                      Stored Net · not recomputed from expenses
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card size="sm">
-                  <CardHeader>
-                    <CardDescription>RPM</CardDescription>
-                    <KpiValue>{formatRpm(rpm)}</KpiValue>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground text-xs">
-                      Physical Gross ÷ Driven miles
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card size="sm">
-                  <CardHeader>
-                    <CardDescription>Productive Trucks</CardDescription>
-                    <KpiValue>{formatMetricCount(trucks)}</KpiValue>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground text-xs">
-                      Distinct physical units with settlement activity — not
-                      fleet utilization
-                      {filters.lens === "accounting"
-                        ? " (physical count kept when Accounting Total is active)"
-                        : ""}
-                    </p>
-                  </CardContent>
-                </Card>
+              <div className="grid gap-3 md:grid-cols-3">
+                <div className="bg-card rounded-xl border p-4 md:col-span-1 md:row-span-1 md:min-h-[8.5rem]">
+                  <p className="text-muted-foreground text-xs font-medium">
+                    {isAccounting ? "Accounting Net / Margin" : "Operating Net / Margin"}
+                  </p>
+                  <p className="mt-1 text-3xl font-semibold tracking-tight tabular-nums">
+                    {formatMoney(net)}
+                    <span className="text-muted-foreground ml-2 text-base font-medium">
+                      · {margin.value == null ? "—" : pct(margin.value)}
+                    </span>
+                  </p>
+                  <DirectionLine comparison={netCmp} favorableWhen="up" />
+                </div>
+                <div className="bg-card rounded-xl border p-4">
+                  <p className="text-muted-foreground text-xs font-medium">
+                    {isAccounting ? "Accounting Gross" : "Operating Gross"}
+                  </p>
+                  <p className="mt-1 text-2xl font-semibold tracking-tight tabular-nums">
+                    {formatMoney(gross)}
+                  </p>
+                  <DirectionLine comparison={grossCmp} favorableWhen="up" />
+                </div>
+                <div className="bg-card rounded-xl border p-4">
+                  <p className="text-muted-foreground text-xs font-medium">
+                    {isAccounting
+                      ? "Allocation impact"
+                      : "Productive trucks"}
+                  </p>
+                  <p className="mt-1 text-2xl font-semibold tracking-tight tabular-nums">
+                    {isAccounting
+                      ? formatMoney(alloc)
+                      : trucks.value == null
+                        ? "—"
+                        : String(trucks.value)}
+                  </p>
+                  <p className="text-muted-foreground mt-1 text-xs">
+                    {isAccounting
+                      ? "Stored Net on buckets 1/2/3"
+                      : "Settlement-active physical units"}
+                  </p>
+                </div>
               </div>
+              {interpretation ? (
+                <p className="text-sm leading-relaxed">{interpretation}</p>
+              ) : null}
+              {isAccounting ? (
+                <div className="bg-muted/40 rounded-lg px-3 py-2">
+                  <p className="text-muted-foreground text-xs font-medium uppercase">
+                    Operating context
+                  </p>
+                  <p className="mt-1 text-sm tabular-nums">
+                    Productive trucks{" "}
+                    <strong>
+                      {trucks.value == null ? "—" : trucks.value}
+                    </strong>
+                    {" · "}
+                    RPM{" "}
+                    <strong>
+                      {rpm.value == null
+                        ? "Unavailable"
+                        : `$${rpm.value.toFixed(2)}`}
+                    </strong>
+                    {rpm.reason ? ` (${rpm.reason})` : ""}
+                  </p>
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-xs tabular-nums">
+                  Supporting RPM{" "}
+                  {rpm.value == null
+                    ? "Unavailable"
+                    : `$${rpm.value.toFixed(2)}`}
+                  {rpm.reason ? ` · ${rpm.reason}` : ""}
+                </p>
+              )}
             </section>
 
-            <section aria-labelledby="v2-attention-heading">
-              <Card>
-                <CardHeader>
-                  <CardTitle id="v2-attention-heading">Attention Now</CardTitle>
-                  <CardDescription>
-                    Decision-ready exceptions for the active filters
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="grid gap-4 md:grid-cols-3">
-                  <div>
-                    <p className="text-sm font-medium">Negative net</p>
-                    <p className="font-mono text-2xl tabular-nums">{neg.length}</p>
-                    <ul className="text-muted-foreground mt-2 space-y-1 text-xs">
-                      {neg.slice(0, 5).map((item) => (
-                        <li key={item.truck}>
-                          <button
-                            type="button"
-                            aria-haspopup="dialog"
-                            aria-label={`Open drill-down for truck ${item.truck}, negative net ${moneyExact(item.net)}`}
-                            className="hover:text-foreground focus-visible:ring-ring rounded-sm text-left hover:underline focus-visible:ring-2 focus-visible:outline-none"
-                            onClick={(event) =>
-                              openTruck(item.truck, {
-                                team: item.owner,
-                                trigger: event.currentTarget,
-                              })
-                            }
-                          >
-                            Truck {item.truck} · {moneyExact(item.net)}
-                          </button>
-                        </li>
-                      ))}
-                      {neg.length === 0 ? <li>None in selection</li> : null}
-                    </ul>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Gross under $11,000</p>
-                    <p className="font-mono text-2xl tabular-nums">{low.length}</p>
-                    <ul className="text-muted-foreground mt-2 space-y-1 text-xs">
-                      {low.slice(0, 5).map((item) => (
-                        <li key={item.truck}>
-                          <button
-                            type="button"
-                            aria-haspopup="dialog"
-                            aria-label={`Open drill-down for truck ${item.truck}, gross ${moneyExact(item.gross)}`}
-                            className="hover:text-foreground focus-visible:ring-ring rounded-sm text-left hover:underline focus-visible:ring-2 focus-visible:outline-none"
-                            onClick={(event) =>
-                              openTruck(item.truck, {
-                                team: item.owner,
-                                trigger: event.currentTarget,
-                              })
-                            }
-                          >
-                            Truck {item.truck} · {moneyExact(item.gross)}
-                          </button>
-                        </li>
-                      ))}
-                      {low.length === 0 ? <li>None in selection</li> : null}
-                    </ul>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Return-date gaps</p>
-                    {data.sources.returns.status === "error" ? (
-                      <p className="text-muted-foreground text-sm">
-                        Data unavailable · returns
-                      </p>
-                    ) : (
-                      <>
-                        <p className="font-mono text-2xl tabular-nums">
-                          {gaps.length}
-                        </p>
-                        <ul className="text-muted-foreground mt-2 space-y-1 text-xs">
-                          {gaps.slice(0, 5).map((item) => (
-                            <li key={item.truck}>
-                              <button
-                                type="button"
-                                aria-haspopup="dialog"
-                                aria-label={`Open drill-down for truck ${item.truck}, return-date gap`}
-                                className="hover:text-foreground focus-visible:ring-ring rounded-sm text-left hover:underline focus-visible:ring-2 focus-visible:outline-none"
-                                onClick={(event) =>
-                                  openTruck(item.truck, {
-                                    trigger: event.currentTarget,
-                                  })
-                                }
-                              >
-                                Truck {item.truck}
-                              </button>
-                            </li>
-                          ))}
-                          {gaps.length === 0 ? (
-                            <li>None in current returns load</li>
-                          ) : null}
-                        </ul>
-                      </>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </section>
-
-            <div className="grid gap-6 lg:grid-cols-2">
-              <section aria-labelledby="v2-trend-heading">
-                <Card className="h-full">
-                  <CardHeader>
-                    <CardTitle id="v2-trend-heading">
-                      Gross and Net Trend
-                    </CardTitle>
-                    <CardDescription>
-                      Up to 12 calendar months ending at the selected period ·
-                      same lens and team filter · partial periods marked
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {incomplete ? (
-                      <p className="text-muted-foreground text-sm">
-                        Trend unavailable · settlement pagination incomplete.
-                      </p>
-                    ) : (
-                      <GrossNetTrendChart
-                        data={chartPoints}
-                        grain={filters.grain}
-                        lens={filters.lens}
-                      />
-                    )}
-                  </CardContent>
-                </Card>
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(16rem,0.8fr)]">
+              <section
+                aria-labelledby="v2-trend"
+                className="rounded-xl border p-4"
+              >
+                <h2 id="v2-trend" className="text-sm font-semibold">
+                  Performance trend
+                </h2>
+                <div className="mt-3">
+                  <GrossNetTrendChart
+                    data={chartPoints}
+                    grain={filters.grain}
+                    lens={filters.lens}
+                    span={filters.trendSpan}
+                    onSpanChange={(span) =>
+                      updateParams({ trend: span === 6 ? "6" : null })
+                    }
+                  />
+                </div>
               </section>
 
-              <section aria-labelledby="v2-recon-heading">
-                <Card className="h-full">
-                  <CardHeader>
-                    <CardTitle id="v2-recon-heading">
-                      Operating vs Accounting
-                    </CardTitle>
-                    <CardDescription>
-                      Allocation trucks 1/2/3 are accounting buckets, not
-                      physical trucks.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-2 text-sm">
-                    {reconciliation.status === "partial" ||
-                    reconciliation.status === "empty" ? (
-                      <p className="text-muted-foreground">
-                        Reconciliation incomplete
-                        {reconciliation.reason
-                          ? ` · ${reconciliation.reason}`
-                          : ""}
-                      </p>
-                    ) : (
-                      <>
-                        <div className="flex justify-between gap-4">
-                          <span>Operating Net</span>
-                          <span className="font-mono tabular-nums">
-                            {moneyExact(reconciliation.operatingNet)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between gap-4">
-                          <span>+ Allocation Impact (1/2/3)</span>
-                          <span className="font-mono tabular-nums">
-                            {moneyExact(reconciliation.allocationImpact)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between gap-4 border-t pt-2 font-medium">
-                          <span>= Accounting Net</span>
-                          <span className="font-mono tabular-nums">
-                            {moneyExact(reconciliation.accountingNet)}
-                          </span>
-                        </div>
-                        <p className="text-muted-foreground text-xs">
-                          {reconciliation.balanced
-                            ? "Balanced for this population"
-                            : reconciliation.reason}
+              <section
+                aria-labelledby="v2-attention"
+                className="rounded-xl border p-4"
+              >
+                <h2 id="v2-attention" className="text-sm font-semibold">
+                  Needs attention
+                </h2>
+                <ul className="mt-3 space-y-3">
+                  {attentionCategories.length === 0 ? (
+                    <li className="text-muted-foreground text-sm">
+                      No priority exceptions for this selection.
+                    </li>
+                  ) : (
+                    attentionCategories.map((item) => (
+                      <li key={item.id} className="text-sm">
+                        <p className="font-medium">
+                          {item.count} {item.label}
                         </p>
-                      </>
-                    )}
-                  </CardContent>
-                </Card>
+                        <p className="text-muted-foreground text-xs">
+                          {item.group}
+                          {item.impact != null
+                            ? ` · Impact ${money(item.impact)}`
+                            : ""}
+                          {item.urgency !== "none"
+                            ? ` · ${item.urgency} urgency`
+                            : ""}
+                        </p>
+                      </li>
+                    ))
+                  )}
+                </ul>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-4"
+                  onClick={() =>
+                    updateParams({
+                      priorities: filters.prioritiesOpen ? null : "1",
+                    })
+                  }
+                >
+                  {filters.prioritiesOpen
+                    ? "Hide priorities"
+                    : "Review priorities"}
+                </Button>
+                {filters.prioritiesOpen ? (
+                  <div className="mt-4 space-y-4 border-t pt-3 text-sm">
+                    <div>
+                      <h3 className="font-medium">Financial · Negative net</h3>
+                      <ul className="mt-1 space-y-1">
+                        {neg.slice(0, 12).map((item) => (
+                          <li key={item.truck}>
+                            <button
+                              type="button"
+                              className="font-medium underline-offset-2 hover:underline"
+                              onClick={(e) =>
+                                openTruck(item.truck, {
+                                  team: item.owner,
+                                  trigger: e.currentTarget,
+                                })
+                              }
+                            >
+                              Truck {item.truck}
+                            </button>{" "}
+                            <span className="text-muted-foreground tabular-nums">
+                              {moneyExact(item.net)} · {item.owner}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <h3 className="font-medium">Financial · Low gross</h3>
+                      <ul className="mt-1 space-y-1">
+                        {low.slice(0, 12).map((item) => (
+                          <li key={item.truck}>
+                            <button
+                              type="button"
+                              className="font-medium underline-offset-2 hover:underline"
+                              onClick={(e) =>
+                                openTruck(item.truck, {
+                                  team: item.owner,
+                                  trigger: e.currentTarget,
+                                })
+                              }
+                            >
+                              Truck {item.truck}
+                            </button>{" "}
+                            <span className="text-muted-foreground tabular-nums">
+                              {moneyExact(item.gross)} · {item.owner}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <h3 className="font-medium">
+                        Data quality · Return-date gaps
+                      </h3>
+                      <p className="text-muted-foreground text-xs">
+                        Completeness issue on returns — not a financial
+                        underperformance flag.
+                      </p>
+                      <p className="mt-1 tabular-nums">{gaps.length} trucks</p>
+                    </div>
+                  </div>
+                ) : null}
               </section>
             </div>
 
-            <section aria-labelledby="v2-teams-heading">
-              <Card>
-                <CardHeader>
-                  <CardTitle id="v2-teams-heading">Team Performance</CardTitle>
-                  <CardDescription>
-                    Sorted by negative-net trucks, then low-gross trucks, then
-                    lowest net. Physical-truck metrics only.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
+            <section
+              aria-labelledby="v2-recon"
+              className="bg-muted/30 rounded-xl px-4 py-3"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 id="v2-recon" className="text-sm font-semibold">
+                  Accounting reconciliation
+                </h2>
+                <Badge variant="outline">
+                  {reconciliation.balanced ? "Balanced" : "Incomplete"}
+                </Badge>
+              </div>
+              <p className="mt-2 text-sm tabular-nums">
+                Operating Net {money(reconciliation.operatingNet)}
+                {" + "}
+                Allocations {money(reconciliation.allocationImpact)}
+                {" = "}
+                Accounting Net {money(reconciliation.accountingNet)}
+              </p>
+              <details className="mt-2">
+                <summary className="text-muted-foreground cursor-pointer text-xs font-medium">
+                  Explain allocation buckets
+                </summary>
+                <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
+                  Settlement trucks 1, 2, and 3 are owner-allocation buckets
+                  (Carlos, Jorge, CDT)—not physical units. Allocation Impact is
+                  their stored Net. Operating Net excludes them; Accounting Net
+                  includes them.
+                </p>
+              </details>
+            </section>
+
+            <section aria-labelledby="v2-teams" className="space-y-3">
+              <div className="flex flex-wrap items-end justify-between gap-2">
+                <div>
+                  <h2 id="v2-teams" className="text-sm font-semibold">
+                    Physical team performance
+                  </h2>
+                  <p className="text-muted-foreground text-xs">
+                    Sorted by attention (negative Net / exceptions), then lowest
+                    Net. Owner teams — not dispatch groups.
+                  </p>
+                </div>
+                <div
+                  className="bg-muted inline-flex rounded-lg p-0.5"
+                  role="group"
+                  aria-label="Team table scope"
+                >
+                  {(
+                    [
+                      ["attention", "Needs attention"],
+                      ["all", "All teams"],
+                    ] as const
+                  ).map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      aria-pressed={
+                        (filters.teamScope === "attention" &&
+                          value === "attention") ||
+                        (filters.teamScope === "all" && value === "all")
+                      }
+                      className={cn(
+                        "rounded-md px-2.5 py-1.5 text-xs font-medium",
+                        filters.teamScope === value
+                          ? "bg-background shadow-sm"
+                          : "text-muted-foreground"
+                      )}
+                      onClick={() =>
+                        updateParams({
+                          teamscope: value === "all" ? "all" : null,
+                        })
+                      }
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="hidden overflow-x-auto md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Team</TableHead>
+                      <TableHead className="text-right">Net</TableHead>
+                      <TableHead className="text-right">Margin</TableHead>
+                      <TableHead className="text-right">Exceptions</TableHead>
+                      <TableHead className="text-right">Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {visibleTeams.length === 0 ? (
                       <TableRow>
-                        <TableHead>Team</TableHead>
-                        <TableHead className="text-right">Gross</TableHead>
-                        <TableHead className="text-right">Net</TableHead>
-                        <TableHead className="text-right">Margin</TableHead>
-                        <TableHead className="text-right">RPM</TableHead>
-                        <TableHead className="text-right">Neg. trucks</TableHead>
-                        <TableHead className="text-right">Low gross</TableHead>
+                        <TableCell
+                          colSpan={5}
+                          className="text-muted-foreground"
+                        >
+                          No teams in this scope.
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {teams.map((team) => (
+                    ) : (
+                      visibleTeams.map((team) => (
                         <TableRow
                           key={team.team}
-                          className={cn(
-                            "hover:bg-muted/50 focus-visible:ring-ring cursor-pointer focus-visible:ring-2 focus-visible:outline-none",
-                            focusTeam === team.team && "bg-muted/60"
-                          )}
-                          tabIndex={0}
-                          role="button"
-                          aria-haspopup="dialog"
-                          aria-expanded={
-                            focusTeam === team.team && !focusTruck
-                          }
-                          aria-label={`Open team ${team.team} drill-down`}
-                          onClick={(event) =>
-                            openTeam(team.team, event.currentTarget)
-                          }
-                          onKeyDown={(event) => {
-                            if (event.key === "Enter" || event.key === " ") {
-                              event.preventDefault()
-                              openTeam(team.team, event.currentTarget)
-                            }
-                          }}
+                          className="hover:bg-muted/40 focus-within:bg-muted/40"
                         >
                           <TableCell className="font-medium">
                             {team.team}
+                            {team.needsAttention ? (
+                              <span className="text-destructive ml-2 text-xs">
+                                Needs attention
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground ml-2 text-xs">
+                                Stable
+                              </span>
+                            )}
                           </TableCell>
-                          <TableCell className="text-right font-mono tabular-nums">
-                            {money(team.gross)}
-                          </TableCell>
-                          <TableCell className="text-right font-mono tabular-nums">
+                          <TableCell className="text-right tabular-nums">
                             {money(team.net)}
                           </TableCell>
-                          <TableCell className="text-right font-mono tabular-nums">
-                            {team.margin == null
-                              ? "Not available"
-                              : pct(team.margin)}
+                          <TableCell className="text-right tabular-nums">
+                            {team.margin == null ? "—" : pct(team.margin)}
                           </TableCell>
-                          <TableCell className="text-right font-mono tabular-nums">
-                            {team.rpm == null
-                              ? "Not available"
-                              : `$${team.rpm.toFixed(2)}`}
+                          <TableCell className="text-right tabular-nums">
+                            {team.negativeNetTrucks} / {team.lowGrossTrucks}
                           </TableCell>
-                          <TableCell className="text-right font-mono tabular-nums">
-                            {team.negativeNetTrucks}
-                          </TableCell>
-                          <TableCell className="text-right font-mono tabular-nums">
-                            {team.lowGrossTrucks}
+                          <TableCell className="text-right">
+                            <button
+                              type="button"
+                              aria-haspopup="dialog"
+                              aria-expanded={focusTeam === team.team}
+                              className="text-sm font-medium underline-offset-2 hover:underline"
+                              onClick={(e) =>
+                                openTeam(team.team, e.currentTarget)
+                              }
+                            >
+                              Review →
+                            </button>
                           </TableCell>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+
+              <ul className="space-y-2 md:hidden">
+                {visibleTeams.map((team) => (
+                  <li
+                    key={team.team}
+                    className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2"
+                  >
+                    <div>
+                      <p className="font-medium">{team.team}</p>
+                      <p className="text-muted-foreground text-xs tabular-nums">
+                        Net {money(team.net)} ·{" "}
+                        {team.needsAttention ? "Needs attention" : "Stable"}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className="text-sm font-medium"
+                      onClick={(e) => openTeam(team.team, e.currentTarget)}
+                    >
+                      Review →
+                    </button>
+                  </li>
+                ))}
+              </ul>
             </section>
+
+            <section aria-labelledby="v2-dispatch" className="space-y-3">
+              <div>
+                <h2 id="v2-dispatch" className="text-sm font-semibold">
+                  Physical dispatch performance
+                </h2>
+                <p className="text-muted-foreground text-xs">
+                  Distinct from owner teams. Dispatch comes from settlement{" "}
+                  <code className="text-[0.7rem]">Dispatch</code>.
+                </p>
+              </div>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Dispatch</TableHead>
+                      <TableHead className="text-right">Net</TableHead>
+                      <TableHead className="text-right">Margin</TableHead>
+                      <TableHead className="text-right">Trucks</TableHead>
+                      <TableHead className="text-right">Exceptions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {dispatchRows.length === 0 ? (
+                      <TableRow>
+                        <TableCell
+                          colSpan={5}
+                          className="text-muted-foreground"
+                        >
+                          No dispatch groups in this selection.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      dispatchRows.map((row) => (
+                        <TableRow key={row.team}>
+                          <TableCell className="font-medium">
+                            {row.team}
+                            {row.needsAttention ? (
+                              <span className="text-destructive ml-2 text-xs">
+                                Needs attention
+                              </span>
+                            ) : null}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {money(row.net)}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {row.margin == null ? "—" : pct(row.margin)}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {row.productiveTrucks}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {row.negativeNetTrucks} / {row.lowGrossTrucks}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </section>
+
+            <details className="text-muted-foreground rounded-lg text-xs leading-relaxed">
+              <summary className="text-foreground cursor-pointer text-sm font-medium">
+                Technical details
+              </summary>
+              <div className="mt-2 space-y-1">
+                <p>
+                  Sources: settlements ({data.sources.settlements.status},{" "}
+                  {data.sources.settlements.rowCount} rows, pagination{" "}
+                  {String(data.sources.settlements.paginationComplete)});
+                  returns ({data.sources.returns.status}).
+                </p>
+                <p>
+                  As of{" "}
+                  <time dateTime={asOf}>
+                    {asOf ? new Date(asOf).toLocaleString() : "—"}
+                  </time>{" "}
+                  = request time. Freshness unavailable means the source does
+                  not publish sync time — not that records refreshed at request
+                  time.
+                </p>
+                <p>
+                  Filters: view={filters.lens}, grain={filters.grain}, period=
+                  {filters.period}, team=
+                  {filters.teams.join("|") || "all"}, dispatch=
+                  {filters.dispatches.join("|") || "all"}.
+                </p>
+                <p>
+                  RPM trust band: exclude trucks with miles≤0; flag Check data
+                  when miles &lt; 100 and RPM &gt; $5, or RPM outside
+                  $0.05–$15/mi. Aggregate RPM excludes Check-data / unavailable
+                  trucks. Does not clamp stored Gross or miles.
+                </p>
+                <p>
+                  Diesel MPG join skipped at truck grain (unsafe period match).
+                  Allocation buckets 1/2/3 are owner accounting only.
+                </p>
+              </div>
+            </details>
           </>
         ) : null}
-
-        <section aria-labelledby="v2-ops-heading">
-          <Card>
-            <CardHeader>
-              <CardTitle id="v2-ops-heading">Operational Reports</CardTitle>
-              <CardDescription>
-                Existing operational detail routes — unchanged by V2
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-wrap gap-2">
-              {(
-                [
-                  ["/", "Settlements"],
-                  ["/out-schedule", "Out Schedule"],
-                  ["/trucks-return", "Trucks Return"],
-                  ["/diesel", "Diesel"],
-                ] as const
-              ).map(([href, label]) => (
-                <Link
-                  key={href}
-                  href={href}
-                  className={buttonVariants({ variant: "outline", size: "sm" })}
-                >
-                  {label}
-                </Link>
-              ))}
-            </CardContent>
-          </Card>
-        </section>
-
-        <details className="border-border/60 rounded-xl border px-4 py-3">
-          <summary className="cursor-pointer text-sm font-medium">
-            Technical details
-          </summary>
-          <div className="text-muted-foreground mt-3 space-y-2 text-xs">
-            <p>
-              Sources: settlements ({data.sources.settlements.status},{" "}
-              {data.sources.settlements.rowCount} rows, pagination{" "}
-              {data.sources.settlements.paginationComplete
-                ? "complete"
-                : "incomplete"}
-              ); returns ({data.sources.returns.status},{" "}
-              {data.sources.returns.rowCount} rows).
-            </p>
-            <p>
-              Filters: grain={filters.grain}, period={filters.period || "—"},
-              team={filters.teams.join("|") || "all"}, lens={filters.lens}.
-              Active settlement rows: {activeRows.length}.
-            </p>
-            <p>
-              As of: {asOf || "—"}. Freshness: {freshness}. Request time is not
-              a source sync timestamp.
-            </p>
-            <p>
-              Allocation buckets 1/2/3 excluded from Operating Fleet KPIs,
-              RPM, productive trucks, and exception lists; included in
-              Accounting Total and reconciliation.
-            </p>
-            <p>
-              Productive Trucks = distinct physical trucks with a settlement
-              row in the selection (activity, not utilization).
-            </p>
-            <p>
-              Trend points: {trendPoints.length} ({filters.grain}). History
-              rows loaded: {num(allRows.length)}. Drill-down URL: focus=
-              {focusTeam || "—"}, truck={focusTruck || "—"}.
-            </p>
-            <p>
-              Diesel MPG is not shown on V2 when settlement weeks and fuel Store
-              Date matching cannot be reconciled at the same grain for the
-              active lens. Settlement Fuel Expenses ÷ miles remains available in
-              truck drill-down. Open Diesel for gallon detail.
-            </p>
-          </div>
-        </details>
       </main>
 
       <TeamDrillDownPanel
@@ -964,10 +1150,16 @@ export function ExecutiveOverview({ data }: { data: V2DashboardData }) {
         team={focusTeam}
         metrics={focusedTeamMetrics}
         trucks={focusTeamTrucks}
+        truckFilter={filters.truckFilter}
+        onTruckFilterChange={(value) =>
+          updateParams({
+            truckfilter: value === "negative_net" ? null : value,
+          })
+        }
         grossComparison={focusTeamGrossCmp}
         netComparison={focusTeamNetCmp}
-        periodLabel={periodLabel}
-        filterSummary={filterSummary}
+        periodLabel={periodHuman}
+        viewLabel={isAccounting ? "Accounting view" : "Operating view"}
         onClose={closeTeamPanel}
         onSelectTruck={(truck, trigger) =>
           openTruck(truck, { team: focusTeam, trigger })
@@ -977,16 +1169,14 @@ export function ExecutiveOverview({ data }: { data: V2DashboardData }) {
       <TruckDrillDownPanel
         open={Boolean(focusTruck)}
         truck={focusTruck}
-        periodMetrics={focusTruckPeriod}
+        aggregate={focusTruckPeriod}
         history={focusTruckHistory}
-        periodLabel={periodLabel}
-        filterSummary={filterSummary}
-        onClose={closeTruckPanel}
-        onBackToTeam={
-          focusTeam
-            ? () => updateParams({ truck: null, focus: focusTeam })
-            : undefined
-        }
+        periodLabel={periodHuman}
+        onBack={closeTruckPanel}
+        onClose={() => {
+          if (focusTeam) closeTruckPanel()
+          else closeTeamPanel()
+        }}
       />
     </div>
   )

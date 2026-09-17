@@ -1,11 +1,12 @@
 "use client"
 
+import { useState } from "react"
 import {
   Bar,
-  BarChart,
   CartesianGrid,
+  ComposedChart,
   Line,
-  LineChart,
+  ReferenceLine,
   XAxis,
   YAxis,
 } from "recharts"
@@ -26,25 +27,24 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { money, moneyTick } from "@/lib/format"
+import { money, moneyTick, pct } from "@/lib/format"
 import type { ExecutiveGrain, ExecutiveLens, TrendPoint } from "@/lib/v2/metrics"
 import { cn } from "cn"
 
 const trendConfig = {
   chartGross: { label: "Gross", color: "var(--chart-1)" },
-  chartNet: { label: "Net", color: "var(--chart-2)" },
+  chartMargin: { label: "Net margin %", color: "var(--chart-2)" },
 } satisfies ChartConfig
 
-const chartMargin = { left: 4, right: 4, top: 4, bottom: 4 }
+const chartMargin = { left: 4, right: 8, top: 8, bottom: 4 }
 
 export type ChartTrendPoint = TrendPoint & {
   partial: boolean
-  /** Chart-safe numbers; null metrics become undefined so marks are omitted. */
   chartGross: number | undefined
-  chartNet: number | undefined
+  chartMargin: number | undefined
 }
 
-function moneyTooltip(
+function trendTooltip(
   value: number | string | ReadonlyArray<number | string> | undefined,
   name: number | string | undefined,
   item: unknown
@@ -55,35 +55,50 @@ function moneyTooltip(
       ? (item as { payload?: ChartTrendPoint }).payload
       : undefined
   const key = String(name ?? "")
-  const label = key === "chartGross" ? "Gross" : key === "chartNet" ? "Net" : key
+  const isMargin = key === "chartMargin"
   return (
-    <div className="flex w-full flex-col gap-1">
+    <div className="flex w-full flex-col gap-1 text-xs">
       <div className="flex w-full items-center justify-between gap-4">
-        <span className="text-muted-foreground">{label}</span>
-        <span className="font-mono font-medium tabular-nums">
-          {Number.isFinite(n) ? money(n) : "Not available"}
+        <span className="text-muted-foreground">
+          {isMargin ? "Net margin" : "Gross"}
+        </span>
+        <span className="tabular-nums font-medium">
+          {!Number.isFinite(n)
+            ? "Not available"
+            : isMargin
+              ? pct(n)
+              : money(n)}
         </span>
       </div>
       {payload ? (
-        <p className="text-muted-foreground text-[0.65rem]">
-          {payload.period}
-          {payload.partial ? " · Partial period" : ""}
-          {payload.status !== "ok" && payload.reason
-            ? ` · ${payload.reason}`
-            : ""}
-        </p>
+        <>
+          <div className="flex w-full items-center justify-between gap-4">
+            <span className="text-muted-foreground">Net</span>
+            <span className="tabular-nums font-medium">
+              {payload.net == null ? "Not available" : money(payload.net)}
+            </span>
+          </div>
+          <p className="text-muted-foreground">
+            {payload.period}
+            {payload.partial ? " · Partial period" : ""}
+          </p>
+        </>
       ) : null}
     </div>
   )
 }
 
-export function toChartTrendPoints(points: TrendPoint[], partialPeriods: Set<string>): ChartTrendPoint[] {
+export function toChartTrendPoints(
+  points: TrendPoint[],
+  partialPeriods: Set<string>
+): ChartTrendPoint[] {
   return points.map((point) => ({
     ...point,
     partial: partialPeriods.has(point.period),
     chartGross:
       point.status === "ok" && point.gross != null ? point.gross : undefined,
-    chartNet: point.status === "ok" && point.net != null ? point.net : undefined,
+    chartMargin:
+      point.status === "ok" && point.margin != null ? point.margin : undefined,
   }))
 }
 
@@ -91,162 +106,186 @@ export function GrossNetTrendChart({
   data,
   grain,
   lens,
+  span,
+  onSpanChange,
 }: {
   data: ChartTrendPoint[]
   grain: ExecutiveGrain
   lens: ExecutiveLens
+  span: 6 | 12
+  onSpanChange: (span: 6 | 12) => void
 }) {
-  const lensLabel =
-    lens === "operating" ? "Operating Fleet" : "Accounting Total"
+  const [showTable, setShowTable] = useState(false)
+  const lensLabel = lens === "operating" ? "Operating" : "Accounting"
+  const visible = data.slice(-span)
   const empty =
-    data.length === 0 ||
-    data.every((point) => point.chartGross == null && point.chartNet == null)
+    visible.length === 0 ||
+    visible.every(
+      (point) => point.chartGross == null && point.chartMargin == null
+    )
 
   if (empty) {
     return (
       <p className="text-muted-foreground text-sm">
-        No Gross/Net trend points for the loaded ≥12-month window and filters.
+        No trend points for the loaded window and filters.
       </p>
     )
   }
 
   return (
-    <div className="space-y-4">
-      <p className="text-muted-foreground text-xs">
-        Lens: {lensLabel}. Gross is solid; Net is dashed
-        {grain === "week" ? " (weekly line)" : " (monthly bars)"}. Partial
-        periods are marked in the table.
-      </p>
-      <ChartContainer config={trendConfig} className="aspect-auto h-52 md:h-72">
-        {grain === "week" ? (
-          <LineChart data={data} margin={chartMargin}>
-            <CartesianGrid vertical={false} />
-            <XAxis
-              dataKey="label"
-              tickLine={false}
-              axisLine={false}
-              minTickGap={28}
-              interval="preserveStartEnd"
-              tickFormatter={(value: string) =>
-                data.find((d) => d.label === value)?.partial
-                  ? `${value}*`
-                  : value
-              }
-            />
-            <YAxis
-              tickLine={false}
-              axisLine={false}
-              tickFormatter={moneyTick}
-              width={48}
-            />
-            <ChartTooltip
-              content={<ChartTooltipContent formatter={moneyTooltip} />}
-            />
-            <ChartLegend content={<ChartLegendContent className="gap-2 pt-2" />} />
-            <Line
-              type="linear"
-              dataKey="chartGross"
-              name="Gross"
-              stroke="var(--color-chartGross)"
-              strokeWidth={2}
-              dot={false}
-              connectNulls={false}
-            />
-            <Line
-              type="linear"
-              dataKey="chartNet"
-              name="Net"
-              stroke="var(--color-chartNet)"
-              strokeWidth={2}
-              strokeDasharray="6 4"
-              dot={false}
-              connectNulls={false}
-            />
-          </LineChart>
-        ) : (
-          <BarChart data={data} margin={chartMargin}>
-            <CartesianGrid vertical={false} />
-            <XAxis
-              dataKey="label"
-              tickLine={false}
-              axisLine={false}
-              tickFormatter={(value: string) =>
-                data.find((d) => d.label === value)?.partial
-                  ? `${value}*`
-                  : value
-              }
-            />
-            <YAxis
-              tickLine={false}
-              axisLine={false}
-              tickFormatter={moneyTick}
-              width={48}
-            />
-            <ChartTooltip
-              content={<ChartTooltipContent formatter={moneyTooltip} />}
-            />
-            <ChartLegend content={<ChartLegendContent className="gap-2 pt-2" />} />
-            <Bar
-              dataKey="chartGross"
-              name="Gross"
-              fill="var(--color-chartGross)"
-              radius={4}
-            />
-            <Bar
-              dataKey="chartNet"
-              name="Net"
-              fill="var(--color-chartNet)"
-              radius={4}
-              fillOpacity={0.45}
-              stroke="var(--color-chartNet)"
-              strokeWidth={1.5}
-              strokeDasharray="4 3"
-            />
-          </BarChart>
-        )}
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-muted-foreground text-xs">
+          {lensLabel} Gross (bars) and Net margin % (line). Zero margin marked.
+          Partial periods marked with *.
+        </p>
+        <div
+          className="bg-muted inline-flex rounded-lg p-0.5"
+          role="group"
+          aria-label="Trend span"
+        >
+          {([6, 12] as const).map((value) => (
+            <button
+              key={value}
+              type="button"
+              className={cn(
+                "rounded-md px-2.5 py-1 text-xs font-medium",
+                span === value
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+              aria-pressed={span === value}
+              onClick={() => onSpanChange(value)}
+            >
+              {value} periods
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <ChartContainer
+        config={trendConfig}
+        className="aspect-auto h-48 md:h-64"
+        aria-label={`${lensLabel} Gross and Net margin trend`}
+      >
+        <ComposedChart data={visible} margin={chartMargin}>
+          <CartesianGrid vertical={false} />
+          <XAxis
+            dataKey="label"
+            tickLine={false}
+            axisLine={false}
+            minTickGap={grain === "week" ? 36 : 20}
+            interval="preserveStartEnd"
+            tickFormatter={(value: string) =>
+              visible.find((d) => d.label === value)?.partial
+                ? `${String(value).slice(5)}*`
+                : String(value).slice(5)
+            }
+          />
+          <YAxis
+            yAxisId="gross"
+            tickLine={false}
+            axisLine={false}
+            tickFormatter={moneyTick}
+            width={48}
+          />
+          <YAxis
+            yAxisId="margin"
+            orientation="right"
+            tickLine={false}
+            axisLine={false}
+            tickFormatter={(v: number) => `${Math.round(v * 100)}%`}
+            width={40}
+            domain={["auto", "auto"]}
+          />
+          <ReferenceLine
+            yAxisId="margin"
+            y={0}
+            stroke="var(--border)"
+            strokeDasharray="3 3"
+          />
+          <ChartTooltip
+            content={<ChartTooltipContent formatter={trendTooltip} />}
+          />
+          <ChartLegend content={<ChartLegendContent className="gap-2 pt-2" />} />
+          <Bar
+            yAxisId="gross"
+            dataKey="chartGross"
+            name="Gross"
+            fill="var(--color-chartGross)"
+            radius={3}
+          />
+          <Line
+            yAxisId="margin"
+            type="linear"
+            dataKey="chartMargin"
+            name="Net margin %"
+            stroke="var(--color-chartMargin)"
+            strokeWidth={2}
+            dot={false}
+            connectNulls={false}
+          />
+        </ComposedChart>
       </ChartContainer>
 
-      <div className="overflow-x-auto">
-        <Table aria-label="Gross and Net trend table">
-          <TableHeader>
-            <TableRow>
-              <TableHead>Period</TableHead>
-              <TableHead className="text-right">Gross</TableHead>
-              <TableHead className="text-right">Net</TableHead>
-              <TableHead>Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {data.map((point) => (
-              <TableRow
-                key={point.period}
-                className={cn(point.partial && "bg-muted/40")}
-              >
-                <TableCell className="font-mono text-xs tabular-nums">
-                  {point.period}
-                  {point.partial ? " *" : ""}
-                </TableCell>
-                <TableCell className="text-right font-mono text-xs tabular-nums">
-                  {point.gross == null ? "Not available" : money(point.gross)}
-                </TableCell>
-                <TableCell className="text-right font-mono text-xs tabular-nums">
-                  {point.net == null ? "Not available" : money(point.net)}
-                </TableCell>
-                <TableCell className="text-muted-foreground text-xs">
-                  {point.partial
-                    ? "Partial"
-                    : point.status === "ok"
-                      ? "Complete"
-                      : point.status}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-      <p className="text-muted-foreground text-xs">
-        * Partial period — not directly comparable to a complete period.
+      <p className="sr-only">
+        Accessible trend summary: {visible.length} periods of {lensLabel} Gross
+        and Net margin. Use View data table for exact values.
       </p>
+
+      <button
+        type="button"
+        className="text-muted-foreground hover:text-foreground text-xs font-medium underline-offset-2 hover:underline"
+        aria-expanded={showTable}
+        onClick={() => setShowTable((v) => !v)}
+      >
+        {showTable ? "Hide data table" : "View data table"}
+      </button>
+
+      {showTable ? (
+        <div className="overflow-x-auto">
+          <Table aria-label="Gross, Net, and margin trend table">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Period</TableHead>
+                <TableHead className="text-right">Gross</TableHead>
+                <TableHead className="text-right">Net</TableHead>
+                <TableHead className="text-right">Margin</TableHead>
+                <TableHead>Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {visible.map((point) => (
+                <TableRow
+                  key={point.period}
+                  className={cn(point.partial && "bg-muted/40")}
+                >
+                  <TableCell className="text-xs tabular-nums">
+                    {point.period}
+                    {point.partial ? " *" : ""}
+                  </TableCell>
+                  <TableCell className="text-right text-xs tabular-nums">
+                    {point.gross == null ? "—" : money(point.gross)}
+                  </TableCell>
+                  <TableCell className="text-right text-xs tabular-nums">
+                    {point.net == null ? "—" : money(point.net)}
+                  </TableCell>
+                  <TableCell className="text-right text-xs tabular-nums">
+                    {point.margin == null ? "—" : pct(point.margin)}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-xs">
+                    {point.partial
+                      ? "Partial"
+                      : point.status === "ok"
+                        ? "Complete"
+                        : point.status}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      ) : null}
     </div>
   )
 }
