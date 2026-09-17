@@ -19,7 +19,7 @@ export function ReportLoading({
         aria-hidden="true"
       />
       <div className="flex flex-col gap-1.5">
-        <p className="font-heading text-foreground text-xl font-semibold tracking-tight">
+        <p className="font-heading text-foreground text-2xl font-bold tracking-tight">
           {title}
         </p>
         <p className="text-muted-foreground text-sm">{message}</p>

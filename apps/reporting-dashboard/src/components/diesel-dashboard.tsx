@@ -5,6 +5,8 @@ import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 
 import { DieselMonthlyTrendChart } from "@/components/diesel-charts"
 import { DashboardShell } from "@/components/dashboard-shell"
+import { KpiValue } from "@/components/kpi-value"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -14,6 +16,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
@@ -71,7 +74,7 @@ function KpiCard({ label, value }: { label: string; value: string }) {
     <Card size="sm">
       <CardHeader>
         <CardDescription>{label}</CardDescription>
-        <CardTitle className="font-mono text-xl tabular-nums">{value}</CardTitle>
+        <KpiValue>{value}</KpiValue>
       </CardHeader>
     </Card>
   )
@@ -361,15 +364,13 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
       live={Boolean(data.meta.live)}
     >
       {data.meta.error ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Couldn't load Diesel</CardTitle>
-            <CardDescription>
-              Live agent-reporting (fuel) only. There is no embedded snapshot.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="text-muted-foreground text-sm">{data.meta.error}</CardContent>
-        </Card>
+        <Alert variant="destructive">
+          <AlertTitle>Couldn't load Diesel</AlertTitle>
+          <AlertDescription>
+            Live agent-reporting (fuel) only. There is no embedded snapshot.{" "}
+            {data.meta.error}
+          </AlertDescription>
+        </Alert>
       ) : null}
 
       <Card size="sm">
@@ -512,7 +513,11 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
           ) : null}
           {trendReady &&
           monthlyTrend.every((point) => point.gallons === 0 && point.spend === 0) ? (
-            <p className="text-muted-foreground text-sm">No data in this window</p>
+            <Empty className="border-0 py-6">
+              <EmptyHeader>
+                <EmptyTitle>No data in this window</EmptyTitle>
+              </EmptyHeader>
+            </Empty>
           ) : null}
           {trendReady &&
           !monthlyTrend.every((point) => point.gallons === 0 && point.spend === 0) ? (
@@ -543,8 +548,12 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
               <TableBody>
                 {byOwner.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-muted-foreground">
-                      No rows
+                    <TableCell colSpan={5} className="p-0">
+                      <Empty className="border-0 py-8">
+                        <EmptyHeader>
+                          <EmptyTitle>No rows</EmptyTitle>
+                        </EmptyHeader>
+                      </Empty>
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -602,8 +611,19 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
               <TableBody>
                 {filteredDetail.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-muted-foreground">
-                      {detailMeta.loading ? "Loading…" : "No rows"}
+                    <TableCell colSpan={9} className="p-0">
+                      <Empty className="border-0 py-8">
+                        <EmptyHeader>
+                          <EmptyTitle>
+                            {detailMeta.loading ? "Loading…" : "No rows"}
+                          </EmptyTitle>
+                          {detailMeta.loading ? (
+                            <EmptyDescription>
+                              Fetching transactions for this month
+                            </EmptyDescription>
+                          ) : null}
+                        </EmptyHeader>
+                      </Empty>
                     </TableCell>
                   </TableRow>
                 ) : (

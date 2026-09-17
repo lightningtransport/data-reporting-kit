@@ -4,6 +4,8 @@ import { useMemo, useState } from "react"
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 
 import { DashboardShell } from "@/components/dashboard-shell"
+import { KpiValue } from "@/components/kpi-value"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -13,6 +15,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
@@ -57,7 +60,7 @@ function KpiCard({ label, value, hint }: { label: string; value: string; hint?: 
     <Card size="sm">
       <CardHeader className="pb-0">
         <CardDescription>{label}</CardDescription>
-        <CardTitle className="font-heading text-xl tabular-nums">{value}</CardTitle>
+        <KpiValue>{value}</KpiValue>
         {hint ? <p className="text-muted-foreground text-xs">{hint}</p> : null}
       </CardHeader>
     </Card>
@@ -169,15 +172,13 @@ export function TrucksReturnDashboard({ data }: { data: ReturnsPayload }) {
       live={Boolean(data.meta.live)}
     >
       {data.meta.error ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Couldn't load Trucks Return</CardTitle>
-            <CardDescription>
-              Requires a server-only AGENT_REPORTING_KEY for the returns report.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="text-muted-foreground text-sm">{data.meta.error}</CardContent>
-        </Card>
+        <Alert variant="destructive">
+          <AlertTitle>Couldn't load Trucks Return</AlertTitle>
+          <AlertDescription>
+            Requires a server-only AGENT_REPORTING_KEY for the returns report.{" "}
+            {data.meta.error}
+          </AlertDescription>
+        </Alert>
       ) : null}
 
       <Card size="sm">
@@ -287,7 +288,7 @@ export function TrucksReturnDashboard({ data }: { data: ReturnsPayload }) {
                 key={day.iso}
                 className="rounded-lg border border-border px-1 py-1.5 text-center"
               >
-                <div className="text-muted-foreground text-[10px] font-medium uppercase tracking-wide">
+                <div className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
                   {day.label}
                 </div>
                 <div className="font-heading text-sm tabular-nums">{day.count}</div>
@@ -326,8 +327,12 @@ export function TrucksReturnDashboard({ data }: { data: ReturnsPayload }) {
               <TableBody>
                 {tableRows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-muted-foreground">
-                      No rows
+                    <TableCell colSpan={6} className="p-0">
+                      <Empty className="border-0 py-8">
+                        <EmptyHeader>
+                          <EmptyTitle>No rows</EmptyTitle>
+                        </EmptyHeader>
+                      </Empty>
                     </TableCell>
                   </TableRow>
                 ) : (
