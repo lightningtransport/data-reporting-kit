@@ -172,9 +172,9 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
         </Card>
       ) : null}
 
-      <Card>
+      <Card size="sm">
         <CardContent className="pt-(--card-spacing)">
-          <FieldGroup className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <FieldGroup className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
             <Field className="w-full md:col-span-2 xl:col-span-1">
               <FieldLabel>Period</FieldLabel>
               <Tabs
@@ -338,7 +338,7 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
         isCopy={!data.meta.live}
       />
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
         <KpiCard label="Gross" value={money(agg.kpi.gross)} />
         <KpiCard label="Expenses" value={money(agg.kpi.exp)} />
         <KpiCard label="Net" value={money(agg.kpi.net)} />
@@ -350,7 +350,7 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
         <KpiCard label="Miles" value={num(agg.kpi.miles)} />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Gross and Net by week</CardTitle>
@@ -385,7 +385,7 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
         </Card>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2">
         <TruckRankCard
           title={`Trucks · Gross · ${scope}`}
           description="Top 15 preview. Show all lists the full selection."
@@ -400,7 +400,7 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
         />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <RankTable
           title="Teams · Gross"
           description="Includes allocation trucks 1/2/3"

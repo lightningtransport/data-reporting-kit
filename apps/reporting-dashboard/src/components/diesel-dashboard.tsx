@@ -372,9 +372,9 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
         </Card>
       ) : null}
 
-      <Card>
+      <Card size="sm">
         <CardContent className="pt-(--card-spacing)">
-          <FieldGroup className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <FieldGroup className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
             <Field>
               <FieldLabel>Month</FieldLabel>
               <div className="flex w-full items-center gap-2">

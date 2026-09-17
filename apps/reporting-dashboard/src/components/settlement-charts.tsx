@@ -34,19 +34,21 @@ const fuelConfig = {
   pct: { label: "% fuel / expenses", color: "var(--chart-4)" },
 } satisfies ChartConfig
 
+const chartMargin = { left: 4, right: 4, top: 4, bottom: 4 }
+
 export function WeeklyTrendChart({
   data,
 }: {
   data: Array<{ label: string; gross: number; net: number }>
 }) {
   return (
-    <ChartContainer config={trendConfig} className="aspect-auto h-72">
-      <LineChart data={data} margin={{ left: 8, right: 8 }}>
+    <ChartContainer config={trendConfig} className="aspect-auto h-52 md:h-72">
+      <LineChart data={data} margin={chartMargin}>
         <CartesianGrid vertical={false} />
         <XAxis dataKey="label" tickLine={false} axisLine={false} />
-        <YAxis tickLine={false} axisLine={false} tickFormatter={moneyTick} />
+        <YAxis tickLine={false} axisLine={false} tickFormatter={moneyTick} width={48} />
         <ChartTooltip content={<ChartTooltipContent />} />
-        <ChartLegend content={<ChartLegendContent />} />
+        <ChartLegend content={<ChartLegendContent className="gap-2 pt-2" />} />
         <Line
           type="monotone"
           dataKey="gross"
@@ -72,13 +74,13 @@ export function MonthlyTrendChart({
   data: Array<{ label: string; gross: number; net: number }>
 }) {
   return (
-    <ChartContainer config={trendConfig} className="aspect-auto h-72">
-      <BarChart data={data} margin={{ left: 8, right: 8 }}>
+    <ChartContainer config={trendConfig} className="aspect-auto h-52 md:h-72">
+      <BarChart data={data} margin={chartMargin}>
         <CartesianGrid vertical={false} />
         <XAxis dataKey="label" tickLine={false} axisLine={false} />
-        <YAxis tickLine={false} axisLine={false} tickFormatter={moneyTick} />
+        <YAxis tickLine={false} axisLine={false} tickFormatter={moneyTick} width={48} />
         <ChartTooltip content={<ChartTooltipContent />} />
-        <ChartLegend content={<ChartLegendContent />} />
+        <ChartLegend content={<ChartLegendContent className="gap-2 pt-2" />} />
         <Bar dataKey="gross" fill="var(--color-gross)" radius={4} />
         <Bar dataKey="net" fill="var(--color-net)" radius={4} />
       </BarChart>
@@ -92,8 +94,8 @@ export function FuelOwnerChart({
   data: Array<{ owner: string; fuel: number }>
 }) {
   return (
-    <ChartContainer config={fuelConfig} className="aspect-auto h-60">
-      <BarChart data={data} layout="vertical" margin={{ left: 8, right: 8 }}>
+    <ChartContainer config={fuelConfig} className="aspect-auto h-44 md:h-60">
+      <BarChart data={data} layout="vertical" margin={chartMargin}>
         <CartesianGrid horizontal={false} />
         <XAxis type="number" tickLine={false} axisLine={false} tickFormatter={moneyTick} />
         <YAxis
@@ -101,7 +103,7 @@ export function FuelOwnerChart({
           dataKey="owner"
           tickLine={false}
           axisLine={false}
-          width={88}
+          width={64}
         />
         <ChartTooltip content={<ChartTooltipContent />} />
         <Bar dataKey="fuel" fill="var(--color-fuel)" radius={4} />
@@ -116,8 +118,8 @@ export function FuelPctChart({
   data: Array<{ owner: string; pct: number }>
 }) {
   return (
-    <ChartContainer config={fuelConfig} className="aspect-auto h-60">
-      <BarChart data={data} layout="vertical" margin={{ left: 8, right: 8 }}>
+    <ChartContainer config={fuelConfig} className="aspect-auto h-44 md:h-60">
+      <BarChart data={data} layout="vertical" margin={chartMargin}>
         <CartesianGrid horizontal={false} />
         <XAxis type="number" tickLine={false} axisLine={false} domain={[0, 80]} />
         <YAxis
@@ -125,7 +127,7 @@ export function FuelPctChart({
           dataKey="owner"
           tickLine={false}
           axisLine={false}
-          width={88}
+          width={64}
         />
         <ChartTooltip content={<ChartTooltipContent />} />
         <Bar dataKey="pct" fill="var(--color-pct)" radius={4} />
