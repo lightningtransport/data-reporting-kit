@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.8.7 - 2026-09-16
+
+- Out Schedule and Trucks Return tables share a left-to-right spine: Truck → event date → Day → who → report-only columns. Trucks Return is now Truck, Return Date, Day, Driver Name, Insurance; shared `formatOpsDate` / `weekdayFromIso` helpers.
+
 ## 3.8.6 - 2026-09-16
 
 - Dashboard UI is English-only: **Settlements** (was Liquidaciones), **Summary**, **Technical details**, **Views**, **Show all**, **Snapshot**. Route-aware loading screens for Settlements / Out Schedule / Trucks Return / Diesel via shared `ReportLoading`.

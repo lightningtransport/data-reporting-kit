@@ -1,3 +1,5 @@
+import { weekdayFromIso } from "@/lib/ops-table"
+
 export const SCHEDULE_TEAMS_URL =
   "https://lightningtransport.ninoxdb.com/share/p10ce94o8paa2q4a1z4nw0emznn2ubhriza6?locale=en&utcoffset=-240"
 
@@ -66,16 +68,6 @@ function toIsoDate(raw: string): string {
   const parsed = new Date(value)
   if (!Number.isNaN(parsed.getTime())) return parsed.toISOString().slice(0, 10)
   return value
-}
-
-function weekdayFromIso(iso: string): string {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return ""
-  const date = new Date(`${iso}T12:00:00Z`)
-  if (Number.isNaN(date.getTime())) return ""
-  return new Intl.DateTimeFormat("en-US", {
-    weekday: "long",
-    timeZone: "UTC",
-  }).format(date)
 }
 
 function flattenRows(payload: unknown): Record<string, unknown>[] {
