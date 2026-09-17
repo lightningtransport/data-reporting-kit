@@ -6,7 +6,7 @@ Read `AGENTS.md` first. These rules are for **Grok Bot and Cursor agents** that 
 
 ## Reporting dashboard (source of truth)
 
-The live reporting screens live in [`apps/reporting-dashboard`](../apps/reporting-dashboard): Next.js App Router + **real shadcn/ui** (Button, Tabs, Card, Badge, Input, Table, Checkbox, Select, Popover + Command multi-select, DropdownMenu). Do not rebuild them as a native `<select multiple>` or a hand-rolled CSS imitation.
+The live reporting screens live in [`apps/reporting-dashboard`](../apps/reporting-dashboard): Next.js App Router + **real shadcn/ui** (Button, Tabs, Card, Badge, Input, Table, Checkbox, Select, Popover + Command multi-select, Alert, Empty). Do not rebuild them as a native `<select multiple>` or a hand-rolled CSS imitation.
 
 - **Live URL:** https://lightning-settlement-dashboard.vercel.app
 - **Deep links:** `/` Settlements · `/out-schedule` Out Schedule · `/trucks-return` Trucks Return · `/diesel` Diesel
@@ -33,7 +33,7 @@ A one-week headline question that is not an HTML report and not a trend/ranking 
 
 ## Required HTML sections
 
-Shared shell for every dashboard view: Lightning logo, view title, **Snapshot** badge when data is not live, and a top-right **Views** DropdownMenu linking Settlements / Out Schedule / Trucks Return / Diesel. Route-level loading screens use a shared spinner with report-specific English copy.
+Shared shell for every dashboard view: Lightning logo, view title, **Snapshot** badge when data is not live, and a fixed **Tabs** row linking Settlements / Out Schedule / Trucks Return / Diesel (same place on every report). The shell lives in a shared `(reports)` layout so chrome stays mounted while only the report body suspends. Route-level loading screens use a shared spinner with report-specific English copy inside the content region.
 
 ### Settlements (`/`)
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.8.12 - 2026-09-16
+
+- Reporting dashboard: persistent `(reports)` chrome with fixed shadcn Tabs (no jumping view dropdown), content-only loading, Settlements 120s revalidate, and client router `staleTimes` for faster report switches. Out Schedule / Trucks Return stay live.
+
 ## 3.8.11 - 2026-09-16
 
 - Reporting dashboard typography: literal Geist tokens, bold CardTitle, KPI values as mono figures (not titles), shared page/section/eyebrow hierarchy; load errors use Alert and main empty tables use Empty.

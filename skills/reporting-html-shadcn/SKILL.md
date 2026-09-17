@@ -26,7 +26,7 @@ For other static files only: small HTML that reuses [`assets/report-ui.css`](ass
 
 ## Source of truth
 
-1. Reporting dashboard: edit [`apps/reporting-dashboard`](../../apps/reporting-dashboard) (Next.js + real shadcn/ui), including slim **Settlements** header, truck focus card, **Summary** from 12 months of `settlements`, plus **Out Schedule**, **Trucks Return**, and **Diesel** views with a top-right **Views** menu. Grok bots must link https://lightning-settlement-dashboard.vercel.app (or `/out-schedule` / `/trucks-return` / `/diesel` as appropriate).
+1. Reporting dashboard: edit [`apps/reporting-dashboard`](../../apps/reporting-dashboard) (Next.js + real shadcn/ui), including slim **Settlements** header, truck focus card, **Summary** from 12 months of `settlements`, plus **Out Schedule**, **Trucks Return**, and **Diesel** views with fixed **Tabs** navigation. Grok bots must link https://lightning-settlement-dashboard.vercel.app (or `/out-schedule` / `/trucks-return` / `/diesel` as appropriate).
 2. Other static HTML only: copy [`assets/report-ui.css`](assets/report-ui.css) to the workspace `reports/assets/report-ui.css` (skill-cache fallback: `skills/reporting-html-shadcn/assets/report-ui.css`). Do not invent a second visual language.
 3. Match the confirmed settlement look: clean minimal **light** theme, more whitespace, clear hierarchy, soft borders, no heavy shadows.
 

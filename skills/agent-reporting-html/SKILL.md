@@ -62,7 +62,7 @@ Always apply the confirmed Settlements sections:
 - Fuel spend by owner from stored Fuel Expenses; gallons/MPG from `fuel`.
 - KPI strip: Gross, Expenses, Net, Fuel, physical trucks, miles.
 - Evidence in a closed **Technical details** accordion: source report(s), normalized filters, exact period/window, row/distinct count, pagination completeness, `as_of`, source-freshness limitation, material caveats.
-- Real shadcn/ui in the Next app; Popover + Command for owner multi-select; top-right **Views** menu for Settlements / Out Schedule / Trucks Return / Diesel. Route loaders show report-specific English copy.
+- Real shadcn/ui in the Next app; Popover + Command for owner multi-select; fixed **Tabs** navigation for Settlements / Out Schedule / Trucks Return / Diesel. Route loaders show report-specific English copy in the content region (chrome stays mounted).
 - Do not display Full Week or Other Deductions+Previous.
 
 When the user asks to **see** / open / show Out Schedule, Trucks Return, or Diesel (planned departures / expected returns / fuel screens), answer with the matching live dashboard URL above. Do not generate a replacement one-off HTML file.

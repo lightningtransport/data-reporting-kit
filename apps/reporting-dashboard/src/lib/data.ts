@@ -4,6 +4,7 @@ import {
   type SettlementPayload,
   type SettlementRow,
 } from "@/lib/settlement"
+import { SETTLEMENTS_REVALIDATE_SECONDS } from "@/lib/reporting-cache"
 
 const DEFAULT_ENDPOINT =
   "https://aaqquwhdglueqlnbifvn.supabase.co/functions/v1/agent-reporting"
@@ -136,7 +137,7 @@ async function fetchOffset<T>(
   url.searchParams.set("offset", String(offset))
   const response = await fetch(url, {
     headers: { "x-agent-key": key, Accept: "application/json" },
-    cache: "no-store",
+    next: { revalidate: SETTLEMENTS_REVALIDATE_SECONDS },
   })
   if (response.status === 416) {
     return {

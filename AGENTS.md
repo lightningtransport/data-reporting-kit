@@ -61,7 +61,7 @@ The reporting dashboard is the Next.js + shadcn/ui app in `apps/reporting-dashbo
 | Trucks Return | `/trucks-return` | Current expected returns / Trucks Return UI |
 | Diesel | `/diesel` | Fuel / diesel gallons and spend by month and owner |
 
-The top-right view menu switches between these screens on any route. Settlements reads paginated `settlements` (plus `fuel` gallons for the focus window) for ≥12 months, shows **Summary** (owner matrix, physical-truck KPIs, dispatch/owner filters), a truck focus card under search, and must not present a truncated truck ranking as the full fleet: preview plus **Show all** lists every physical truck in the selection. Out Schedule reads the live Ninox Schedule_Teams share. Trucks Return paginates `returns` (no Phone/CDL). Diesel paginates live `fuel` (≥12 months), with month navigation and historical `fuel.owner` filter.
+The top Tabs row switches between these screens on any route. Settlements reads paginated `settlements` (plus `fuel` gallons for the focus window) for ≥12 months, shows **Summary** (owner matrix, physical-truck KPIs, dispatch/owner filters), a truck focus card under search, and must not present a truncated truck ranking as the full fleet: preview plus **Show all** lists every physical truck in the selection. Out Schedule reads the live Ninox Schedule_Teams share. Trucks Return paginates `returns` (no Phone/CDL). Diesel paginates live `fuel` (≥12 months), with month navigation and historical `fuel.owner` filter.
 
 Other HTML reports still follow the ≥3-month window and confirmed sections. Do not invent a second visual language; prefer real shadcn components in `apps/reporting-dashboard`.
 

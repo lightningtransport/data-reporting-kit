@@ -15,7 +15,7 @@ Grok Bot and Cursor agents: the reporting dashboard lives in [`apps/reporting-da
 - Source and OpenAPI contract for the custom-key `agent-reporting` Edge Function.
 - Source for the separate membership/JWT `reporting-query` Edge Function.
 - A portable Hermes reporting skill, correction-feedback contract, and access lifecycle guidance.
-- A Next.js + shadcn/ui reporting dashboard (`apps/reporting-dashboard`) for Grok Bot / Cursor agents, with Settlements (weekly/monthly review, rankings, fuel-by-owner, KPIs), Out Schedule, Trucks Return, Diesel, a shared view menu, and evidence footers.
+- A Next.js + shadcn/ui reporting dashboard (`apps/reporting-dashboard`) for Grok Bot / Cursor agents, with Settlements (weekly/monthly review, rankings, fuel-by-owner, KPIs), Out Schedule, Trucks Return, Diesel, fixed Tabs navigation, and evidence footers.
 - A private ChatGPT Plugin package: reusable reporting skill plus remote, read-only MCP connector; see [`docs/chatgpt-plugin.md`](docs/chatgpt-plugin.md).
 
 ## Active interfaces
