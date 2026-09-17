@@ -75,9 +75,10 @@ Not established (do not display or approximate): Ninox “Full Week” / “No F
 ### Executive Overview (`/v2`)
 
 1. Separate read-only executive layer (not a replacement for Settlements or the operational Tabs). Do not redirect `/` to `/v2`.
-2. Controls: Week/Month grain, selected period, Team, Operating Fleet vs Accounting Total lens (URL search params).
-3. KPI strip (Gross, Net/margin, RPM, Productive Trucks), Attention Now exceptions, Gross/Net trend, Operating vs Accounting reconciliation (allocation buckets 1/2/3), Team Performance with accessible drill-down panels, links to existing operational routes, and **Technical details**.
-4. Uses the same governed settlement/returns loaders and business rules as Settlements. Cross-source diesel MPG is omitted when settlement and fuel periods cannot be matched safely at the requested grain; settlement Fuel Expenses remain authoritative for settlement fuel spend.
+2. Controls: Operating/Accounting **View**, Week/Month grain, period (human label in chrome; ISO in URL), Team (owner), **Dispatch**, URL-backed focus/truck drawers.
+3. First-viewport decision surface: Net/margin + Gross + Productive trucks (or Allocation Impact in Accounting), interpretation strip, Gross bars + Net-margin % trend, Needs Attention rail, compact reconciliation, Physical team performance and Physical dispatch performance, progressive team/truck drawers, **Technical details**.
+4. Accounting view must not silently re-scope physical metrics; physical RPM/trucks stay under **Operating context**. RPM outliers use the documented Check-data trust band (exclude from aggregate RPM).
+5. Uses the same governed settlement/returns loaders and business rules as Settlements. Cross-source diesel MPG is omitted when settlement and fuel periods cannot be matched safely; settlement Fuel Expenses remain authoritative for settlement fuel spend.
 
 ## Business-rule reminders that affect HTML
 

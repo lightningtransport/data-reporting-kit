@@ -4,8 +4,10 @@ import { describe, it } from "node:test"
 import {
   accountingNet,
   allocationImpact,
+  assessTruckRpm,
   buildGrossNetTrend,
   compareMetric,
+  dispatchPerformance,
   filterRowsForPeriod,
   isAllocationTruck,
   isPhysicalTruck,
@@ -36,6 +38,7 @@ function row(
   return {
     t: partial.t,
     o: partial.o ?? "Carlos",
+    d: partial.d,
     pf: partial.pf,
     g: partial.g ?? 0,
     e: partial.e ?? 0,
@@ -123,7 +126,21 @@ describe("margin, RPM, MPG, denominators", () => {
       row({ t: "101", pf: WEEK, g: 10000, m: 1000 }),
       row({ t: "1", pf: WEEK, g: 5000, m: 500 }),
     ]
-    assert.deepEqual(revenuePerMile(rows), { value: 10, status: "ok" })
+    assert.equal(revenuePerMile(rows).value, 10)
+    assert.equal(revenuePerMile(rows).status, "ok")
+  })
+
+  it("flags extreme RPM as Check data and excludes from aggregate", () => {
+    const rows = [
+      row({ t: "842", pf: WEEK, g: 7543, m: 100 }), // $75.43/mi
+      row({ t: "101", pf: WEEK, g: 10000, m: 5000 }),
+    ]
+    const extreme = assessTruckRpm(7543, 100)
+    assert.equal(extreme.status, "check_data")
+    const fleet = revenuePerMile(rows)
+    assert.equal(fleet.status, "ok")
+    assert.equal(fleet.value, 2)
+    assert.match(String(fleet.reason), /Excluded/)
   })
 
   it("returns unavailable MPG for zero gallons or incomplete match", () => {
@@ -183,7 +200,7 @@ describe("exceptions", () => {
   })
 })
 
-describe("team performance", () => {
+describe("team and dispatch performance", () => {
   it("aggregates physical metrics by team and sorts underperformance first", () => {
     const rows = [
       row({ t: "101", pf: WEEK, o: "Carlos", g: 12000, n: 2000, m: 1000 }),
@@ -192,9 +209,23 @@ describe("team performance", () => {
     ]
     const teams = teamPerformance(rows)
     assert.equal(teams[0]?.team, "Jorge")
+    assert.equal(teams[0]?.needsAttention, true)
     assert.equal(teams[0]?.negativeNetTrucks, 1)
     const carlos = teams.find((t) => t.team === "Carlos")
     assert.equal(carlos?.gross, 12000)
+  })
+
+  it("aggregates physical metrics by dispatch", () => {
+    const rows = [
+      row({ t: "101", pf: WEEK, o: "Carlos", d: "Group 1", g: 12000, n: 2000, m: 1000 }),
+      row({ t: "102", pf: WEEK, o: "Jorge", d: "Group 2", g: 8000, n: -500, m: 800 }),
+      row({ t: "103", pf: WEEK, o: "Carlos", d: "Group 1", g: 9000, n: 100, m: 900 }),
+    ]
+    const groups = dispatchPerformance(rows)
+    assert.equal(groups.length, 2)
+    const g1 = groups.find((g) => g.team === "Group 1")
+    assert.equal(g1?.productiveTrucks, 2)
+    assert.equal(g1?.gross, 21000)
   })
 })
 

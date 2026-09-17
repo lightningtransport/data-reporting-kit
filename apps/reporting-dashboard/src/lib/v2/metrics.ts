@@ -10,16 +10,63 @@
 export const LOW_GROSS_THRESHOLD = 11000
 export const ALLOCATION_TRUCKS = new Set(["1", "2", "3"])
 
+/**
+ * RPM trust band (physical Gross ÷ Driven_miles for the same truck/period).
+ * Outside the band, or sparse miles with elevated RPM → Check data (not silent clamp).
+ */
+export const RPM_EXTREME_HIGH = 15
+export const RPM_EXTREME_LOW = 0.05
+export const RPM_SPARSE_MILES = 100
+export const RPM_SPARSE_HIGH = 5
+
 /** Minimal settlement fields required by executive metrics. */
 export type SettlementMetricRow = {
   t: string
   o: string
+  /** Dispatch group when present on settlements. */
+  d?: string
   pf: string
   g: number
   n: number
   f: number
   m: number
   e?: number
+}
+
+export type RpmAssessment = {
+  value: number | null
+  status: "ok" | "unavailable" | "check_data"
+  reason?: string
+}
+
+/**
+ * Validate truck-period RPM from matching Gross and Driven_miles.
+ * Does not invent or clamp stored source values — flags only.
+ */
+export function assessTruckRpm(gross: number, miles: number): RpmAssessment {
+  if (!(miles > 0)) {
+    return {
+      value: null,
+      status: "unavailable",
+      reason: "Driven miles missing or zero",
+    }
+  }
+  const rpm = gross / miles
+  if (miles < RPM_SPARSE_MILES && rpm > RPM_SPARSE_HIGH) {
+    return {
+      value: rpm,
+      status: "check_data",
+      reason: `Sparse miles (${Math.round(miles)}) with elevated RPM`,
+    }
+  }
+  if (rpm > RPM_EXTREME_HIGH || rpm < RPM_EXTREME_LOW) {
+    return {
+      value: rpm,
+      status: "check_data",
+      reason: `RPM outside $${RPM_EXTREME_LOW}–$${RPM_EXTREME_HIGH}/mi trust band`,
+    }
+  }
+  return { value: rpm, status: "ok" }
 }
 
 export type ExecutiveLens = "operating" | "accounting"
@@ -58,9 +105,11 @@ export type TeamPerformanceRow = {
   net: number
   margin: number | null
   rpm: number | null
+  rpmStatus: "ok" | "unavailable" | "check_data"
   negativeNetTrucks: number
   lowGrossTrucks: number
   productiveTrucks: number
+  needsAttention: boolean
 }
 
 export type Reconciliation = {
@@ -251,7 +300,7 @@ export function reconcileNets(
   }
 }
 
-/** RPM = physical Gross / physical miles when miles > 0. */
+/** RPM = physical Gross / physical miles when miles > 0; excludes Check-data trucks. */
 export function revenuePerMile(
   rows: SettlementMetricRow[],
   options?: { incomplete?: boolean }
@@ -271,16 +320,36 @@ export function revenuePerMile(
       reason: "No physical settlement rows",
     }
   }
-  const gross = sumStored(phys, (row) => row.g)
-  const miles = sumStored(phys, (row) => row.m)
+  let gross = 0
+  let miles = 0
+  let excluded = 0
+  for (const [, agg] of aggregatePhysicalByTruck(rows)) {
+    const assessed = assessTruckRpm(agg.gross, agg.miles)
+    if (assessed.status !== "ok" || assessed.value == null) {
+      excluded += 1
+      continue
+    }
+    gross += agg.gross
+    miles += agg.miles
+  }
   if (miles <= 0) {
     return {
       value: null,
       status: "unavailable",
-      reason: "Driven miles missing or zero",
+      reason:
+        excluded > 0
+          ? "No trusted truck miles after excluding Check-data / unavailable RPM"
+          : "Driven miles missing or zero",
     }
   }
-  return { value: gross / miles, status: "ok" }
+  return {
+    value: gross / miles,
+    status: "ok",
+    reason:
+      excluded > 0
+        ? `Excluded ${excluded} truck(s) flagged Check data or unavailable`
+        : undefined,
+  }
 }
 
 /**
@@ -390,23 +459,39 @@ export function productiveTrucks(
 
 function aggregatePhysicalByTruck(rows: SettlementMetricRow[]): Map<
   string,
-  { owner: string; gross: number; net: number; miles: number; fuel: number }
+  {
+    owner: string
+    dispatch: string
+    gross: number
+    net: number
+    miles: number
+    fuel: number
+  }
 > {
   const map = new Map<
     string,
-    { owner: string; gross: number; net: number; miles: number; fuel: number }
+    {
+      owner: string
+      dispatch: string
+      gross: number
+      net: number
+      miles: number
+      fuel: number
+    }
   >()
   for (const row of physicalRows(rows)) {
     const id = normalizeTruckId(row.t)
     if (!id) continue
     const current = map.get(id) ?? {
       owner: row.o,
+      dispatch: row.d ?? "",
       gross: 0,
       net: 0,
       miles: 0,
       fuel: 0,
     }
     current.owner = row.o || current.owner
+    current.dispatch = row.d || current.dispatch
     current.gross += row.g
     current.net += row.n
     current.miles += row.m
@@ -483,30 +568,91 @@ export function teamPerformance(
   const result: TeamPerformanceRow[] = []
   for (const [team, teamRows] of byTeam) {
     const phys = physicalRows(teamRows)
+    if (!phys.length) continue
     const gross = sumStored(phys, (row) => row.g)
     const net = sumStored(phys, (row) => row.n)
-    const miles = sumStored(phys, (row) => row.m)
+    const rpmMetric = revenuePerMile(teamRows)
     const margin = gross === 0 ? null : net / gross
-    const rpm = miles > 0 ? gross / miles : null
+    const rpmStatus: TeamPerformanceRow["rpmStatus"] =
+      rpmMetric.status === "ok"
+        ? "ok"
+        : rpmMetric.value != null
+          ? "check_data"
+          : "unavailable"
     result.push({
       team,
       gross,
       net,
       margin,
-      rpm,
+      rpm: rpmMetric.value,
+      rpmStatus,
       negativeNetTrucks: negativeNetExceptions(teamRows).length,
       lowGrossTrucks: lowGrossExceptions(teamRows).length,
       productiveTrucks: productiveTrucks(teamRows).value ?? 0,
+      needsAttention:
+        net < 0 ||
+        negativeNetExceptions(teamRows).length > 0 ||
+        lowGrossExceptions(teamRows).length > 0,
     })
   }
 
-  // Surface material underperformance first: more negative-net, then lower net.
   return result.sort((a, b) => {
+    if (Number(b.needsAttention) !== Number(a.needsAttention)) {
+      return Number(b.needsAttention) - Number(a.needsAttention)
+    }
     if (b.negativeNetTrucks !== a.negativeNetTrucks) {
       return b.negativeNetTrucks - a.negativeNetTrucks
     }
     if (b.lowGrossTrucks !== a.lowGrossTrucks) {
       return b.lowGrossTrucks - a.lowGrossTrucks
+    }
+    return a.net - b.net
+  })
+}
+
+/** Physical dispatch performance (same metrics as teams, keyed by Dispatch). */
+export function dispatchPerformance(
+  rows: SettlementMetricRow[]
+): TeamPerformanceRow[] {
+  const byDispatch = new Map<string, SettlementMetricRow[]>()
+  for (const row of physicalRows(rows)) {
+    const dispatch = (row.d || "").trim() || "(unassigned)"
+    const list = byDispatch.get(dispatch) ?? []
+    list.push(row)
+    byDispatch.set(dispatch, list)
+  }
+
+  const result: TeamPerformanceRow[] = []
+  for (const [dispatch, dispatchRows] of byDispatch) {
+    const gross = sumStored(dispatchRows, (row) => row.g)
+    const net = sumStored(dispatchRows, (row) => row.n)
+    const rpmMetric = revenuePerMile(dispatchRows)
+    const margin = gross === 0 ? null : net / gross
+    result.push({
+      team: dispatch,
+      gross,
+      net,
+      margin,
+      rpm: rpmMetric.value,
+      rpmStatus:
+        rpmMetric.status === "ok"
+          ? "ok"
+          : rpmMetric.value != null
+            ? "check_data"
+            : "unavailable",
+      negativeNetTrucks: negativeNetExceptions(dispatchRows).length,
+      lowGrossTrucks: lowGrossExceptions(dispatchRows).length,
+      productiveTrucks: productiveTrucks(dispatchRows).value ?? 0,
+      needsAttention:
+        net < 0 ||
+        negativeNetExceptions(dispatchRows).length > 0 ||
+        lowGrossExceptions(dispatchRows).length > 0,
+    })
+  }
+
+  return result.sort((a, b) => {
+    if (Number(b.needsAttention) !== Number(a.needsAttention)) {
+      return Number(b.needsAttention) - Number(a.needsAttention)
     }
     return a.net - b.net
   })
@@ -576,12 +722,23 @@ export function filterRowsForPeriod(
   rows: SettlementMetricRow[],
   grain: ExecutiveGrain,
   period: string,
-  teams?: string[]
+  options?: string[] | { teams?: string[]; dispatches?: string[] }
 ): SettlementMetricRow[] {
+  const opts = Array.isArray(options)
+    ? { teams: options }
+    : (options ?? {})
   const teamSet =
-    teams && teams.length > 0 ? new Set(teams) : null
+    opts.teams && opts.teams.length > 0 ? new Set(opts.teams) : null
+  const dispatchSet =
+    opts.dispatches && opts.dispatches.length > 0
+      ? new Set(opts.dispatches)
+      : null
   return rows.filter((row) => {
     if (teamSet && !teamSet.has(row.o)) return false
+    if (dispatchSet) {
+      const dispatch = (row.d || "").trim() || "(unassigned)"
+      if (!dispatchSet.has(dispatch)) return false
+    }
     if (grain === "week") return row.pf === period
     return row.pf.startsWith(period)
   })
@@ -612,6 +769,7 @@ export type TrendPoint = {
   label: string
   gross: number | null
   net: number | null
+  margin: number | null
   status: MetricStatus
   reason?: string
 }
@@ -619,23 +777,30 @@ export type TrendPoint = {
 export type TruckPeriodRow = {
   truck: string
   owner: string
+  dispatch: string
   period: string
   gross: number
   net: number
   miles: number
   fuel: number
   rpm: number | null
+  rpmStatus: "ok" | "unavailable" | "check_data"
+  rpmReason?: string
 }
 
 export type TruckAggregate = {
   truck: string
   owner: string
+  dispatch: string
   gross: number
   net: number
   miles: number
   fuel: number
   rpm: number | null
+  rpmStatus: "ok" | "unavailable" | "check_data"
+  rpmReason?: string
   fuelPerMile: number | null
+  flags: Array<"negative_net" | "low_gross" | "check_data">
 }
 
 /** Calendar month `YYYY-MM` shifted by `delta` months (negative = earlier). */
@@ -707,6 +872,14 @@ export function buildGrossNetTrend(
       label: period,
       gross: gross.value,
       net: net.value,
+      margin:
+        gross.value != null &&
+        net.value != null &&
+        gross.value !== 0 &&
+        gross.status === "ok" &&
+        net.status === "ok"
+          ? net.value / gross.value
+          : null,
       status,
       reason: gross.reason ?? net.reason,
     }
@@ -715,20 +888,30 @@ export function buildGrossNetTrend(
 
 /** Physical trucks in a team for the active row set, sorted by lowest net. */
 export function trucksInSelection(
-  rows: SettlementMetricRow[]
+  rows: SettlementMetricRow[],
+  threshold = LOW_GROSS_THRESHOLD
 ): TruckAggregate[] {
   const map = aggregatePhysicalByTruck(rows)
   const out: TruckAggregate[] = []
   for (const [truck, agg] of map) {
+    const assessed = assessTruckRpm(agg.gross, agg.miles)
+    const flags: TruckAggregate["flags"] = []
+    if (agg.net < 0) flags.push("negative_net")
+    if (agg.gross < threshold) flags.push("low_gross")
+    if (assessed.status === "check_data") flags.push("check_data")
     out.push({
       truck,
       owner: agg.owner,
+      dispatch: agg.dispatch,
       gross: agg.gross,
       net: agg.net,
       miles: agg.miles,
       fuel: agg.fuel,
-      rpm: agg.miles > 0 ? agg.gross / agg.miles : null,
+      rpm: assessed.value,
+      rpmStatus: assessed.status,
+      rpmReason: assessed.reason,
       fuelPerMile: agg.miles > 0 ? agg.fuel / agg.miles : null,
+      flags,
     })
   }
   return out.sort(
@@ -745,18 +928,27 @@ export function truckSettlementHistory(
   if (!id || isAllocationTruck(id)) return []
   const byPeriod = new Map<
     string,
-    { owner: string; gross: number; net: number; miles: number; fuel: number }
+    {
+      owner: string
+      dispatch: string
+      gross: number
+      net: number
+      miles: number
+      fuel: number
+    }
   >()
   for (const row of rows) {
     if (normalizeTruckId(row.t) !== id) continue
     const current = byPeriod.get(row.pf) ?? {
       owner: row.o,
+      dispatch: row.d ?? "",
       gross: 0,
       net: 0,
       miles: 0,
       fuel: 0,
     }
     current.owner = row.o || current.owner
+    current.dispatch = row.d || current.dispatch
     current.gross += row.g
     current.net += row.n
     current.miles += row.m
@@ -765,14 +957,36 @@ export function truckSettlementHistory(
   }
   return [...byPeriod.entries()]
     .sort(([a], [b]) => b.localeCompare(a))
-    .map(([period, agg]) => ({
-      truck: id,
-      owner: agg.owner,
-      period,
-      gross: agg.gross,
-      net: agg.net,
-      miles: agg.miles,
-      fuel: agg.fuel,
-      rpm: agg.miles > 0 ? agg.gross / agg.miles : null,
-    }))
+    .map(([period, agg]) => {
+      const assessed = assessTruckRpm(agg.gross, agg.miles)
+      return {
+        truck: id,
+        owner: agg.owner,
+        dispatch: agg.dispatch,
+        period,
+        gross: agg.gross,
+        net: agg.net,
+        miles: agg.miles,
+        fuel: agg.fuel,
+        rpm: assessed.value,
+        rpmStatus: assessed.status,
+        rpmReason: assessed.reason,
+      }
+    })
+}
+
+/** Plain-language executive strip when both comparisons are available. */
+export function executiveInterpretation(input: {
+  view: ExecutiveLens
+  grossCmp: PeriodComparison
+  netCmp: PeriodComparison
+}): string | null {
+  const { grossCmp, netCmp, view } = input
+  if (grossCmp.status !== "ok" || netCmp.status !== "ok") return null
+  if (grossCmp.pct == null || netCmp.pct == null) return null
+  const grossDir = grossCmp.absolute != null && grossCmp.absolute >= 0 ? "increased" : "fell"
+  const netDir = netCmp.absolute != null && netCmp.absolute >= 0 ? "increased" : "fell"
+  const netLabel = view === "operating" ? "Operating Net" : "Accounting Net"
+  const fmt = (p: number) => `${(Math.abs(p) * 100).toFixed(1)}%`
+  return `Gross ${grossDir} ${fmt(grossCmp.pct)}, while ${netLabel} ${netDir} ${fmt(netCmp.pct)} versus the prior period.`
 }
