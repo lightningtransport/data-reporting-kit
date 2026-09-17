@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react"
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 
-import { DashboardShell } from "@/components/dashboard-shell"
+import { DashboardShell, TechnicalDetails } from "@/components/dashboard-shell"
 import { KpiValue } from "@/components/kpi-value"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
@@ -189,7 +189,8 @@ export function TrucksReturnDashboard({ data }: { data: ReturnsPayload }) {
               <div className="flex w-full items-center gap-2">
                 <Button
                   variant="outline"
-                  size="icon-sm"
+                  size="icon"
+                  className="size-9"
                   disabled={datedOnly === "undated"}
                   onClick={() => setFocusMonday(shiftCalendarMonday(focusMonday, -1))}
                 >
@@ -200,7 +201,8 @@ export function TrucksReturnDashboard({ data }: { data: ReturnsPayload }) {
                 </div>
                 <Button
                   variant="outline"
-                  size="icon-sm"
+                  size="icon"
+                  className="size-9"
                   disabled={datedOnly === "undated"}
                   onClick={() => setFocusMonday(shiftCalendarMonday(focusMonday, 1))}
                 >
@@ -286,7 +288,7 @@ export function TrucksReturnDashboard({ data }: { data: ReturnsPayload }) {
             {dayStrip.map((day) => (
               <div
                 key={day.iso}
-                className="rounded-lg border border-border px-1 py-1.5 text-center"
+                className="min-h-11 rounded-lg border border-border px-1 py-2 text-center"
               >
                 <div className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
                   {day.label}
@@ -373,9 +375,7 @@ export function TrucksReturnDashboard({ data }: { data: ReturnsPayload }) {
 
       <footer className="text-muted-foreground flex flex-col gap-2 text-sm">
         <p>Current expected returns list. Phone and CDL are not shown.</p>
-        <details>
-          <summary className="cursor-pointer text-foreground">Technical details</summary>
-          <div className="mt-3 flex flex-col gap-2">
+        <TechnicalDetails>
             <p>
               Dataset: <strong>{data.meta.dataset}</strong> · total_count=
               <strong>{data.meta.total_count}</strong> · fetched=
@@ -414,8 +414,7 @@ export function TrucksReturnDashboard({ data }: { data: ReturnsPayload }) {
                 ? " One or more trucks had more than two driver names; extras are appended in Driver 2."
                 : ""}
             </p>
-          </div>
-        </details>
+        </TechnicalDetails>
       </footer>
     </DashboardShell>
   )

@@ -14,6 +14,7 @@ import {
 
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { cn } from "cn"
 
 export type DashboardView =
   | "liquidaciones"
@@ -63,6 +64,7 @@ type HeaderState = {
 
 const HeaderContext = createContext<{
   setHeader: (next: HeaderState) => void
+  clearActions: () => void
 } | null>(null)
 
 function LightningLogo() {
@@ -103,15 +105,15 @@ export function useDashboardHeader(state: HeaderState) {
   if (!ctx) {
     throw new Error("useDashboardHeader must be used within DashboardChrome")
   }
-  const { setHeader } = ctx
+  const { setHeader, clearActions } = ctx
 
   useLayoutEffect(() => {
     setHeader(state)
   })
 
   useEffect(() => {
-    return () => setHeader({})
-  }, [setHeader])
+    return () => clearActions()
+  }, [clearActions])
 }
 
 /**
@@ -137,13 +139,64 @@ export function DashboardShell({
   return <div className="flex flex-col gap-4 md:gap-6">{children}</div>
 }
 
+/** Native details with accessible summary focus — evidence footers only. */
+export function TechnicalDetails({
+  children,
+  className,
+}: {
+  children: ReactNode
+  className?: string
+}) {
+  return (
+    <details
+      className={cn(
+        "text-muted-foreground rounded-lg text-xs leading-relaxed",
+        className
+      )}
+    >
+      <summary
+        className={cn(
+          "text-foreground cursor-pointer text-sm font-medium select-none",
+          "rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        )}
+      >
+        Technical details
+      </summary>
+      <div className="mt-2 space-y-1">{children}</div>
+    </details>
+  )
+}
+
 export function DashboardChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const active = viewFromPath(pathname)
   const activeView = VIEWS.find((view) => view.id === active) ?? VIEWS[0]
-  const [header, setHeader] = useState<HeaderState>({})
+  const [header, setHeader] = useState<HeaderState>({
+    title: activeView.label,
+  })
+  const [headerPath, setHeaderPath] = useState(pathname)
 
-  const headerApi = useMemo(() => ({ setHeader }), [])
+  // Reset chrome meta as soon as the route changes (before/while body loads).
+  // Child useLayoutEffect then fills in subtitle/actions without a parent wipe race.
+  if (headerPath !== pathname) {
+    setHeaderPath(pathname)
+    setHeader({
+      title: activeView.label,
+      eyebrow: "Operations",
+      live: true,
+    })
+  }
+
+  const headerApi = useMemo(
+    () => ({
+      setHeader,
+      clearActions: () =>
+        setHeader((prev) =>
+          prev.actions === undefined ? prev : { ...prev, actions: undefined }
+        ),
+    }),
+    []
+  )
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0 })
@@ -184,14 +237,14 @@ export function DashboardChrome({ children }: { children: ReactNode }) {
 
           <Tabs value={active} className="w-full gap-0">
             <TabsList
-              className="h-auto w-full max-w-full justify-start overflow-x-auto"
+              className="h-auto min-h-9 w-full max-w-full justify-start overflow-x-auto"
               aria-label="Report views"
             >
               {VIEWS.map((view) => (
                 <TabsTrigger
                   key={view.id}
                   value={view.id}
-                  className="px-3"
+                  className="min-h-9 px-3"
                   nativeButton={false}
                   render={<Link href={view.href} prefetch />}
                 >
@@ -201,7 +254,12 @@ export function DashboardChrome({ children }: { children: ReactNode }) {
             </TabsList>
           </Tabs>
         </header>
-        {children}
+        <div
+          key={pathname}
+          className="motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-150"
+        >
+          {children}
+        </div>
       </div>
     </HeaderContext.Provider>
   )

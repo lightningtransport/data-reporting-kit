@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react"
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 
-import { DashboardShell } from "@/components/dashboard-shell"
+import { DashboardShell, TechnicalDetails } from "@/components/dashboard-shell"
 import { ExecutiveSummary } from "@/components/executive-summary"
 import { OwnerMultiSelect } from "@/components/owner-multi-select"
 import {
@@ -197,7 +197,8 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
                 <div className="flex w-full items-center gap-2">
                   <Button
                     variant="outline"
-                    size="icon-sm"
+                    size="icon"
+                    className="size-9"
                     disabled={weekIndex <= 0}
                     onClick={() => setWeek(weeks[weekIndex - 1] ?? week)}
                   >
@@ -225,7 +226,8 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
                   </Select>
                   <Button
                     variant="outline"
-                    size="icon-sm"
+                    size="icon"
+                    className="size-9"
                     disabled={weekIndex >= weeks.length - 1}
                     onClick={() => setWeek(weeks[weekIndex + 1] ?? week)}
                   >
@@ -517,9 +519,7 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
 
       <footer className="text-muted-foreground flex flex-col gap-2 text-sm">
         <p>Weekly settlement figures (Tue–Mon).</p>
-        <details>
-          <summary className="cursor-pointer text-foreground">Technical details</summary>
-          <div className="mt-3 flex flex-col gap-2">
+        <TechnicalDetails>
             <p>
               Filtros: vista=<strong>{vista}</strong>,{" "}
               {vista === "mensual" ? `mes=${month}` : `semana=${week}`}, dispatch=
@@ -558,8 +558,7 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
               tables. as_of is request time, not a Ninox sync stamp. Live
               agent-reporting only; no embedded snapshot.
             </p>
-          </div>
-        </details>
+        </TechnicalDetails>
       </footer>
     </DashboardShell>
   )

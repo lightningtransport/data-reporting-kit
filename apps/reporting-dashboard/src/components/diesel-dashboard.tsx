@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 
 import { DieselMonthlyTrendChart } from "@/components/diesel-charts"
-import { DashboardShell } from "@/components/dashboard-shell"
+import { DashboardShell, TechnicalDetails } from "@/components/dashboard-shell"
 import { KpiValue } from "@/components/kpi-value"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
@@ -360,7 +360,7 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
   return (
     <DashboardShell
       title="Diesel"
-      subtitle={`${monthLabel(month)} · ${productLabel} · ${kpi.transactions} tx · ${kpi.distinctTrucks} camiones`}
+      subtitle={`${monthLabel(month)} · ${productLabel} · ${kpi.transactions} tx · ${kpi.distinctTrucks} trucks`}
       live={Boolean(data.meta.live)}
     >
       {data.meta.error ? (
@@ -381,7 +381,8 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
               <div className="flex w-full items-center gap-2">
                 <Button
                   variant="outline"
-                  size="icon-sm"
+                  size="icon"
+                  className="size-9"
                   disabled={monthIndex <= 0}
                   onClick={() => setMonth(months[monthIndex - 1] ?? month)}
                 >
@@ -409,7 +410,8 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
                 </Select>
                 <Button
                   variant="outline"
-                  size="icon-sm"
+                  size="icon"
+                  className="size-9"
                   disabled={monthIndex < 0 || monthIndex >= months.length - 1}
                   onClick={() => setMonth(months[monthIndex + 1] ?? month)}
                 >
@@ -542,7 +544,7 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
                   <TableHead className="text-right">Gallons</TableHead>
                   <TableHead className="text-right">Adj. spend</TableHead>
                   <TableHead className="text-right">Tx</TableHead>
-                  <TableHead className="text-right">Camiones</TableHead>
+                  <TableHead className="text-right">Trucks</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -583,7 +585,7 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Transacciones</CardTitle>
+          <CardTitle>Transactions</CardTitle>
           <CardDescription>
             Focus-month detail · up to 400 rows
             {detailMeta.loading ? " · loading…" : ""}
@@ -679,9 +681,7 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
           Diesel uses live fuel transactions. Owner is historical on the
           transaction, not the current trucks master.
         </p>
-        <details>
-          <summary className="cursor-pointer text-foreground">Technical details</summary>
-          <div className="mt-3 flex flex-col gap-2">
+        <TechnicalDetails>
             <p>
               Dataset: <strong>{data.meta.dataset}</strong> · total_count=
               <strong>{data.meta.total_count}</strong> · fetched=
@@ -707,8 +707,7 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
               reuses recent live agent-reporting queries. Detail table capped at
               400 rows. Default product = diesel excluding DEF.
             </p>
-          </div>
-        </details>
+        </TechnicalDetails>
       </footer>
     </DashboardShell>
   )
