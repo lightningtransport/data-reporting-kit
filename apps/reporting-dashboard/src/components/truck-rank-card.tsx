@@ -31,6 +31,8 @@ import {
 import { money } from "@/lib/format"
 import { TRUCK_RANK_PREVIEW, type TruckAgg } from "@/lib/settlement"
 
+const RANK_HEADERS = ["#", "Truck", "Team", "Gross", "Net"] as const
+
 export function TruckRankCard({
   title,
   description,
@@ -43,10 +45,7 @@ export function TruckRankCard({
   primary: "g" | "n"
 }) {
   const preview = trucks.slice(0, TRUCK_RANK_PREVIEW)
-  const headers =
-    primary === "g"
-      ? ["#", "Truck", "Team", "Gross", "Net"]
-      : ["#", "Truck", "Team", "Net", "Gross"]
+  const sortLabel = primary === "g" ? "Gross" : "Net"
 
   return (
     <Card>
@@ -54,13 +53,13 @@ export function TruckRankCard({
         <div className="flex flex-col gap-1">
           <CardTitle>{title}</CardTitle>
           <CardDescription>
-            {description} · {trucks.length} trucks in selection
+            Sorted by {sortLabel} · {description} · {trucks.length} trucks in selection
           </CardDescription>
         </div>
         <TruckListDialog title={title} trucks={trucks} primary={primary} />
       </CardHeader>
       <CardContent>
-        <RankBody headers={headers} trucks={preview} primary={primary} startAt={1} />
+        <RankBody trucks={preview} primary={primary} startAt={1} />
       </CardContent>
     </Card>
   )
@@ -85,10 +84,7 @@ function TruckListDialog({
         truck.o.toLowerCase().includes(needle)
     )
   }, [query, trucks])
-  const headers =
-    primary === "g"
-      ? ["#", "Truck", "Team", "Gross", "Net"]
-      : ["#", "Truck", "Team", "Net", "Gross"]
+  const sortLabel = primary === "g" ? "Gross" : "Net"
 
   return (
     <Dialog>
@@ -99,7 +95,7 @@ function TruckListDialog({
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
-            Full selection ({trucks.length}), not a preview.
+            Full selection ({trucks.length}), sorted by {sortLabel}.
           </DialogDescription>
         </DialogHeader>
         <Input
@@ -109,7 +105,7 @@ function TruckListDialog({
           onChange={(event) => setQuery(event.target.value)}
         />
         <div className="max-h-[60vh] overflow-auto rounded-lg border">
-          <RankBody headers={headers} trucks={filtered} primary={primary} startAt={1} />
+          <RankBody trucks={filtered} primary={primary} startAt={1} />
         </div>
       </DialogContent>
     </Dialog>
@@ -117,12 +113,10 @@ function TruckListDialog({
 }
 
 function RankBody({
-  headers,
   trucks,
   primary,
   startAt,
 }: {
-  headers: string[]
   trucks: TruckAgg[]
   primary: "g" | "n"
   startAt: number
@@ -131,15 +125,31 @@ function RankBody({
     <Table>
       <TableHeader>
         <TableRow>
-          {headers.map((header) => (
-            <TableHead key={header}>{header}</TableHead>
+          {RANK_HEADERS.map((header) => (
+            <TableHead
+              key={header}
+              className={
+                header === "Gross" || header === "Net" ? "text-right" : undefined
+              }
+            >
+              <span
+                className={
+                  (primary === "g" && header === "Gross") ||
+                  (primary === "n" && header === "Net")
+                    ? "font-semibold"
+                    : undefined
+                }
+              >
+                {header}
+              </span>
+            </TableHead>
           ))}
         </TableRow>
       </TableHeader>
       <TableBody>
         {trucks.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={headers.length} className="text-muted-foreground">
+            <TableCell colSpan={RANK_HEADERS.length} className="text-muted-foreground">
               No data
             </TableCell>
           </TableRow>
@@ -157,25 +167,20 @@ function RankBody({
                 ) : null}
               </TableCell>
               <TableCell>{truck.o}</TableCell>
-              {primary === "g" ? (
-                <>
-                  <TableCell className="text-right font-mono tabular-nums">
-                    {money(truck.g)}
-                  </TableCell>
-                  <TableCell className="text-right font-mono tabular-nums">
-                    {money(truck.n)}
-                  </TableCell>
-                </>
-              ) : (
-                <>
-                  <TableCell className="text-right font-mono tabular-nums">
-                    {money(truck.n)}
-                  </TableCell>
-                  <TableCell className="text-right font-mono tabular-nums">
-                    {money(truck.g)}
-                  </TableCell>
-                </>
-              )}
+              <TableCell
+                className={`text-right font-mono tabular-nums${
+                  primary === "g" ? " font-medium" : ""
+                }`}
+              >
+                {money(truck.g)}
+              </TableCell>
+              <TableCell
+                className={`text-right font-mono tabular-nums${
+                  primary === "n" ? " font-medium" : ""
+                }`}
+              >
+                {money(truck.n)}
+              </TableCell>
             </TableRow>
           ))
         )}

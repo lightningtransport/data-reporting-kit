@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 
 import { DashboardShell } from "@/components/dashboard-shell"
@@ -34,14 +34,14 @@ import {
 import type { ReturnsPayload } from "@/lib/returns"
 import {
   addDaysIso,
-  availableMondays,
   collapseTruckRows,
-  defaultFocusMonday,
+  currentMonday,
   distinctTrucksInWeek,
   distinctUndatedTrucks,
   formatOpsDate,
-  shiftFocusMonday,
+  shiftCalendarMonday,
   weekRangeLabel,
+  weekdayTruckStrip,
 } from "@/lib/ops-table"
 
 function insuranceBadgeClass(insurance: string): string {
@@ -73,20 +73,10 @@ export function TrucksReturnDashboard({ data }: { data: ReturnsPayload }) {
     [data.rows]
   )
 
-  const mondays = useMemo(
-    () => availableMondays(data.rows.map((row) => row.returnDate)),
-    [data.rows]
-  )
-  const [focusMonday, setFocusMonday] = useState(() => defaultFocusMonday(mondays))
+  const [focusMonday, setFocusMonday] = useState(() => currentMonday())
   const [truckQuery, setTruckQuery] = useState("")
   const [insurance, setInsurance] = useState("all")
   const [datedOnly, setDatedOnly] = useState("all")
-
-  useEffect(() => {
-    setFocusMonday((prev) =>
-      mondays.includes(prev) ? prev : defaultFocusMonday(mondays)
-    )
-  }, [mondays])
 
   const insuranceItems = useMemo(
     () => [
@@ -157,16 +147,15 @@ export function TrucksReturnDashboard({ data }: { data: ReturnsPayload }) {
       (row) => row.eventDate && row.eventDate >= focusMonday && row.eventDate <= sunday
     )
     if (datedOnly === "dated") return inWeek
-    // "all": week rows plus undated so managers still see trucks with no date
     const undated = collapsedAll.filter((row) => !row.eventDate)
     return [...inWeek, ...undated]
   }, [collapsedAll, focusMonday, datedOnly])
 
-  const focusIdx = mondays.indexOf(focusMonday)
-  const canPrev = focusIdx > 0 || (focusIdx < 0 && mondays.some((m) => m < focusMonday))
-  const canNext =
-    (focusIdx >= 0 && focusIdx < mondays.length - 1) ||
-    (focusIdx < 0 && mondays.some((m) => m > focusMonday))
+  const dayStrip = useMemo(
+    () => weekdayTruckStrip(collapsedAll, focusMonday),
+    [collapsedAll, focusMonday]
+  )
+  const daysWithData = dayStrip.filter((day) => day.count > 0).length
 
   const extraDrivers = tableRows.some((row) => row.extraDrivers)
   const thisLabel = weekRangeLabel(focusMonday)
@@ -200,8 +189,8 @@ export function TrucksReturnDashboard({ data }: { data: ReturnsPayload }) {
                 <Button
                   variant="outline"
                   size="icon-sm"
-                  disabled={!canPrev || datedOnly === "undated"}
-                  onClick={() => setFocusMonday(shiftFocusMonday(focusMonday, mondays, -1))}
+                  disabled={datedOnly === "undated"}
+                  onClick={() => setFocusMonday(shiftCalendarMonday(focusMonday, -1))}
                 >
                   <ChevronLeftIcon />
                 </Button>
@@ -211,8 +200,8 @@ export function TrucksReturnDashboard({ data }: { data: ReturnsPayload }) {
                 <Button
                   variant="outline"
                   size="icon-sm"
-                  disabled={!canNext || datedOnly === "undated"}
-                  onClick={() => setFocusMonday(shiftFocusMonday(focusMonday, mondays, 1))}
+                  disabled={datedOnly === "undated"}
+                  onClick={() => setFocusMonday(shiftCalendarMonday(focusMonday, 1))}
                 >
                   <ChevronRightIcon />
                 </Button>
@@ -289,6 +278,30 @@ export function TrucksReturnDashboard({ data }: { data: ReturnsPayload }) {
         />
         <KpiCard label="No date" value={String(noDateTrucks)} hint="Distinct trucks" />
       </div>
+
+      {datedOnly !== "undated" ? (
+        <>
+          <div className="grid grid-cols-7 gap-1.5">
+            {dayStrip.map((day) => (
+              <div
+                key={day.iso}
+                className="rounded-lg border border-border px-1 py-1.5 text-center"
+              >
+                <div className="text-muted-foreground text-[10px] font-medium uppercase tracking-wide">
+                  {day.label}
+                </div>
+                <div className="font-heading text-sm tabular-nums">{day.count}</div>
+              </div>
+            ))}
+          </div>
+          {daysWithData < 7 ? (
+            <p className="text-muted-foreground -mt-2 text-xs">
+              Live returns only shows dates still in the list ({daysWithData}/7 days with
+              trucks). Past return days are not retained here.
+            </p>
+          ) : null}
+        </>
+      ) : null}
 
       <Card>
         <CardHeader>
@@ -368,8 +381,9 @@ export function TrucksReturnDashboard({ data }: { data: ReturnsPayload }) {
             </p>
             <p>
               Focus week Mon–Sun <strong>{focusMonday}</strong>–
-              <strong>{addDaysIso(focusMonday, 6)}</strong> ({thisLabel}) · returning this
-              week=<strong>{returningThisWeek}</strong> · returning next week=
+              <strong>{addDaysIso(focusMonday, 6)}</strong> ({thisLabel}) · days with data=
+              <strong>{daysWithData}</strong>/7 · returning this week=
+              <strong>{returningThisWeek}</strong> · returning next week=
               <strong>{returningNextWeek}</strong> ({nextLabel}) · no date=
               <strong>{noDateTrucks}</strong>.
             </p>
@@ -377,8 +391,7 @@ export function TrucksReturnDashboard({ data }: { data: ReturnsPayload }) {
               UI filters: search=&quot;{truckQuery}&quot;, insurance=
               <strong>{insurance}</strong>, return_date=<strong>{datedOnly}</strong> ·
               table=<strong>{tableRows.length}</strong> truck-date rows · source rows=
-              <strong>{filteredSource.length}</strong> · weeks in payload=
-              <strong>{mondays.length}</strong>.
+              <strong>{filteredSource.length}</strong>.
             </p>
             <p>
               as_of=<strong>{data.meta.as_of}</strong> · source_freshness=
@@ -386,11 +399,12 @@ export function TrucksReturnDashboard({ data }: { data: ReturnsPayload }) {
             </p>
             <p>
               Caveats: KPIs and table use distinct trucks after collapsing driver-grain
-              rows on (Truck, Return Date) into Driver 1 / Driver 2. Week nav only walks
-              Mondays present in the live returns payload. Null Return Date = no stored
-              date. Phone Number and CDL are sensitive and are not requested. Do not use
-              Ninox_ID or a name as a CDL substitute. as_of is request time, not a Ninox
-              sync stamp.
+              rows on (Truck, Return Date) into Driver 1 / Driver 2. Week nav is calendar
+              Mon–Sun (±7 days). The returns list is live/volatile — days or weeks with no
+              rows are not retained in this screen (historical returns need DriverPay).
+              Null Return Date = no stored date. Phone Number and CDL are sensitive and are
+              not requested. Do not use Ninox_ID or a name as a CDL substitute. as_of is
+              request time, not a Ninox sync stamp.
               {extraDrivers
                 ? " One or more trucks had more than two driver names; extras are appended in Driver 2."
                 : ""}

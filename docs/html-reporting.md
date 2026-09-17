@@ -41,7 +41,7 @@ Shared shell for every dashboard view: Lightning logo, view title, **Snapshot** 
 2. Mobile-first filters (Period Week/Month, Team, Truck, Dispatch). Truck search renders a **Truck** focus card immediately under the filters (Gross, expenses, net, fuel, miles, team, weeks in the selection).
 3. **Summary**: owner matrix (TOTAL + exact stored `Owner` columns), physical-truck averages, Gross below $11,000 count, net+/net−, LTR Invoices, Tolls+PrePass, optional gallons/MPG from `fuel`. Visible labels are English operational copy.
 4. Weekly and monthly review modes, with the named date selected in the toolbar. Historical `Dispatch` filter uses exact `settlements.Dispatch` values (not current `trucks.dispatcher`).
-5. Truck rankings and owner rankings by stored Gross and Net. Truck lists: preview plus **Show all** for the full selection. Non-physical buckets use badge **Non-physical**.
+5. Truck rankings and owner rankings by stored Gross and Net (same column order Gross then Net; each card labeled Sorted by Gross or Sorted by Net). Truck lists: preview plus **Show all** for the full selection. Non-physical buckets use badge **Non-physical**.
 6. Fuel spend by owner for the focused week and month, using stored `Fuel Expenses` (settlement) and `fuel.owner` only for gallon attribution.
 7. KPI strip: Gross, Expenses, Net, Fuel, physical-truck count, miles.
 8. Evidence stays in a closed **Technical details** accordion (source report(s), normalized filters, exact period/window, row/distinct count, pagination completeness, `as_of`, source-freshness limitation, material caveats). Humans see one line: weekly Tue–Mon settlement numbers.
@@ -51,17 +51,19 @@ Not established (do not display or approximate): Ninox “Full Week” / “No F
 
 ### Out Schedule (`/out-schedule`)
 
-1. Distinct-truck KPIs for the focused Monday–Sunday week and the next week (leaving counts), with prev/next week nav limited to Mondays present in the live Schedule_Teams payload.
-2. Table collapsed to one row per truck per Out Date: Truck, Out Date, Day (derived), Driver 1, Driver 2, Owner, Dispatch, Flatbed, Solo. Shared left-to-right spine with Trucks Return (Truck → event date → Day → who → report-only columns).
-3. Light filters (truck/driver search, owner, dispatch), Export CSV of collapsed rows, truck count, **Technical details**.
-4. Do not substitute DriverPay history when the Ninox share fails; show an explicit error state. Insurance / Team Status / Truck Status / Notes are not in this share. Past weeks not still in the live share cannot be reconstructed.
+1. Distinct-truck KPIs for the focused Monday–Sunday week and the next week (leaving counts). Week nav is calendar Mon ±7 days (empty weeks allowed).
+2. Mon–Sun day strip with distinct-truck counts per weekday so incomplete live weeks are visible (Schedule_Teams drops past planned days).
+3. Table collapsed to one row per truck per Out Date: Truck, Out Date, Day (derived), Driver 1, Driver 2, Owner, Dispatch, Flatbed, Solo. Sticky column headers in the scroll area.
+4. Light filters (truck/driver search, owner, dispatch), Export CSV of collapsed rows, truck count, **Technical details**.
+5. Do not substitute DriverPay history when the Ninox share fails; show an explicit error state. Insurance / Team Status / Truck Status / Notes are not in this share. Past planned days not still in the live share cannot be reconstructed here.
 
 ### Trucks Return (`/trucks-return`)
 
-1. Distinct-truck KPIs: returning this week, returning next week, and no date (empty `Return Date`), with Mon–Sun week nav limited to dates present in the live `returns` payload.
-2. Table collapsed to one row per truck per Return Date: Truck, Return Date, Day (derived), Driver 1, Driver 2, Insurance (never Phone/CDL). Shared left-to-right spine with Out Schedule.
+1. Distinct-truck KPIs: returning this week, returning next week, and no date (empty `Return Date`). Calendar Mon ±7 week nav; Mon–Sun day strip for dated weeks.
+2. Table collapsed to one row per truck per Return Date: Truck, Return Date, Day (derived), Driver 1, Driver 2, Insurance (never Phone/CDL). Sticky headers.
 3. Light filters, truck count, **Technical details**. Driver-row grain is collapsed for display and KPIs; source row count stays in Technical details.
-4. History caveat: only Return Dates still present in the current live list are navigable.
+4. Live `returns` is volatile; historical returns need DriverPay (not this screen).
+
 
 ### Diesel (`/diesel`)
 

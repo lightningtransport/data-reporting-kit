@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { ChevronLeftIcon, ChevronRightIcon, DownloadIcon } from "lucide-react"
 
 import { DashboardShell } from "@/components/dashboard-shell"
@@ -34,13 +34,13 @@ import {
 import type { OutSchedulePayload } from "@/lib/out-schedule"
 import {
   addDaysIso,
-  availableMondays,
   collapseTruckRows,
-  defaultFocusMonday,
+  currentMonday,
   distinctTrucksInWeek,
   formatOpsDate,
-  shiftFocusMonday,
+  shiftCalendarMonday,
   weekRangeLabel,
+  weekdayTruckStrip,
   type CollapsedTruckRow,
 } from "@/lib/ops-table"
 
@@ -106,20 +106,10 @@ export function OutScheduleDashboard({ data }: { data: OutSchedulePayload }) {
     [data.rows]
   )
 
-  const mondays = useMemo(
-    () => availableMondays(data.rows.map((row) => row.outDate)),
-    [data.rows]
-  )
-  const [focusMonday, setFocusMonday] = useState(() => defaultFocusMonday(mondays))
+  const [focusMonday, setFocusMonday] = useState(() => currentMonday())
   const [truckQuery, setTruckQuery] = useState("")
   const [owner, setOwner] = useState("all")
   const [dispatch, setDispatch] = useState("all")
-
-  useEffect(() => {
-    setFocusMonday((prev) =>
-      mondays.includes(prev) ? prev : defaultFocusMonday(mondays)
-    )
-  }, [mondays])
 
   const ownerItems = useMemo(
     () => [
@@ -189,11 +179,11 @@ export function OutScheduleDashboard({ data }: { data: OutSchedulePayload }) {
     [collapsedAll, focusMonday]
   )
 
-  const focusIdx = mondays.indexOf(focusMonday)
-  const canPrev = focusIdx > 0 || (focusIdx < 0 && mondays.some((m) => m < focusMonday))
-  const canNext =
-    (focusIdx >= 0 && focusIdx < mondays.length - 1) ||
-    (focusIdx < 0 && mondays.some((m) => m > focusMonday))
+  const dayStrip = useMemo(
+    () => weekdayTruckStrip(collapsedAll, focusMonday),
+    [collapsedAll, focusMonday]
+  )
+  const daysWithData = dayStrip.filter((day) => day.count > 0).length
 
   const extraDrivers = tableRows.some((row) => row.extraDrivers)
   const thisLabel = weekRangeLabel(focusMonday)
@@ -242,8 +232,7 @@ export function OutScheduleDashboard({ data }: { data: OutSchedulePayload }) {
                 <Button
                   variant="outline"
                   size="icon-sm"
-                  disabled={!canPrev}
-                  onClick={() => setFocusMonday(shiftFocusMonday(focusMonday, mondays, -1))}
+                  onClick={() => setFocusMonday(shiftCalendarMonday(focusMonday, -1))}
                 >
                   <ChevronLeftIcon />
                 </Button>
@@ -253,8 +242,7 @@ export function OutScheduleDashboard({ data }: { data: OutSchedulePayload }) {
                 <Button
                   variant="outline"
                   size="icon-sm"
-                  disabled={!canNext}
-                  onClick={() => setFocusMonday(shiftFocusMonday(focusMonday, mondays, 1))}
+                  onClick={() => setFocusMonday(shiftCalendarMonday(focusMonday, 1))}
                 >
                   <ChevronRightIcon />
                 </Button>
@@ -330,6 +318,26 @@ export function OutScheduleDashboard({ data }: { data: OutSchedulePayload }) {
           hint={nextLabel}
         />
       </div>
+
+      <div className="grid grid-cols-7 gap-1.5">
+        {dayStrip.map((day) => (
+          <div
+            key={day.iso}
+            className="rounded-lg border border-border px-1 py-1.5 text-center"
+          >
+            <div className="text-muted-foreground text-[10px] font-medium uppercase tracking-wide">
+              {day.label}
+            </div>
+            <div className="font-heading text-sm tabular-nums">{day.count}</div>
+          </div>
+        ))}
+      </div>
+      {daysWithData < 7 ? (
+        <p className="text-muted-foreground -mt-2 text-xs">
+          Live Schedule_Teams only shows days still in the share ({daysWithData}/7 days with
+          trucks). Past planned days are not retained here.
+        </p>
+      ) : null}
 
       <Card>
         <CardHeader>
@@ -411,7 +419,8 @@ export function OutScheduleDashboard({ data }: { data: OutSchedulePayload }) {
             </p>
             <p>
               Focus week Mon–Sun <strong>{focusMonday}</strong>–
-              <strong>{addDaysIso(focusMonday, 6)}</strong> ({thisLabel}) · leaving this week=
+              <strong>{addDaysIso(focusMonday, 6)}</strong> ({thisLabel}) · days with data=
+              <strong>{daysWithData}</strong>/7 · leaving this week=
               <strong>{leavingThisWeek}</strong> · leaving next week=
               <strong>{leavingNextWeek}</strong> ({nextLabel}).
             </p>
@@ -419,8 +428,7 @@ export function OutScheduleDashboard({ data }: { data: OutSchedulePayload }) {
               UI filters: search=&quot;{truckQuery}&quot;, owner=
               <strong>{owner}</strong>, dispatch=<strong>{dispatch}</strong> · table=
               <strong>{tableRows.length}</strong> trucks · source rows=
-              <strong>{filteredSource.length}</strong> · weeks in payload=
-              <strong>{mondays.length}</strong>.
+              <strong>{filteredSource.length}</strong>.
             </p>
             <p>
               as_of=<strong>{data.meta.as_of}</strong> · source_freshness=
@@ -428,10 +436,11 @@ export function OutScheduleDashboard({ data }: { data: OutSchedulePayload }) {
             </p>
             <p>
               Caveats: KPIs and table use distinct trucks after collapsing driver-grain
-              rows on (Truck, Out Date) into Driver 1 / Driver 2. Week nav only walks
-              Mondays present in the live Schedule_Teams payload. Insurance / Team Status /
-              Truck Status / Notes are not on this share. Do not substitute DriverPay.
-              as_of is request time.
+              rows on (Truck, Out Date) into Driver 1 / Driver 2. Week nav is calendar
+              Mon–Sun (±7 days). Schedule_Teams is a live planned list — days or weeks with
+              no rows are not retained in this screen. Insurance / Team Status / Truck
+              Status / Notes are not on this share. Do not substitute DriverPay. as_of is
+              request time.
               {extraDrivers
                 ? " One or more trucks had more than two driver names; extras are appended in Driver 2."
                 : ""}

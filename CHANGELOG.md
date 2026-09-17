@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.8.10 - 2026-09-16
+
+- Sticky table column headers in scrollable dashboard tables; Settlements Gross/Net rankings share column order with Sorted-by labels; Out Schedule / Trucks Return use calendar Mon±7 week nav plus a Mon–Sun day strip so incomplete live weeks are visible.
+
 ## 3.8.9 - 2026-09-16
 
 - Out Schedule and Trucks Return: collapse driver-grain rows to one truck per date (Driver 1 / Driver 2), add Mon–Sun week nav, and show distinct-truck KPIs for this week / next week (plus No date on returns). Week history is limited to dates still in each live payload.

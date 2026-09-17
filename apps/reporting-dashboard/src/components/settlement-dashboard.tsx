@@ -403,8 +403,9 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <RankTable
           title="Teams · Gross"
-          description="Includes allocation trucks 1/2/3"
+          description="Sorted by Gross · includes allocation trucks 1/2/3"
           headers={["#", "Team", "Gross", "Net"]}
+          emphasizeCol={2}
           rows={ownerGross.map((owner, index) => [
             String(index + 1),
             owner.o,
@@ -414,13 +415,14 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
         />
         <RankTable
           title="Teams · Net"
-          description="Includes allocation trucks 1/2/3"
-          headers={["#", "Team", "Net", "Gross"]}
+          description="Sorted by Net · includes allocation trucks 1/2/3"
+          headers={["#", "Team", "Gross", "Net"]}
+          emphasizeCol={3}
           rows={ownerNet.map((owner, index) => [
             String(index + 1),
             owner.o,
-            money(owner.n),
             money(owner.g),
+            money(owner.n),
           ])}
         />
         <RankTable
@@ -566,11 +568,13 @@ function RankTable({
   description,
   headers,
   rows,
+  emphasizeCol,
 }: {
   title: string
   description?: string
   headers: string[]
   rows: string[][]
+  emphasizeCol?: number
 }) {
   return (
     <Card>
@@ -583,8 +587,15 @@ function RankTable({
           <Table>
             <TableHeader>
               <TableRow>
-                {headers.map((header) => (
-                  <TableHead key={header}>{header}</TableHead>
+                {headers.map((header, index) => (
+                  <TableHead
+                    key={header}
+                    className={index > 1 ? "text-right" : undefined}
+                  >
+                    <span className={emphasizeCol === index ? "font-semibold" : undefined}>
+                      {header}
+                    </span>
+                  </TableHead>
                 ))}
               </TableRow>
             </TableHeader>
@@ -601,7 +612,13 @@ function RankTable({
                     {cells.map((cell, cellIndex) => (
                       <TableCell
                         key={`${title}-${index}-${cellIndex}`}
-                        className={cellIndex > 1 ? "text-right font-mono tabular-nums" : undefined}
+                        className={
+                          cellIndex > 1
+                            ? `text-right font-mono tabular-nums${
+                                emphasizeCol === cellIndex ? " font-medium" : ""
+                              }`
+                            : undefined
+                        }
                       >
                         {cell}
                       </TableCell>

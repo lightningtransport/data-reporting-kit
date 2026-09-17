@@ -195,7 +195,7 @@ export function ExecutiveSummary({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="rounded-lg border">
+          <div className="overflow-auto rounded-lg border">
             <Table className="min-w-max">
               <TableHeader>
                 <TableRow>

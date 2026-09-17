@@ -112,6 +112,19 @@ export function shiftFocusMonday(
   return mondays[idx + direction] ?? focusMonday
 }
 
+/** Calendar week nav: always shift Monday by ±7 days. */
+export function shiftCalendarMonday(focusMonday: string, direction: -1 | 1): string {
+  return addDaysIso(focusMonday, direction * 7) || focusMonday
+}
+
+export type WeekdayStripDay = {
+  iso: string
+  label: string
+  count: number
+}
+
+const WEEKDAY_SHORT = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const
+
 export type CollapsibleDriverRow = {
   truck: string
   eventDate: string
@@ -129,6 +142,27 @@ export type CollapsedTruckRow = {
   fields: Record<string, string>
   sourceRowCount: number
   extraDrivers: boolean
+}
+
+/** Distinct-truck counts per Mon–Sun day for the focused week (0 when absent). */
+export function weekdayTruckStrip(
+  rows: Array<{ truck: string; eventDate: string }>,
+  monday: string
+): WeekdayStripDay[] {
+  const days: WeekdayStripDay[] = []
+  for (let i = 0; i < 7; i++) {
+    const iso = addDaysIso(monday, i)
+    const trucks = new Set<string>()
+    for (const row of rows) {
+      if (row.eventDate === iso) trucks.add(row.truck)
+    }
+    days.push({
+      iso,
+      label: WEEKDAY_SHORT[i] ?? "",
+      count: trucks.size,
+    })
+  }
+  return days
 }
 
 function joinDistinct(values: string[]): string {
