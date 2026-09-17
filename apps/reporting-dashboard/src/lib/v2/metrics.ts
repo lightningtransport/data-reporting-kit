@@ -108,8 +108,83 @@ export type TeamPerformanceRow = {
   rpmStatus: "ok" | "unavailable" | "check_data"
   negativeNetTrucks: number
   lowGrossTrucks: number
+  /** Union of negative-net and low-gross truck sets — never sum of the two. */
+  distinctFlaggedTrucks: number
   productiveTrucks: number
   needsAttention: boolean
+}
+
+export type AttentionReasons = {
+  negativeNetTrucks: number
+  lowGrossTrucks: number
+  distinctFlaggedTrucks: number
+  needsAttention: boolean
+  /** Deterministic: high = any negative-net truck; medium = only low-gross. */
+  urgency: "high" | "medium" | "none"
+  negativeNetImpact: number
+}
+
+/**
+ * Physical exception reasons for a settlement population.
+ * Counts are distinct trucks; a truck may appear in both categories.
+ */
+export function attentionReasons(
+  rows: SettlementMetricRow[],
+  threshold = LOW_GROSS_THRESHOLD
+): AttentionReasons {
+  const neg = negativeNetExceptions(rows)
+  const low = lowGrossExceptions(rows, threshold)
+  const flagged = new Set<string>()
+  for (const item of neg) flagged.add(item.truck)
+  for (const item of low) flagged.add(item.truck)
+  const negativeNetTrucks = neg.length
+  const lowGrossTrucks = low.length
+  const urgency =
+    negativeNetTrucks > 0
+      ? "high"
+      : lowGrossTrucks > 0
+        ? "medium"
+        : "none"
+  return {
+    negativeNetTrucks,
+    lowGrossTrucks,
+    distinctFlaggedTrucks: flagged.size,
+    needsAttention: flagged.size > 0,
+    urgency,
+    negativeNetImpact: neg.reduce((sum, item) => sum + item.net, 0),
+  }
+}
+
+/** Compact English labels for Why flagged cells. */
+export function formatWhyFlagged(reasons: AttentionReasons): {
+  primary: string
+  compact: string
+  detail: string
+} {
+  if (!reasons.needsAttention) {
+    return {
+      primary: "No flags",
+      compact: "No flags",
+      detail: "No negative-net or low-gross physical trucks.",
+    }
+  }
+  const parts: string[] = []
+  if (reasons.negativeNetTrucks > 0) {
+    parts.push(
+      `${reasons.negativeNetTrucks} negative-net truck${reasons.negativeNetTrucks === 1 ? "" : "s"}`
+    )
+  }
+  if (reasons.lowGrossTrucks > 0) {
+    parts.push(
+      `${reasons.lowGrossTrucks} low-gross truck${reasons.lowGrossTrucks === 1 ? "" : "s"}`
+    )
+  }
+  return {
+    primary: parts.join(" · "),
+    compact: `${reasons.distinctFlaggedTrucks} truck${reasons.distinctFlaggedTrucks === 1 ? "" : "s"} flagged · ${parts.join(" · ")}`,
+    detail:
+      "Negative net: stored Net below $0. Low gross: stored Gross below $11,000. A truck can appear in both categories. Counts are distinct physical trucks; allocation buckets 1/2/3 are excluded.",
+  }
 }
 
 export type Reconciliation = {
@@ -571,6 +646,7 @@ export function teamPerformance(
     if (!phys.length) continue
     const gross = sumStored(phys, (row) => row.g)
     const net = sumStored(phys, (row) => row.n)
+    const reasons = attentionReasons(teamRows)
     const rpmMetric = revenuePerMile(teamRows)
     const margin = gross === 0 ? null : net / gross
     const rpmStatus: TeamPerformanceRow["rpmStatus"] =
@@ -586,13 +662,11 @@ export function teamPerformance(
       margin,
       rpm: rpmMetric.value,
       rpmStatus,
-      negativeNetTrucks: negativeNetExceptions(teamRows).length,
-      lowGrossTrucks: lowGrossExceptions(teamRows).length,
+      negativeNetTrucks: reasons.negativeNetTrucks,
+      lowGrossTrucks: reasons.lowGrossTrucks,
+      distinctFlaggedTrucks: reasons.distinctFlaggedTrucks,
       productiveTrucks: productiveTrucks(teamRows).value ?? 0,
-      needsAttention:
-        net < 0 ||
-        negativeNetExceptions(teamRows).length > 0 ||
-        lowGrossExceptions(teamRows).length > 0,
+      needsAttention: reasons.needsAttention,
     })
   }
 
@@ -626,6 +700,7 @@ export function dispatchPerformance(
   for (const [dispatch, dispatchRows] of byDispatch) {
     const gross = sumStored(dispatchRows, (row) => row.g)
     const net = sumStored(dispatchRows, (row) => row.n)
+    const reasons = attentionReasons(dispatchRows)
     const rpmMetric = revenuePerMile(dispatchRows)
     const margin = gross === 0 ? null : net / gross
     result.push({
@@ -640,13 +715,11 @@ export function dispatchPerformance(
           : rpmMetric.value != null
             ? "check_data"
             : "unavailable",
-      negativeNetTrucks: negativeNetExceptions(dispatchRows).length,
-      lowGrossTrucks: lowGrossExceptions(dispatchRows).length,
+      negativeNetTrucks: reasons.negativeNetTrucks,
+      lowGrossTrucks: reasons.lowGrossTrucks,
+      distinctFlaggedTrucks: reasons.distinctFlaggedTrucks,
       productiveTrucks: productiveTrucks(dispatchRows).value ?? 0,
-      needsAttention:
-        net < 0 ||
-        negativeNetExceptions(dispatchRows).length > 0 ||
-        lowGrossExceptions(dispatchRows).length > 0,
+      needsAttention: reasons.needsAttention,
     })
   }
 

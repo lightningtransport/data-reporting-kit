@@ -5,10 +5,12 @@ import {
   accountingNet,
   allocationImpact,
   assessTruckRpm,
+  attentionReasons,
   buildGrossNetTrend,
   compareMetric,
   dispatchPerformance,
   filterRowsForPeriod,
+  formatWhyFlagged,
   isAllocationTruck,
   isPhysicalTruck,
   lensGross,
@@ -186,6 +188,32 @@ describe("exceptions", () => {
     assert.equal(low[0]?.truck, "102")
   })
 
+  it("counts a truck in both categories once in distinctFlagged", () => {
+    const rows = [
+      // Both negative-net and low-gross
+      row({ t: "101", pf: WEEK, o: "Carlos", g: 8000, n: -200 }),
+      // Low-gross only
+      row({ t: "102", pf: WEEK, o: "Jorge", g: 9000, n: 100 }),
+      // Negative-net only
+      row({ t: "103", pf: WEEK, o: "CDT", g: 12000, n: -50 }),
+      // Stable
+      row({ t: "104", pf: WEEK, o: "Carlos", g: 15000, n: 2000 }),
+    ]
+    const reasons = attentionReasons(rows)
+    assert.equal(reasons.negativeNetTrucks, 2)
+    assert.equal(reasons.lowGrossTrucks, 2)
+    assert.equal(reasons.distinctFlaggedTrucks, 3)
+    assert.equal(reasons.needsAttention, true)
+    assert.equal(reasons.urgency, "high")
+    assert.equal(reasons.negativeNetImpact, -250)
+
+    const why = formatWhyFlagged(reasons)
+    assert.match(why.primary, /2 negative-net trucks/)
+    assert.match(why.primary, /2 low-gross trucks/)
+    assert.doesNotMatch(why.primary, /2 \/ 2/)
+    assert.match(why.detail, /can appear in both/)
+  })
+
   it("lists return-date gaps by distinct truck", () => {
     const gaps = returnDateGaps([
       { truck: "101", returnDate: "" },
@@ -211,8 +239,21 @@ describe("team and dispatch performance", () => {
     assert.equal(teams[0]?.team, "Jorge")
     assert.equal(teams[0]?.needsAttention, true)
     assert.equal(teams[0]?.negativeNetTrucks, 1)
+    assert.equal(teams[0]?.distinctFlaggedTrucks, 1)
     const carlos = teams.find((t) => t.team === "Carlos")
     assert.equal(carlos?.gross, 12000)
+  })
+
+  it("uses distinct union for team flagged counts when a truck is in both", () => {
+    const rows = [
+      row({ t: "101", pf: WEEK, o: "Carlos", g: 8000, n: -100, m: 500 }),
+      row({ t: "102", pf: WEEK, o: "Carlos", g: 9000, n: 200, m: 500 }),
+    ]
+    const teams = teamPerformance(rows)
+    const carlos = teams.find((t) => t.team === "Carlos")
+    assert.equal(carlos?.negativeNetTrucks, 1)
+    assert.equal(carlos?.lowGrossTrucks, 2)
+    assert.equal(carlos?.distinctFlaggedTrucks, 2)
   })
 
   it("aggregates physical metrics by dispatch", () => {
@@ -226,6 +267,7 @@ describe("team and dispatch performance", () => {
     const g1 = groups.find((g) => g.team === "Group 1")
     assert.equal(g1?.productiveTrucks, 2)
     assert.equal(g1?.gross, 21000)
+    assert.equal(g1?.distinctFlaggedTrucks, 1)
   })
 })
 

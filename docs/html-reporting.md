@@ -75,10 +75,11 @@ Not established (do not display or approximate): Ninox “Full Week” / “No F
 ### Executive Overview (`/v2`)
 
 1. Separate read-only executive layer (not a replacement for Settlements or the operational Tabs). Do not redirect `/` to `/v2`.
-2. Controls: Operating/Accounting **View**, Week/Month grain, period (human label in chrome; ISO in URL), Team (owner), **Dispatch**, URL-backed focus/truck drawers.
-3. First-viewport decision surface: Net/margin + Gross + Productive trucks (or Allocation Impact in Accounting), interpretation strip, Gross bars + Net-margin % trend, Needs Attention rail, compact reconciliation, Physical team performance and Physical dispatch performance, progressive team/truck drawers, **Technical details**.
-4. Accounting view must not silently re-scope physical metrics; physical RPM/trucks stay under **Operating context**. RPM outliers use the documented Check-data trust band (exclude from aggregate RPM).
-5. Uses the same governed settlement/returns loaders and business rules as Settlements. Cross-source diesel MPG is omitted when settlement and fuel periods cannot be matched safely; settlement Fuel Expenses remain authoritative for settlement fuel spend.
+2. Controls: Operating/Accounting **View**, Week/Month grain, period (human label in chrome; ISO in URL), **Owner Team**, **Dispatch**, URL-backed focus / `focusdispatch` / truck drawers.
+3. First-viewport decision surface: Net/margin + Gross + Productive trucks (or Allocation Impact in Accounting), interpretation strip, Gross bars + Net-margin % trend, Needs Attention rail (financial only), Accounting reconciliation (compact disclosure when Operating + zero allocations + balanced), **Current population** line, Owner team performance and Dispatch performance (single-filter summary cards instead of one-row tables), Fuel performance (Store Date calendar month; Dispatch not applied), Fleet-wide data quality (returns; filters not applied), progressive drawers, **Technical details**.
+4. Why flagged uses distinct negative-net / low-gross reason labels (a truck can be in both; distinct union — never a raw `neg / low` fraction). Urgency: High = any negative-net; Medium = low-gross only.
+5. Accounting view must not silently re-scope physical metrics; physical RPM/trucks stay under **Operating context**. RPM outliers use the documented Check-data trust band (exclude from aggregate RPM).
+6. Uses the same governed settlement / returns / fuel loaders and business rules as Settlements and Diesel. Cross-source diesel MPG is omitted when settlement and fuel periods cannot be matched safely; settlement Fuel Expenses remain authoritative for settlement fuel spend. Deep links to `/`, `/trucks-return`, and `/diesel` for operational detail.
 
 ## Business-rule reminders that affect HTML
 

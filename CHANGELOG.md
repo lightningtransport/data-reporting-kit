@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.8.21 - 2026-09-17
+
+- Reporting dashboard **V2 Round 2**: Why flagged uses distinct negative-net / low-gross labels (never `2 / 4`); Needs Attention financial-only with Review actions; Dispatch Review drawer via `focusdispatch`; Current population summary; single Owner Team / Dispatch summary cards; compact Accounting adjustment when allocations are zero; Fuel performance from governed diesel trend (Dispatch not applied); Fleet-wide data quality for returns; Technical details source-filter map. Ops routes unchanged beyond deep links.
+
 ## 3.8.20 - 2026-09-17
 
 - Reporting dashboard **V2 corrective UX**: compact executive header; Operating/Accounting View segmented control with Accounting “Operating context”; 3 primary KPIs + interpretation strip; Needs Attention priority rail; Gross bars + Net-margin % trend (6/12) with table disclosure; compact reconciliation; Physical team + **dispatch** performance; team/truck drawers with exception filters; RPM Check-data trust band ($0.05–$15/mi; sparse-miles rule) with tests. Ops routes unchanged.
