@@ -2,6 +2,9 @@
 export const DIESEL_TREND_REVALIDATE_SECONDS = 180
 export const DIESEL_MONTH_REVALIDATE_SECONDS = 120
 
+/** Settlements + settlement-window fuel gallons (seconds). */
+export const SETTLEMENTS_REVALIDATE_SECONDS = 120
+
 /** Browser/CDN stale-while-revalidate window after s-maxage. */
 export const DIESEL_SWR_SECONDS = 300
 

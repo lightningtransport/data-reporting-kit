@@ -1,7 +1,13 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from "next"
 
 const nextConfig: NextConfig = {
-  /* config options here */
-};
+  experimental: {
+    // Reuse visited report RSC payloads briefly so tab switches feel instant.
+    staleTimes: {
+      dynamic: 60,
+      static: 180,
+    },
+  },
+}
 
-export default nextConfig;
+export default nextConfig
