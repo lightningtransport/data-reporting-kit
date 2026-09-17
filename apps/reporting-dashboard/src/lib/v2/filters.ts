@@ -12,6 +12,7 @@ export type V2SearchParams = {
   dispatch?: string
   lens?: string
   focus?: string
+  focusdispatch?: string
   truck?: string
   teamscope?: string
   truckfilter?: string
@@ -30,6 +31,7 @@ export type V2Filters = {
   dispatches: string[] // empty = all dispatches
   lens: ExecutiveLens
   focusTeam: string | null
+  focusDispatch: string | null
   focusTruck: string | null
   teamScope: TeamTableScope
   truckFilter: TruckDrawerFilter
@@ -97,6 +99,10 @@ export function resolveV2Filters(
     typeof params.focus === "string" && params.focus.trim()
       ? params.focus.trim()
       : null
+  const focusDispatch =
+    typeof params.focusdispatch === "string" && params.focusdispatch.trim()
+      ? params.focusdispatch.trim()
+      : null
   const focusTruck =
     typeof params.truck === "string" && params.truck.trim()
       ? params.truck.trim()
@@ -121,6 +127,7 @@ export function resolveV2Filters(
     dispatches,
     lens,
     focusTeam,
+    focusDispatch,
     focusTruck,
     teamScope,
     truckFilter,
@@ -147,6 +154,7 @@ export function v2Href(
     sp.set("dispatch", filters.dispatches.join("|"))
   }
   if (filters.focusTeam) sp.set("focus", filters.focusTeam)
+  if (filters.focusDispatch) sp.set("focusdispatch", filters.focusDispatch)
   if (filters.focusTruck) sp.set("truck", filters.focusTruck)
   if (filters.teamScope === "all") sp.set("teamscope", "all")
   if (filters.truckFilter && filters.truckFilter !== "negative_net") {

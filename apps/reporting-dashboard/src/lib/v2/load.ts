@@ -1,4 +1,5 @@
 import { getSettlementSummary } from "@/lib/data"
+import { getFuelTrend, type FuelTrendPayload } from "@/lib/fuel"
 import { getReturns, type ReturnsPayload } from "@/lib/returns"
 import type { SettlementPayload } from "@/lib/settlement"
 
@@ -17,9 +18,11 @@ export type V2SourceMeta = {
 export type V2DashboardData = {
   settlements: SettlementPayload
   returns: ReturnsPayload | null
+  fuelTrend: FuelTrendPayload | null
   sources: {
     settlements: V2SourceMeta
     returns: V2SourceMeta
+    fuel: V2SourceMeta
   }
 }
 
@@ -30,9 +33,10 @@ function freshnessLabel(raw: string | undefined): string {
 }
 
 export async function loadV2DashboardData(): Promise<V2DashboardData> {
-  const [settlementsResult, returnsResult] = await Promise.allSettled([
+  const [settlementsResult, returnsResult, fuelResult] = await Promise.allSettled([
     getSettlementSummary(),
     getReturns(),
+    getFuelTrend(),
   ])
 
   const settlements: SettlementPayload =
@@ -62,6 +66,9 @@ export async function loadV2DashboardData(): Promise<V2DashboardData> {
   const returns: ReturnsPayload | null =
     returnsResult.status === "fulfilled" ? returnsResult.value : null
 
+  const fuelTrend: FuelTrendPayload | null =
+    fuelResult.status === "fulfilled" ? fuelResult.value : null
+
   const settlementError =
     settlements.meta.error ||
     (settlementsResult.status === "rejected" ? "Settlements load failed" : undefined)
@@ -70,9 +77,14 @@ export async function loadV2DashboardData(): Promise<V2DashboardData> {
     returns?.meta.error ||
     (returnsResult.status === "rejected" ? "Returns load failed" : undefined)
 
+  const fuelError =
+    fuelTrend?.meta.error ||
+    (fuelResult.status === "rejected" ? "Fuel trend load failed" : undefined)
+
   return {
     settlements,
     returns,
+    fuelTrend,
     sources: {
       settlements: {
         name: "settlements",
@@ -101,6 +113,21 @@ export async function loadV2DashboardData(): Promise<V2DashboardData> {
         asOf: returns?.meta.as_of || "",
         freshness: freshnessLabel(returns?.meta.source_freshness),
         error: returnsError,
+      },
+      fuel: {
+        name: "fuel",
+        status: fuelError
+          ? "error"
+          : fuelTrend && fuelTrend.meta.fetched_count > 0
+            ? "ok"
+            : fuelTrend
+              ? "empty"
+              : "error",
+        rowCount: fuelTrend?.meta.fetched_count ?? 0,
+        paginationComplete: fuelTrend?.meta.pagination_complete ?? false,
+        asOf: fuelTrend?.meta.as_of || "",
+        freshness: freshnessLabel(fuelTrend?.meta.source_freshness),
+        error: fuelError,
       },
     },
   }

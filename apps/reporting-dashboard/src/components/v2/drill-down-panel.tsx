@@ -87,6 +87,7 @@ function RpmCell({
 export function TeamDrillDownPanel({
   open,
   team,
+  entityKind = "owner",
   metrics,
   trucks,
   truckFilter,
@@ -95,11 +96,13 @@ export function TeamDrillDownPanel({
   netComparison,
   periodLabel,
   viewLabel,
+  filterContext,
   onClose,
   onSelectTruck,
 }: {
   open: boolean
   team: string | null
+  entityKind?: "owner" | "dispatch"
   metrics: TeamPerformanceRow | null
   trucks: TruckAggregate[]
   truckFilter: TruckDrawerFilter
@@ -108,18 +111,27 @@ export function TeamDrillDownPanel({
   netComparison: PeriodComparison
   periodLabel: string
   viewLabel: string
+  filterContext?: string
   onClose: () => void
   onSelectTruck: (truck: string, trigger?: HTMLElement) => void
 }) {
   const titleId = useId()
   const descriptionId = useId()
   const headingRef = useRef<HTMLHeadingElement>(null)
+  const entityTitle =
+    entityKind === "dispatch"
+      ? `Dispatch ${team ?? ""}`.trim()
+      : (team ?? "Owner Team")
+  const whyHeading =
+    entityKind === "dispatch"
+      ? "Why this dispatch needs attention"
+      : "Why this owner team needs attention"
 
   useEffect(() => {
     if (!open) return
     const id = window.setTimeout(() => headingRef.current?.focus(), 0)
     return () => window.clearTimeout(id)
-  }, [open, team])
+  }, [open, team, entityKind])
 
   const filtered =
     truckFilter === "all"
@@ -134,9 +146,13 @@ export function TeamDrillDownPanel({
       why.push(`${metrics.negativeNetTrucks} negative-net trucks`)
     }
     if (metrics.lowGrossTrucks > 0) {
-      why.push(`${metrics.lowGrossTrucks} trucks below gross threshold`)
+      why.push(`${metrics.lowGrossTrucks} trucks below Gross threshold`)
     }
-    if (metrics.net < 0) why.push("Team Net is negative")
+    if (metrics.distinctFlaggedTrucks > 0) {
+      why.push(
+        `${metrics.distinctFlaggedTrucks} distinct flagged trucks (union; not a sum)`
+      )
+    }
   }
 
   return (
@@ -159,10 +175,11 @@ export function TeamDrillDownPanel({
             tabIndex={-1}
             className="outline-none focus-visible:ring-ring rounded-sm focus-visible:ring-2"
           >
-            {team ?? "Team"}
+            {entityTitle}
           </DialogTitle>
           <DialogDescription id={descriptionId}>
-            {periodLabel} · {viewLabel}. Physical team performance. Escape
+            {periodLabel}
+            {filterContext ? ` · ${filterContext}` : ""} · {viewLabel}. Escape
             closes.
           </DialogDescription>
         </DialogHeader>
@@ -184,9 +201,11 @@ export function TeamDrillDownPanel({
                   </p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground text-xs">Neg. trucks</p>
+                  <p className="text-muted-foreground text-xs">
+                    Productive trucks
+                  </p>
                   <p className="text-lg tabular-nums font-semibold">
-                    {metrics.negativeNetTrucks}
+                    {metrics.productiveTrucks}
                   </p>
                 </div>
               </div>
@@ -195,9 +214,9 @@ export function TeamDrillDownPanel({
                 netComparison={netComparison}
               />
 
-              <section aria-labelledby="team-why">
-                <h3 id="team-why" className="text-sm font-semibold">
-                  Why this team needs attention
+              <section aria-labelledby="entity-why">
+                <h3 id="entity-why" className="text-sm font-semibold">
+                  {whyHeading}
                 </h3>
                 {why.length ? (
                   <ul className="mt-1 list-disc space-y-0.5 pl-5 text-sm">
@@ -207,9 +226,13 @@ export function TeamDrillDownPanel({
                   </ul>
                 ) : (
                   <p className="text-muted-foreground mt-1 text-sm">
-                    No exception flags for this team in the selected period.
+                    No exception flags for this selection.
                   </p>
                 )}
+                <p className="text-muted-foreground mt-2 text-xs">
+                  Negative net: stored Net below $0. Low gross: stored Gross
+                  below $11,000. A truck can appear in both categories.
+                </p>
               </section>
 
               <div
@@ -219,9 +242,12 @@ export function TeamDrillDownPanel({
               >
                 {(
                   [
-                    ["negative_net", `Negative net`],
-                    ["low_gross", `Low gross`],
-                    ["all", `All ${trucks.length} trucks`],
+                    [
+                      "negative_net",
+                      `Negative net (${metrics.negativeNetTrucks})`,
+                    ],
+                    ["low_gross", `Low gross (${metrics.lowGrossTrucks})`],
+                    ["all", `All trucks (${trucks.length})`],
                   ] as const
                 ).map(([value, label]) => (
                   <button
@@ -247,6 +273,9 @@ export function TeamDrillDownPanel({
                   <TableHeader className="bg-background sticky top-0 z-10">
                     <TableRow>
                       <TableHead>Truck</TableHead>
+                      {entityKind === "dispatch" ? (
+                        <TableHead>Owner Team</TableHead>
+                      ) : null}
                       <TableHead className="text-right">Net</TableHead>
                       <TableHead className="text-right">Gross</TableHead>
                       <TableHead className="text-right">RPM</TableHead>
@@ -260,7 +289,7 @@ export function TeamDrillDownPanel({
                     {filtered.length === 0 ? (
                       <TableRow>
                         <TableCell
-                          colSpan={6}
+                          colSpan={entityKind === "dispatch" ? 7 : 6}
                           className="text-muted-foreground text-sm"
                         >
                           No trucks in this filter.
@@ -272,6 +301,11 @@ export function TeamDrillDownPanel({
                           <TableCell className="font-medium tabular-nums">
                             {truck.truck}
                           </TableCell>
+                          {entityKind === "dispatch" ? (
+                            <TableCell className="text-xs">
+                              {truck.owner || "—"}
+                            </TableCell>
+                          ) : null}
                           <TableCell className="text-right tabular-nums">
                             {money(truck.net)}
                           </TableCell>
@@ -322,7 +356,7 @@ export function TeamDrillDownPanel({
             </>
           ) : (
             <p className="text-muted-foreground text-sm">
-              Team metrics unavailable for this selection.
+              Metrics unavailable for this selection.
             </p>
           )}
         </div>
@@ -392,7 +426,7 @@ export function TruckDrillDownPanel({
               className="text-muted-foreground hover:text-foreground text-xs font-medium"
               onClick={onBack}
             >
-              ← Back to team
+              ← Back
             </button>
           </div>
           <DialogTitle
@@ -406,7 +440,7 @@ export function TruckDrillDownPanel({
           <DialogDescription id={descriptionId}>
             {periodLabel}
             {aggregate
-              ? ` · Team ${aggregate.owner}${aggregate.dispatch ? ` · Dispatch ${aggregate.dispatch}` : ""}`
+              ? ` · Owner Team ${aggregate.owner}${aggregate.dispatch ? ` · Dispatch ${aggregate.dispatch}` : ""}`
               : ""}
             . Escape closes.
           </DialogDescription>
@@ -527,7 +561,7 @@ export function TruckDrillDownPanel({
             className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
             onClick={onBack}
           >
-            Back to team
+            Back
           </button>
           <Link
             href={truck ? `/?truck=${encodeURIComponent(truck)}` : "/"}
