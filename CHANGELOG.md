@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.8.22 - 2026-09-17
+
+- V2 Performance trend tooltip: one card per period (Gross, Net, Net margin %); stop duplicating the period and mis-formatting margin as money ($0 Gross).
+
 ## 3.8.21 - 2026-09-17
 
 - Reporting dashboard **V2 Round 2**: Why flagged uses distinct negative-net / low-gross labels (never `2 / 4`); Needs Attention financial-only with Review actions; Dispatch Review drawer via `focusdispatch`; Current population summary; single Owner Team / Dispatch summary cards; compact Accounting adjustment when allocations are zero; Fuel performance from governed diesel trend (Dispatch not applied); Fleet-wide data quality for returns; Technical details source-filter map. Ops routes unchanged beyond deep links.
