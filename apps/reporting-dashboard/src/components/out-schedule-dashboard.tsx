@@ -32,12 +32,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import type { OutSchedulePayload, OutScheduleRow } from "@/lib/out-schedule"
-
-function formatOutDate(iso: string): string {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso || "—"
-  const [, month, day] = iso.split("-")
-  return `${month}/${day}/${iso.slice(0, 4)}`
-}
+import { formatOpsDate } from "@/lib/ops-table"
 
 function toCsv(rows: OutScheduleRow[]): string {
   const headers = [
@@ -262,7 +257,7 @@ export function OutScheduleDashboard({ data }: { data: OutSchedulePayload }) {
                         )}
                       </TableCell>
                       <TableCell className="font-mono tabular-nums">
-                        {formatOutDate(row.outDate)}
+                        {formatOpsDate(row.outDate)}
                       </TableCell>
                       <TableCell>{row.day || "—"}</TableCell>
                       <TableCell className="max-w-72 truncate uppercase">

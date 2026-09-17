@@ -51,13 +51,13 @@ Not established (do not display or approximate): Ninox “Full Week” / “No F
 
 ### Out Schedule (`/out-schedule`)
 
-1. Table of live Schedule_Teams rows from the documented share: Truck, Out Date, Day (derived), Team, Owner, Dispatch, Flatbed, Solo.
+1. Table of live Schedule_Teams rows from the documented share: Truck, Out Date, Day (derived), Team, Owner, Dispatch, Flatbed, Solo. Shared left-to-right spine with Trucks Return (Truck → event date → Day → who → report-only columns).
 2. Light filters (truck/team search, owner, dispatch), Export CSV, row count, **Technical details**.
 3. Do not substitute DriverPay history when the Ninox share fails; show an explicit error state. Insurance / Team Status / Truck Status / Notes are not in this share.
 
 ### Trucks Return (`/trucks-return`)
 
-1. Table of current `returns` rows: Truck, Insurance, Driver Name, Return Date (never Phone/CDL).
+1. Table of current `returns` rows: Truck, Return Date, Day (derived), Driver Name, Insurance (never Phone/CDL). Shared left-to-right spine with Out Schedule (Truck → event date → Day → who → report-only columns).
 2. Light filters, distinct-truck count, **Technical details**.
 3. Driver-row grain: teams usually produce two rows per truck.
 

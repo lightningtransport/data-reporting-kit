@@ -30,6 +30,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import type { ReturnsPayload } from "@/lib/returns"
+import { formatOpsDate, weekdayFromIso } from "@/lib/ops-table"
 
 function insuranceBadgeClass(insurance: string): string {
   const code = insurance.trim().toUpperCase()
@@ -37,13 +38,6 @@ function insuranceBadgeClass(insurance: string): string {
   if (code === "LTL") return "border-lime-300 bg-lime-100 text-lime-950"
   if (code === "CDT") return "border-slate-400 bg-slate-800 text-white"
   return ""
-}
-
-function formatReturnDate(iso: string): string {
-  if (!iso) return "No date"
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso
-  const [, month, day] = iso.split("-")
-  return `${month}/${day}/${iso.slice(0, 4)}`
 }
 
 export function TrucksReturnDashboard({ data }: { data: ReturnsPayload }) {
@@ -184,42 +178,49 @@ export function TrucksReturnDashboard({ data }: { data: ReturnsPayload }) {
               <TableHeader>
                 <TableRow>
                   <TableHead>Truck</TableHead>
-                  <TableHead>Insurance</TableHead>
-                  <TableHead>Driver Name</TableHead>
                   <TableHead>Return Date</TableHead>
+                  <TableHead>Day</TableHead>
+                  <TableHead>Driver Name</TableHead>
+                  <TableHead>Insurance</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-muted-foreground">
+                    <TableCell colSpan={5} className="text-muted-foreground">
                       No rows
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filtered.map((row) => (
-                    <TableRow key={`${row.id}-${row.truck}-${row.driverName}`}>
-                      <TableCell>
-                        <Badge variant="secondary">{row.truck}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        {row.insurance ? (
-                          <Badge
-                            variant="outline"
-                            className={insuranceBadgeClass(row.insurance)}
-                          >
-                            {row.insurance}
-                          </Badge>
-                        ) : (
-                          "—"
-                        )}
-                      </TableCell>
-                      <TableCell className="uppercase">{row.driverName || "—"}</TableCell>
-                      <TableCell className="font-mono tabular-nums">
-                        {formatReturnDate(row.returnDate)}
-                      </TableCell>
-                    </TableRow>
-                  ))
+                  filtered.map((row) => {
+                    const day = weekdayFromIso(row.returnDate)
+                    return (
+                      <TableRow key={`${row.id}-${row.truck}-${row.driverName}`}>
+                        <TableCell>
+                          <Badge variant="secondary">{row.truck}</Badge>
+                        </TableCell>
+                        <TableCell className="font-mono tabular-nums">
+                          {formatOpsDate(row.returnDate)}
+                        </TableCell>
+                        <TableCell>{day || "—"}</TableCell>
+                        <TableCell className="uppercase">
+                          {row.driverName || "—"}
+                        </TableCell>
+                        <TableCell>
+                          {row.insurance ? (
+                            <Badge
+                              variant="outline"
+                              className={insuranceBadgeClass(row.insurance)}
+                            >
+                              {row.insurance}
+                            </Badge>
+                          ) : (
+                            "—"
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })
                 )}
               </TableBody>
             </Table>
