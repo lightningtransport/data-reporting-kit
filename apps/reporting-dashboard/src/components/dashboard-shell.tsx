@@ -31,26 +31,26 @@ const VIEWS: Array<{
   {
     id: "liquidaciones",
     href: "/",
-    label: "Liquidaciones",
-    description: "Resumen semanal / mensual",
+    label: "Settlements",
+    description: "Weekly / monthly summary",
   },
   {
     id: "out-schedule",
     href: "/out-schedule",
     label: "Out Schedule",
-    description: "Salidas planificadas",
+    description: "Planned departures",
   },
   {
     id: "trucks-return",
     href: "/trucks-return",
     label: "Trucks Return",
-    description: "Retornos esperados",
+    description: "Expected returns",
   },
   {
     id: "diesel",
     href: "/diesel",
     label: "Diesel",
-    description: "Combustible por mes / owner",
+    description: "Fuel by month and owner",
   },
 ]
 
@@ -88,7 +88,7 @@ function viewFromPath(pathname: string): DashboardView {
 
 export function DashboardShell({
   title,
-  eyebrow = "Operaciones",
+  eyebrow = "Operations",
   subtitle,
   live = true,
   actions,
@@ -110,7 +110,7 @@ export function DashboardShell({
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 md:px-6 md:py-8">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
         <div className="flex items-center gap-3">
-          <Link href="/" className="shrink-0" aria-label="Ir a Liquidaciones">
+          <Link href="/" className="shrink-0" aria-label="Go to Settlements">
             <LightningLogo />
           </Link>
           <div className="border-l border-border pl-3">
@@ -122,7 +122,7 @@ export function DashboardShell({
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {subtitle ? <div className="text-muted-foreground text-sm">{subtitle}</div> : null}
-          {live ? null : <Badge variant="secondary">Copia</Badge>}
+          {live ? null : <Badge variant="secondary">Snapshot</Badge>}
           {actions}
           <DropdownMenu>
             <DropdownMenuTrigger
@@ -134,7 +134,7 @@ export function DashboardShell({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="min-w-56">
               <DropdownMenuGroup>
-                <DropdownMenuLabel>Vistas</DropdownMenuLabel>
+                <DropdownMenuLabel>Views</DropdownMenuLabel>
                 {VIEWS.map((view) => (
                   <DropdownMenuItem
                     key={view.id}

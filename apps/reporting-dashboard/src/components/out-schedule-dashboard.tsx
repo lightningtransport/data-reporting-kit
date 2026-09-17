@@ -93,14 +93,14 @@ export function OutScheduleDashboard({ data }: { data: OutSchedulePayload }) {
 
   const ownerItems = useMemo(
     () => [
-      { value: "all", label: "Todos" },
+      { value: "all", label: "All" },
       ...owners.map((value) => ({ value, label: value })),
     ],
     [owners]
   )
   const dispatchItems = useMemo(
     () => [
-      { value: "all", label: "Todos" },
+      { value: "all", label: "All" },
       ...dispatches.map((value) => ({ value, label: value })),
     ],
     [dispatches]
@@ -140,7 +140,7 @@ export function OutScheduleDashboard({ data }: { data: OutSchedulePayload }) {
   return (
     <DashboardShell
       title="Out Schedule"
-      subtitle={`${filtered.length} filas · ${distinctTrucks} camiones`}
+      subtitle={`${filtered.length} rows · ${distinctTrucks} trucks`}
       live={Boolean(data.meta.live)}
       actions={
         <Button variant="outline" size="sm" onClick={exportCsv} disabled={filtered.length === 0}>
@@ -152,9 +152,9 @@ export function OutScheduleDashboard({ data }: { data: OutSchedulePayload }) {
       {data.meta.error ? (
         <Card>
           <CardHeader>
-            <CardTitle>No se pudo cargar Out Schedule</CardTitle>
+            <CardTitle>Couldn't load Out Schedule</CardTitle>
             <CardDescription>
-              El share live de Schedule_Teams no respondió. No se sustituye con DriverPay.
+              The live Schedule_Teams share did not respond. DriverPay is not used as a fallback.
             </CardDescription>
           </CardHeader>
           <CardContent className="text-muted-foreground text-sm">{data.meta.error}</CardContent>
@@ -165,11 +165,11 @@ export function OutScheduleDashboard({ data }: { data: OutSchedulePayload }) {
         <CardContent className="pt-(--card-spacing)">
           <FieldGroup className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <Field>
-              <FieldLabel>Camión / equipo</FieldLabel>
+              <FieldLabel>Truck / team</FieldLabel>
               <Input
                 value={truckQuery}
                 onChange={(event) => setTruckQuery(event.target.value)}
-                placeholder="Buscar"
+                placeholder="Search"
               />
             </Field>
             <Field>
@@ -224,9 +224,9 @@ export function OutScheduleDashboard({ data }: { data: OutSchedulePayload }) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Salidas planificadas</CardTitle>
+          <CardTitle>Planned departures</CardTitle>
           <CardDescription>
-            Fuente live Ninox Schedule_Teams · orden Out Date
+            Live Ninox Schedule_Teams · sorted by Out Date
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -248,7 +248,7 @@ export function OutScheduleDashboard({ data }: { data: OutSchedulePayload }) {
                 {filtered.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={8} className="text-muted-foreground">
-                      Sin filas
+                      No rows
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -283,9 +283,9 @@ export function OutScheduleDashboard({ data }: { data: OutSchedulePayload }) {
       </Card>
 
       <footer className="text-muted-foreground flex flex-col gap-2 text-sm">
-        <p>Salidas planificadas (Schedule_Teams). No es historial DriverPay.</p>
+        <p>Planned departures (Schedule_Teams). Not DriverPay history.</p>
         <details>
-          <summary className="cursor-pointer text-foreground">Datos técnicos</summary>
+          <summary className="cursor-pointer text-foreground">Technical details</summary>
           <div className="mt-3 flex flex-col gap-2">
             <p>
               Dataset: <strong>{data.meta.dataset}</strong> · total_count=
@@ -295,9 +295,9 @@ export function OutScheduleDashboard({ data }: { data: OutSchedulePayload }) {
               <strong>{String(Boolean(data.meta.live))}</strong>.
             </p>
             <p>
-              Filtros UI: search=&quot;{truckQuery}&quot;, owner=
+              UI filters: search=&quot;{truckQuery}&quot;, owner=
               <strong>{owner}</strong>, dispatch=<strong>{dispatch}</strong> ·
-              selección=<strong>{filtered.length}</strong> filas · distinct trucks=
+              selection=<strong>{filtered.length}</strong> rows · distinct trucks=
               <strong>{distinctTrucks}</strong>.
             </p>
             <p>
@@ -305,10 +305,10 @@ export function OutScheduleDashboard({ data }: { data: OutSchedulePayload }) {
               <strong>{data.meta.source_freshness}</strong>.
             </p>
             <p>
-              Caveats: el share canónico expone Truck, Out Date, Team, Flatbed,
-              Driver 1, solo, Owner, Dispatch. Day se deriva de Out Date. Insurance /
-              Team Status / Truck Status / Notes no están en este share. No sustituir
-              con DriverPay. as_of es hora de request.
+              Caveats: the canonical share exposes Truck, Out Date, Team, Flatbed,
+              Driver 1, solo, Owner, Dispatch. Day is derived from Out Date. Insurance /
+              Team Status / Truck Status / Notes are not on this share. Do not substitute
+              DriverPay. as_of is request time.
             </p>
           </div>
         </details>

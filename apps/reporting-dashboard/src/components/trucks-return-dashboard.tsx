@@ -40,7 +40,7 @@ function insuranceBadgeClass(insurance: string): string {
 }
 
 function formatReturnDate(iso: string): string {
-  if (!iso) return "Sin fecha"
+  if (!iso) return "No date"
   if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso
   const [, month, day] = iso.split("-")
   return `${month}/${day}/${iso.slice(0, 4)}`
@@ -60,16 +60,16 @@ export function TrucksReturnDashboard({ data }: { data: ReturnsPayload }) {
 
   const insuranceItems = useMemo(
     () => [
-      { value: "all", label: "Todas" },
+      { value: "all", label: "All" },
       ...insurers.map((value) => ({ value, label: value })),
     ],
     [insurers]
   )
   const datedItems = useMemo(
     () => [
-      { value: "all", label: "Todas" },
-      { value: "dated", label: "Con fecha" },
-      { value: "undated", label: "Sin fecha" },
+      { value: "all", label: "All" },
+      { value: "dated", label: "Has date" },
+      { value: "undated", label: "No date" },
     ],
     []
   )
@@ -95,15 +95,15 @@ export function TrucksReturnDashboard({ data }: { data: ReturnsPayload }) {
   return (
     <DashboardShell
       title="Trucks Return"
-      subtitle={`${filtered.length} filas · ${distinctTrucks} camiones`}
+      subtitle={`${filtered.length} rows · ${distinctTrucks} trucks`}
       live={Boolean(data.meta.live)}
     >
       {data.meta.error ? (
         <Card>
           <CardHeader>
-            <CardTitle>No se pudo cargar Trucks Return</CardTitle>
+            <CardTitle>Couldn't load Trucks Return</CardTitle>
             <CardDescription>
-              Requiere AGENT_REPORTING_KEY server-only para el reporte returns.
+              Requires a server-only AGENT_REPORTING_KEY for the returns report.
             </CardDescription>
           </CardHeader>
           <CardContent className="text-muted-foreground text-sm">{data.meta.error}</CardContent>
@@ -114,11 +114,11 @@ export function TrucksReturnDashboard({ data }: { data: ReturnsPayload }) {
         <CardContent className="pt-(--card-spacing)">
           <FieldGroup className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <Field>
-              <FieldLabel>Camión / conductor</FieldLabel>
+              <FieldLabel>Truck / driver</FieldLabel>
               <Input
                 value={truckQuery}
                 onChange={(event) => setTruckQuery(event.target.value)}
-                placeholder="Buscar"
+                placeholder="Search"
               />
             </Field>
             <Field>
@@ -173,9 +173,9 @@ export function TrucksReturnDashboard({ data }: { data: ReturnsPayload }) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Retornos esperados</CardTitle>
+          <CardTitle>Expected returns</CardTitle>
           <CardDescription>
-            Reporte returns · grano conductor (equipos = 2 filas por camión)
+            returns report · driver-row grain (teams usually = 2 rows per truck)
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -193,7 +193,7 @@ export function TrucksReturnDashboard({ data }: { data: ReturnsPayload }) {
                 {filtered.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={4} className="text-muted-foreground">
-                      Sin filas
+                      No rows
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -225,15 +225,15 @@ export function TrucksReturnDashboard({ data }: { data: ReturnsPayload }) {
             </Table>
           </div>
           <p className="text-muted-foreground mt-3 text-sm">
-            #{filtered.length} filas · {distinctTrucks} camiones distintos
+            #{filtered.length} rows · {distinctTrucks} distinct trucks
           </p>
         </CardContent>
       </Card>
 
       <footer className="text-muted-foreground flex flex-col gap-2 text-sm">
-        <p>Lista actual de retornos esperados (returns). Phone y CDL no se muestran.</p>
+        <p>Current expected returns list. Phone and CDL are not shown.</p>
         <details>
-          <summary className="cursor-pointer text-foreground">Datos técnicos</summary>
+          <summary className="cursor-pointer text-foreground">Technical details</summary>
           <div className="mt-3 flex flex-col gap-2">
             <p>
               Dataset: <strong>{data.meta.dataset}</strong> · total_count=
@@ -244,9 +244,9 @@ export function TrucksReturnDashboard({ data }: { data: ReturnsPayload }) {
               (fuente)=<strong>{data.meta.distinct_trucks}</strong>.
             </p>
             <p>
-              Filtros UI: search=&quot;{truckQuery}&quot;, insurance=
+              UI filters: search=&quot;{truckQuery}&quot;, insurance=
               <strong>{insurance}</strong>, return_date=<strong>{datedOnly}</strong> ·
-              selección=<strong>{filtered.length}</strong> filas · distinct trucks=
+              selection=<strong>{filtered.length}</strong> rows · distinct trucks=
               <strong>{distinctTrucks}</strong>.
             </p>
             <p>
@@ -254,11 +254,11 @@ export function TrucksReturnDashboard({ data }: { data: ReturnsPayload }) {
               <strong>{data.meta.source_freshness}</strong>.
             </p>
             <p>
-              Caveats: grano driver-row (equipos suelen tener dos filas). Contar
-              distinct Truck para totales de camión. Return Date null = sin fecha
-              almacenada. Phone Number y CDL son sensibles y no se solicitan. No
-              usar Ninox_ID ni nombre como sustituto de CDL. as_of es hora de
-              request, no sync Ninox.
+              Caveats: driver-row grain (teams usually have two rows). Count
+              distinct Truck for truck totals. Null Return Date = no stored date.
+              Phone Number and CDL are sensitive and are not requested. Do not use
+              Ninox_ID or a name as a CDL substitute. as_of is request time, not a
+              Ninox sync stamp.
             </p>
           </div>
         </details>

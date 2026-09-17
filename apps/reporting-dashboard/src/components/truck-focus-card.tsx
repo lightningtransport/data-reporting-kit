@@ -29,11 +29,11 @@ export function TruckFocusCard({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Camión {needle}</CardTitle>
+          <CardTitle>Truck {needle}</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground text-sm">
-            No hay liquidación de este camión en este periodo.
+            No settlement for this truck in the selected period.
           </p>
         </CardContent>
       </Card>
@@ -49,22 +49,22 @@ export function TruckFocusCard({
         return (
           <Card key={truck.t}>
             <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
-              <CardTitle>Camión {truck.t}</CardTitle>
+              <CardTitle>Truck {truck.t}</CardTitle>
               <div className="flex flex-wrap gap-2">
                 <Badge variant="secondary">{truck.o}</Badge>
                 {truck.np || NON_PHYSICAL.has(truck.t) ? (
-                  <Badge variant="outline">No físico</Badge>
+                  <Badge variant="outline">Non-physical</Badge>
                 ) : null}
               </div>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
               <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 <Stat label="Gross" value={moneyExact(truck.g)} />
-                <Stat label="Gastos" value={moneyExact(truck.e)} />
+                <Stat label="Expenses" value={moneyExact(truck.e)} />
                 <Stat label="Net" value={moneyExact(truck.n)} />
-                <Stat label="Combustible" value={moneyExact(truck.f)} />
-                <Stat label="Millas" value={num(truck.m)} />
-                <Stat label="Pago" value={moneyExact(truck.dp)} />
+                <Stat label="Fuel" value={moneyExact(truck.f)} />
+                <Stat label="Miles" value={num(truck.m)} />
+                <Stat label="Driver pay" value={moneyExact(truck.dp)} />
               </dl>
               <ul className="text-muted-foreground text-sm">
                 {weeks.map((row) => (
@@ -80,7 +80,7 @@ export function TruckFocusCard({
       })}
       {trucks.length > shown.length ? (
         <p className="text-muted-foreground text-sm">
-          {trucks.length - shown.length} camiones más coinciden. Afina el número.
+          {trucks.length - shown.length} more trucks match. Narrow the search.
         </p>
       ) : null}
     </div>

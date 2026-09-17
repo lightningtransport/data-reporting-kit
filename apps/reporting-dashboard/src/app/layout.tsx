@@ -16,13 +16,13 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Lightning Reporting | Lightning Transportation",
   description:
-    "Liquidaciones, Out Schedule, Trucks Return y Diesel — Lightning Transportation.",
+    "Settlements, Out Schedule, Trucks Return, and Diesel — Lightning Transportation.",
 }
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
-      lang="es"
+      lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       style={{ colorScheme: "light" }}
     >
