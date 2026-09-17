@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.8.18 - 2026-09-17
+
+- Reporting dashboard **V2 Executive Overview** at `/v2` (Preview): Operating Fleet vs Accounting Total lenses, KPI strip, Attention Now, 12-month Gross/Net trend, Operating vs Accounting reconciliation (allocation buckets 1/2/3), Team Performance with URL-backed team/truck drill-down panels, operational-report links, and Technical details. Leaves `/`, `/out-schedule`, `/trucks-return`, and `/diesel` unchanged.
+
 ## 3.8.17 - 2026-09-17
 
 - Reporting dashboard primary Tabs: equal 4-column strip with no nested horizontal scroll; height auto so wrapped labels are not cropped; ≥44px tap targets on mobile.
