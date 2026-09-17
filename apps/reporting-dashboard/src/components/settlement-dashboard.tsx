@@ -338,13 +338,14 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
         isCopy={!data.meta.live}
       />
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7">
         <KpiCard label="Gross" value={money(agg.kpi.gross)} />
         <KpiCard label="Expenses" value={money(agg.kpi.exp)} />
         <KpiCard label="Net" value={money(agg.kpi.net)} />
+        <KpiCard label="Fuel" value={money(agg.kpi.fuel)} />
         <KpiCard
-          label="Fuel"
-          value={`${money(agg.kpi.fuel)}${fuelPct ? ` · ${pct(fuelPct)}` : ""}`}
+          label="Fuel / expenses"
+          value={fuelPct ? pct(fuelPct) : "—"}
         />
         <KpiCard label="Trucks" value={String(agg.kpi.phys)} />
         <KpiCard label="Miles" value={num(agg.kpi.miles)} />
@@ -354,33 +355,83 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
         <Card>
           <CardHeader>
             <CardTitle>Gross and Net by week</CardTitle>
+            <CardDescription>
+              Settlement weeks Tue–Mon · stored Gross and Net · full history in
+              selection
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <WeeklyTrendChart data={trendWeekly} />
+            {trendWeekly.length === 0 ||
+            trendWeekly.every((point) => point.gross === 0 && point.net === 0) ? (
+              <Empty className="border-0 py-8">
+                <EmptyHeader>
+                  <EmptyTitle>No weekly totals in this selection</EmptyTitle>
+                </EmptyHeader>
+              </Empty>
+            ) : (
+              <WeeklyTrendChart data={trendWeekly} />
+            )}
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
             <CardTitle>Gross and Net by month</CardTitle>
+            <CardDescription>
+              Sum of settlement weeks in each calendar month · stored Gross and
+              Net
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <MonthlyTrendChart data={trendMonthly} />
+            {trendMonthly.length === 0 ||
+            trendMonthly.every((point) => point.gross === 0 && point.net === 0) ? (
+              <Empty className="border-0 py-8">
+                <EmptyHeader>
+                  <EmptyTitle>No monthly totals in this selection</EmptyTitle>
+                </EmptyHeader>
+              </Empty>
+            ) : (
+              <MonthlyTrendChart data={trendMonthly} />
+            )}
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
             <CardTitle>Fuel by team</CardTitle>
+            <CardDescription>
+              Stored Fuel Expenses by historical owner in the focus period
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <FuelOwnerChart data={fuelChart} />
+            {fuelChart.length === 0 ||
+            fuelChart.every((point) => point.fuel === 0) ? (
+              <Empty className="border-0 py-8">
+                <EmptyHeader>
+                  <EmptyTitle>No fuel expenses in this selection</EmptyTitle>
+                </EmptyHeader>
+              </Empty>
+            ) : (
+              <FuelOwnerChart data={fuelChart} />
+            )}
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
             <CardTitle>Fuel vs expenses</CardTitle>
+            <CardDescription>
+              Fuel ÷ Total Expenses by team when expenses &gt; 0 (stored fields)
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <FuelPctChart data={fuelPctChart} />
+            {fuelPctChart.length === 0 ||
+            fuelPctChart.every((point) => point.pct === 0) ? (
+              <Empty className="border-0 py-8">
+                <EmptyHeader>
+                  <EmptyTitle>No fuel ratio in this selection</EmptyTitle>
+                </EmptyHeader>
+              </Empty>
+            ) : (
+              <FuelPctChart data={fuelPctChart} />
+            )}
           </CardContent>
         </Card>
       </div>

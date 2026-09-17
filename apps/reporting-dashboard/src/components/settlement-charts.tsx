@@ -18,11 +18,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart"
-
-const moneyTick = (value: number) =>
-  Math.abs(value) >= 1_000_000
-    ? `$${(value / 1_000_000).toFixed(1)}M`
-    : `$${(value / 1000).toFixed(0)}k`
+import { money, moneyTick, pctPoints } from "@/lib/format"
 
 const trendConfig = {
   gross: { label: "Gross", color: "var(--chart-1)" },
@@ -36,6 +32,42 @@ const fuelConfig = {
 
 const chartMargin = { left: 4, right: 4, top: 4, bottom: 4 }
 
+function moneyTooltip(
+  value: number | string | ReadonlyArray<number | string> | undefined,
+  name: number | string | undefined
+) {
+  const n = typeof value === "number" ? value : Number(value)
+  const labels: Record<string, string> = {
+    gross: "Gross",
+    net: "Net",
+    fuel: "Fuel",
+  }
+  const key = String(name ?? "")
+  return (
+    <div className="flex w-full items-center justify-between gap-4">
+      <span className="text-muted-foreground">{labels[key] ?? key}</span>
+      <span className="font-mono font-medium tabular-nums">
+        {Number.isFinite(n) ? money(n) : "—"}
+      </span>
+    </div>
+  )
+}
+
+function pctTooltip(
+  value: number | string | ReadonlyArray<number | string> | undefined,
+  name: number | string | undefined
+) {
+  const n = typeof value === "number" ? value : Number(value)
+  return (
+    <div className="flex w-full items-center justify-between gap-4">
+      <span className="text-muted-foreground">% fuel / expenses</span>
+      <span className="font-mono font-medium tabular-nums">
+        {Number.isFinite(n) ? pctPoints(n) : "—"}
+      </span>
+    </div>
+  )
+}
+
 export function WeeklyTrendChart({
   data,
 }: {
@@ -45,9 +77,22 @@ export function WeeklyTrendChart({
     <ChartContainer config={trendConfig} className="aspect-auto h-52 md:h-72">
       <LineChart data={data} margin={chartMargin}>
         <CartesianGrid vertical={false} />
-        <XAxis dataKey="label" tickLine={false} axisLine={false} />
-        <YAxis tickLine={false} axisLine={false} tickFormatter={moneyTick} width={48} />
-        <ChartTooltip content={<ChartTooltipContent />} />
+        <XAxis
+          dataKey="label"
+          tickLine={false}
+          axisLine={false}
+          minTickGap={28}
+          interval="preserveStartEnd"
+        />
+        <YAxis
+          tickLine={false}
+          axisLine={false}
+          tickFormatter={moneyTick}
+          width={48}
+        />
+        <ChartTooltip
+          content={<ChartTooltipContent formatter={moneyTooltip} />}
+        />
         <ChartLegend content={<ChartLegendContent className="gap-2 pt-2" />} />
         <Line
           type="monotone"
@@ -78,8 +123,15 @@ export function MonthlyTrendChart({
       <BarChart data={data} margin={chartMargin}>
         <CartesianGrid vertical={false} />
         <XAxis dataKey="label" tickLine={false} axisLine={false} />
-        <YAxis tickLine={false} axisLine={false} tickFormatter={moneyTick} width={48} />
-        <ChartTooltip content={<ChartTooltipContent />} />
+        <YAxis
+          tickLine={false}
+          axisLine={false}
+          tickFormatter={moneyTick}
+          width={48}
+        />
+        <ChartTooltip
+          content={<ChartTooltipContent formatter={moneyTooltip} />}
+        />
         <ChartLegend content={<ChartLegendContent className="gap-2 pt-2" />} />
         <Bar dataKey="gross" fill="var(--color-gross)" radius={4} />
         <Bar dataKey="net" fill="var(--color-net)" radius={4} />
@@ -97,7 +149,12 @@ export function FuelOwnerChart({
     <ChartContainer config={fuelConfig} className="aspect-auto h-44 md:h-60">
       <BarChart data={data} layout="vertical" margin={chartMargin}>
         <CartesianGrid horizontal={false} />
-        <XAxis type="number" tickLine={false} axisLine={false} tickFormatter={moneyTick} />
+        <XAxis
+          type="number"
+          tickLine={false}
+          axisLine={false}
+          tickFormatter={moneyTick}
+        />
         <YAxis
           type="category"
           dataKey="owner"
@@ -105,7 +162,9 @@ export function FuelOwnerChart({
           axisLine={false}
           width={64}
         />
-        <ChartTooltip content={<ChartTooltipContent />} />
+        <ChartTooltip
+          content={<ChartTooltipContent formatter={moneyTooltip} />}
+        />
         <Bar dataKey="fuel" fill="var(--color-fuel)" radius={4} />
       </BarChart>
     </ChartContainer>
@@ -121,7 +180,13 @@ export function FuelPctChart({
     <ChartContainer config={fuelConfig} className="aspect-auto h-44 md:h-60">
       <BarChart data={data} layout="vertical" margin={chartMargin}>
         <CartesianGrid horizontal={false} />
-        <XAxis type="number" tickLine={false} axisLine={false} domain={[0, 80]} />
+        <XAxis
+          type="number"
+          tickLine={false}
+          axisLine={false}
+          domain={[0, "auto"]}
+          tickFormatter={pctPoints}
+        />
         <YAxis
           type="category"
           dataKey="owner"
@@ -129,7 +194,9 @@ export function FuelPctChart({
           axisLine={false}
           width={64}
         />
-        <ChartTooltip content={<ChartTooltipContent />} />
+        <ChartTooltip
+          content={<ChartTooltipContent formatter={pctTooltip} />}
+        />
         <Bar dataKey="pct" fill="var(--color-pct)" radius={4} />
       </BarChart>
     </ChartContainer>

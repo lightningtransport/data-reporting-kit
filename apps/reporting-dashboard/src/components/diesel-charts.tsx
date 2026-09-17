@@ -4,6 +4,7 @@ import {
   Bar,
   CartesianGrid,
   ComposedChart,
+  Label,
   Line,
   XAxis,
   YAxis,
@@ -17,16 +18,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart"
-
-const moneyTick = (value: number) =>
-  Math.abs(value) >= 1_000_000
-    ? `$${(value / 1_000_000).toFixed(1)}M`
-    : Math.abs(value) >= 1000
-      ? `$${(value / 1000).toFixed(0)}k`
-      : `$${value.toFixed(0)}`
-
-const gallonsTick = (value: number) =>
-  Math.abs(value) >= 1000 ? `${(value / 1000).toFixed(0)}k` : String(Math.round(value))
+import { gallonsTick, moneyExact, moneyTick, num } from "@/lib/format"
 
 const monthlyConfig = {
   gallons: { label: "Gallons", color: "var(--chart-1)" },
@@ -40,6 +32,33 @@ export type DieselMonthlyPoint = {
   spend: number
 }
 
+function dieselTooltip(
+  value: number | string | ReadonlyArray<number | string> | undefined,
+  name: number | string | undefined,
+  item: { dataKey?: string | number | ((obj: unknown) => unknown) }
+) {
+  const n = typeof value === "number" ? value : Number(value)
+  const rawKey = item.dataKey
+  const key =
+    typeof rawKey === "string" || typeof rawKey === "number"
+      ? String(rawKey)
+      : String(name ?? "")
+  const label =
+    key === "spend" ? "Adjusted spend" : key === "gallons" ? "Gallons" : String(name)
+  const formatted =
+    !Number.isFinite(n)
+      ? "—"
+      : key === "spend"
+        ? moneyExact(n)
+        : `${num(n)} gal`
+  return (
+    <div className="flex w-full items-center justify-between gap-4">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-mono font-medium tabular-nums">{formatted}</span>
+    </div>
+  )
+}
+
 export function DieselMonthlyTrendChart({
   data,
 }: {
@@ -47,7 +66,7 @@ export function DieselMonthlyTrendChart({
 }) {
   return (
     <ChartContainer config={monthlyConfig} className="aspect-auto h-52 md:h-72">
-      <ComposedChart data={data} margin={{ left: 4, right: 4, top: 4, bottom: 4 }}>
+      <ComposedChart data={data} margin={{ left: 8, right: 8, top: 4, bottom: 4 }}>
         <CartesianGrid vertical={false} />
         <XAxis dataKey="label" tickLine={false} axisLine={false} />
         <YAxis
@@ -55,17 +74,33 @@ export function DieselMonthlyTrendChart({
           tickLine={false}
           axisLine={false}
           tickFormatter={gallonsTick}
-          width={40}
-        />
+          width={52}
+        >
+          <Label
+            value="Gallons"
+            angle={-90}
+            position="insideLeft"
+            style={{ textAnchor: "middle", fill: "var(--muted-foreground)", fontSize: 11 }}
+          />
+        </YAxis>
         <YAxis
           yAxisId="spend"
           orientation="right"
           tickLine={false}
           axisLine={false}
           tickFormatter={moneyTick}
-          width={44}
+          width={52}
+        >
+          <Label
+            value="USD"
+            angle={90}
+            position="insideRight"
+            style={{ textAnchor: "middle", fill: "var(--muted-foreground)", fontSize: 11 }}
+          />
+        </YAxis>
+        <ChartTooltip
+          content={<ChartTooltipContent formatter={dieselTooltip} />}
         />
-        <ChartTooltip content={<ChartTooltipContent />} />
         <ChartLegend content={<ChartLegendContent className="gap-2 pt-2" />} />
         <Bar
           yAxisId="gallons"
