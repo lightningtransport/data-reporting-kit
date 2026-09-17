@@ -237,14 +237,14 @@ export function DashboardChrome({ children }: { children: ReactNode }) {
 
           <Tabs value={active} className="w-full gap-0">
             <TabsList
-              className="h-auto min-h-9 w-full max-w-full justify-start overflow-x-auto"
+              className="grid h-auto w-full grid-cols-4 gap-0 overflow-hidden"
               aria-label="Report views"
             >
               {VIEWS.map((view) => (
                 <TabsTrigger
                   key={view.id}
                   value={view.id}
-                  className="min-h-9 px-3"
+                  className="min-h-11 min-w-0 px-1.5 py-1.5 text-center text-xs leading-tight whitespace-normal sm:px-3 sm:text-sm"
                   nativeButton={false}
                   render={<Link href={view.href} prefetch />}
                 >

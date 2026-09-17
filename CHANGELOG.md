@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.8.17 - 2026-09-17
+
+- Reporting dashboard primary Tabs: equal 4-column strip with no nested horizontal scroll; wrap-safe labels and ≥44px tap targets on mobile.
+
 ## 3.8.16 - 2026-09-17
 
 - Settlements / Diesel chart presentation: open fuel-% axis (no 80% clip), money/%/gal tooltips, weekly tick density, dual-axis unit labels, chart Empty states and grain descriptions, split Fuel vs Fuel/expenses KPIs. Metric math unchanged.
