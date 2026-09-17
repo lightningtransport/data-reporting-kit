@@ -1,7 +1,7 @@
 "use client"
 
-import { useMemo, useState } from "react"
-import { DownloadIcon } from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
+import { ChevronLeftIcon, ChevronRightIcon, DownloadIcon } from "lucide-react"
 
 import { DashboardShell } from "@/components/dashboard-shell"
 import { Badge } from "@/components/ui/badge"
@@ -31,15 +31,38 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import type { OutSchedulePayload, OutScheduleRow } from "@/lib/out-schedule"
-import { formatOpsDate } from "@/lib/ops-table"
+import type { OutSchedulePayload } from "@/lib/out-schedule"
+import {
+  addDaysIso,
+  availableMondays,
+  collapseTruckRows,
+  defaultFocusMonday,
+  distinctTrucksInWeek,
+  formatOpsDate,
+  shiftFocusMonday,
+  weekRangeLabel,
+  type CollapsedTruckRow,
+} from "@/lib/ops-table"
 
-function toCsv(rows: OutScheduleRow[]): string {
+function KpiCard({ label, value, hint }: { label: string; value: string; hint?: string }) {
+  return (
+    <Card size="sm">
+      <CardHeader className="pb-0">
+        <CardDescription>{label}</CardDescription>
+        <CardTitle className="font-heading text-xl tabular-nums">{value}</CardTitle>
+        {hint ? <p className="text-muted-foreground text-xs">{hint}</p> : null}
+      </CardHeader>
+    </Card>
+  )
+}
+
+function toCsv(rows: CollapsedTruckRow[]): string {
   const headers = [
     "Truck",
     "Out Date",
     "Day",
-    "Team",
+    "Driver 1",
+    "Driver 2",
     "Owner",
     "Dispatch",
     "Flatbed",
@@ -51,12 +74,13 @@ function toCsv(rows: OutScheduleRow[]): string {
     ...rows.map((row) =>
       [
         row.truck,
-        row.outDate,
+        row.eventDate,
         row.day,
-        row.team,
-        row.owner,
-        row.dispatch,
-        row.flatbed,
+        row.driver1,
+        row.driver2,
+        row.fields.owner ?? "",
+        row.fields.dispatch ?? "",
+        row.fields.flatbed ?? "",
         row.solo,
       ]
         .map(escape)
@@ -82,9 +106,20 @@ export function OutScheduleDashboard({ data }: { data: OutSchedulePayload }) {
     [data.rows]
   )
 
+  const mondays = useMemo(
+    () => availableMondays(data.rows.map((row) => row.outDate)),
+    [data.rows]
+  )
+  const [focusMonday, setFocusMonday] = useState(() => defaultFocusMonday(mondays))
   const [truckQuery, setTruckQuery] = useState("")
   const [owner, setOwner] = useState("all")
   const [dispatch, setDispatch] = useState("all")
+
+  useEffect(() => {
+    setFocusMonday((prev) =>
+      mondays.includes(prev) ? prev : defaultFocusMonday(mondays)
+    )
+  }, [mondays])
 
   const ownerItems = useMemo(
     () => [
@@ -101,13 +136,14 @@ export function OutScheduleDashboard({ data }: { data: OutSchedulePayload }) {
     [dispatches]
   )
 
-  const filtered = useMemo(() => {
+  const filteredSource = useMemo(() => {
     const query = truckQuery.trim().toLowerCase()
     return data.rows.filter((row) => {
       if (
         query &&
         !row.truck.toLowerCase().includes(query) &&
-        !row.team.toLowerCase().includes(query)
+        !row.team.toLowerCase().includes(query) &&
+        !row.driver2.toLowerCase().includes(query)
       ) {
         return false
       }
@@ -117,17 +153,58 @@ export function OutScheduleDashboard({ data }: { data: OutSchedulePayload }) {
     })
   }, [data.rows, truckQuery, owner, dispatch])
 
-  const distinctTrucks = useMemo(
-    () => new Set(filtered.map((row) => row.truck).filter(Boolean)).size,
-    [filtered]
+  const collapsedAll = useMemo(
+    () =>
+      collapseTruckRows(
+        filteredSource.map((row) => ({
+          truck: row.truck,
+          eventDate: row.outDate,
+          drivers: [row.team, row.driver2].filter(Boolean),
+          fields: {
+            owner: row.owner,
+            dispatch: row.dispatch,
+            flatbed: row.flatbed,
+            soloFlag: row.solo,
+          },
+        }))
+      ),
+    [filteredSource]
   )
 
+  const nextMonday = addDaysIso(focusMonday, 7)
+  const leavingThisWeek = useMemo(
+    () => distinctTrucksInWeek(collapsedAll, focusMonday),
+    [collapsedAll, focusMonday]
+  )
+  const leavingNextWeek = useMemo(
+    () => distinctTrucksInWeek(collapsedAll, nextMonday),
+    [collapsedAll, nextMonday]
+  )
+
+  const tableRows = useMemo(
+    () =>
+      collapsedAll.filter(
+        (row) => row.eventDate && row.eventDate >= focusMonday && row.eventDate <= addDaysIso(focusMonday, 6)
+      ),
+    [collapsedAll, focusMonday]
+  )
+
+  const focusIdx = mondays.indexOf(focusMonday)
+  const canPrev = focusIdx > 0 || (focusIdx < 0 && mondays.some((m) => m < focusMonday))
+  const canNext =
+    (focusIdx >= 0 && focusIdx < mondays.length - 1) ||
+    (focusIdx < 0 && mondays.some((m) => m > focusMonday))
+
+  const extraDrivers = tableRows.some((row) => row.extraDrivers)
+  const thisLabel = weekRangeLabel(focusMonday)
+  const nextLabel = weekRangeLabel(nextMonday)
+
   function exportCsv() {
-    const blob = new Blob([toCsv(filtered)], { type: "text/csv;charset=utf-8" })
+    const blob = new Blob([toCsv(tableRows)], { type: "text/csv;charset=utf-8" })
     const url = URL.createObjectURL(blob)
     const anchor = document.createElement("a")
     anchor.href = url
-    anchor.download = `out-schedule-${new Date().toISOString().slice(0, 10)}.csv`
+    anchor.download = `out-schedule-${focusMonday}.csv`
     anchor.click()
     URL.revokeObjectURL(url)
   }
@@ -135,10 +212,10 @@ export function OutScheduleDashboard({ data }: { data: OutSchedulePayload }) {
   return (
     <DashboardShell
       title="Out Schedule"
-      subtitle={`${filtered.length} rows · ${distinctTrucks} trucks`}
+      subtitle={`${tableRows.length} trucks · ${thisLabel}`}
       live={Boolean(data.meta.live)}
       actions={
-        <Button variant="outline" size="sm" onClick={exportCsv} disabled={filtered.length === 0}>
+        <Button variant="outline" size="sm" onClick={exportCsv} disabled={tableRows.length === 0}>
           <DownloadIcon data-icon="inline-start" />
           Export Schedule
         </Button>
@@ -156,11 +233,35 @@ export function OutScheduleDashboard({ data }: { data: OutSchedulePayload }) {
         </Card>
       ) : null}
 
-      <Card>
+      <Card size="sm">
         <CardContent className="pt-(--card-spacing)">
-          <FieldGroup className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <FieldGroup className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
             <Field>
-              <FieldLabel>Truck / team</FieldLabel>
+              <FieldLabel>Week</FieldLabel>
+              <div className="flex w-full items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="icon-sm"
+                  disabled={!canPrev}
+                  onClick={() => setFocusMonday(shiftFocusMonday(focusMonday, mondays, -1))}
+                >
+                  <ChevronLeftIcon />
+                </Button>
+                <div className="min-w-0 flex-1 rounded-lg border border-input px-2.5 py-1.5 text-sm">
+                  Mon–Sun · {thisLabel}
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon-sm"
+                  disabled={!canNext}
+                  onClick={() => setFocusMonday(shiftFocusMonday(focusMonday, mondays, 1))}
+                >
+                  <ChevronRightIcon />
+                </Button>
+              </div>
+            </Field>
+            <Field>
+              <FieldLabel>Truck / driver</FieldLabel>
               <Input
                 value={truckQuery}
                 onChange={(event) => setTruckQuery(event.target.value)}
@@ -217,11 +318,24 @@ export function OutScheduleDashboard({ data }: { data: OutSchedulePayload }) {
         </CardContent>
       </Card>
 
+      <div className="grid grid-cols-2 gap-3">
+        <KpiCard
+          label="Leaving this week"
+          value={String(leavingThisWeek)}
+          hint={thisLabel}
+        />
+        <KpiCard
+          label="Leaving next week"
+          value={String(leavingNextWeek)}
+          hint={nextLabel}
+        />
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle>Planned departures</CardTitle>
           <CardDescription>
-            Live Ninox Schedule_Teams · sorted by Out Date
+            One row per truck per Out Date · week {thisLabel}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -232,7 +346,8 @@ export function OutScheduleDashboard({ data }: { data: OutSchedulePayload }) {
                   <TableHead>Truck</TableHead>
                   <TableHead>Out Date</TableHead>
                   <TableHead>Day</TableHead>
-                  <TableHead>Team</TableHead>
+                  <TableHead>Driver 1</TableHead>
+                  <TableHead>Driver 2</TableHead>
                   <TableHead>Owner</TableHead>
                   <TableHead>Dispatch</TableHead>
                   <TableHead>Flatbed</TableHead>
@@ -240,15 +355,15 @@ export function OutScheduleDashboard({ data }: { data: OutSchedulePayload }) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.length === 0 ? (
+                {tableRows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-muted-foreground">
+                    <TableCell colSpan={9} className="text-muted-foreground">
                       No rows
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filtered.map((row) => (
-                    <TableRow key={row.id}>
+                  tableRows.map((row) => (
+                    <TableRow key={`${row.truck}-${row.eventDate}`}>
                       <TableCell>
                         {row.truck ? (
                           <Badge variant="secondary">{row.truck}</Badge>
@@ -257,23 +372,28 @@ export function OutScheduleDashboard({ data }: { data: OutSchedulePayload }) {
                         )}
                       </TableCell>
                       <TableCell className="font-mono tabular-nums">
-                        {formatOpsDate(row.outDate)}
+                        {formatOpsDate(row.eventDate)}
                       </TableCell>
                       <TableCell>{row.day || "—"}</TableCell>
-                      <TableCell className="max-w-72 truncate uppercase">
-                        {row.team || "—"}
+                      <TableCell className="max-w-48 truncate uppercase">
+                        {row.driver1 || "—"}
                       </TableCell>
-                      <TableCell>{row.owner || "—"}</TableCell>
-                      <TableCell>{row.dispatch || "—"}</TableCell>
-                      <TableCell>{row.flatbed || "—"}</TableCell>
-                      <TableCell>{row.solo || "—"}</TableCell>
+                      <TableCell className="max-w-48 truncate uppercase">
+                        {row.driver2 || "—"}
+                      </TableCell>
+                      <TableCell>{row.fields.owner || "—"}</TableCell>
+                      <TableCell>{row.fields.dispatch || "—"}</TableCell>
+                      <TableCell>{row.fields.flatbed || "—"}</TableCell>
+                      <TableCell>{row.solo}</TableCell>
                     </TableRow>
                   ))
                 )}
               </TableBody>
             </Table>
           </div>
-          <p className="text-muted-foreground mt-3 text-sm">#{filtered.length}</p>
+          <p className="text-muted-foreground mt-3 text-sm">
+            #{tableRows.length} trucks · source rows {filteredSource.length}
+          </p>
         </CardContent>
       </Card>
 
@@ -290,20 +410,31 @@ export function OutScheduleDashboard({ data }: { data: OutSchedulePayload }) {
               <strong>{String(Boolean(data.meta.live))}</strong>.
             </p>
             <p>
+              Focus week Mon–Sun <strong>{focusMonday}</strong>–
+              <strong>{addDaysIso(focusMonday, 6)}</strong> ({thisLabel}) · leaving this week=
+              <strong>{leavingThisWeek}</strong> · leaving next week=
+              <strong>{leavingNextWeek}</strong> ({nextLabel}).
+            </p>
+            <p>
               UI filters: search=&quot;{truckQuery}&quot;, owner=
-              <strong>{owner}</strong>, dispatch=<strong>{dispatch}</strong> ·
-              selection=<strong>{filtered.length}</strong> rows · distinct trucks=
-              <strong>{distinctTrucks}</strong>.
+              <strong>{owner}</strong>, dispatch=<strong>{dispatch}</strong> · table=
+              <strong>{tableRows.length}</strong> trucks · source rows=
+              <strong>{filteredSource.length}</strong> · weeks in payload=
+              <strong>{mondays.length}</strong>.
             </p>
             <p>
               as_of=<strong>{data.meta.as_of}</strong> · source_freshness=
               <strong>{data.meta.source_freshness}</strong>.
             </p>
             <p>
-              Caveats: the canonical share exposes Truck, Out Date, Team, Flatbed,
-              Driver 1, solo, Owner, Dispatch. Day is derived from Out Date. Insurance /
-              Team Status / Truck Status / Notes are not on this share. Do not substitute
-              DriverPay. as_of is request time.
+              Caveats: KPIs and table use distinct trucks after collapsing driver-grain
+              rows on (Truck, Out Date) into Driver 1 / Driver 2. Week nav only walks
+              Mondays present in the live Schedule_Teams payload. Insurance / Team Status /
+              Truck Status / Notes are not on this share. Do not substitute DriverPay.
+              as_of is request time.
+              {extraDrivers
+                ? " One or more trucks had more than two driver names; extras are appended in Driver 2."
+                : ""}
             </p>
           </div>
         </details>

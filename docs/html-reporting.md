@@ -51,15 +51,17 @@ Not established (do not display or approximate): Ninox “Full Week” / “No F
 
 ### Out Schedule (`/out-schedule`)
 
-1. Table of live Schedule_Teams rows from the documented share: Truck, Out Date, Day (derived), Team, Owner, Dispatch, Flatbed, Solo. Shared left-to-right spine with Trucks Return (Truck → event date → Day → who → report-only columns).
-2. Light filters (truck/team search, owner, dispatch), Export CSV, row count, **Technical details**.
-3. Do not substitute DriverPay history when the Ninox share fails; show an explicit error state. Insurance / Team Status / Truck Status / Notes are not in this share.
+1. Distinct-truck KPIs for the focused Monday–Sunday week and the next week (leaving counts), with prev/next week nav limited to Mondays present in the live Schedule_Teams payload.
+2. Table collapsed to one row per truck per Out Date: Truck, Out Date, Day (derived), Driver 1, Driver 2, Owner, Dispatch, Flatbed, Solo. Shared left-to-right spine with Trucks Return (Truck → event date → Day → who → report-only columns).
+3. Light filters (truck/driver search, owner, dispatch), Export CSV of collapsed rows, truck count, **Technical details**.
+4. Do not substitute DriverPay history when the Ninox share fails; show an explicit error state. Insurance / Team Status / Truck Status / Notes are not in this share. Past weeks not still in the live share cannot be reconstructed.
 
 ### Trucks Return (`/trucks-return`)
 
-1. Table of current `returns` rows: Truck, Return Date, Day (derived), Driver Name, Insurance (never Phone/CDL). Shared left-to-right spine with Out Schedule (Truck → event date → Day → who → report-only columns).
-2. Light filters, distinct-truck count, **Technical details**.
-3. Driver-row grain: teams usually produce two rows per truck.
+1. Distinct-truck KPIs: returning this week, returning next week, and no date (empty `Return Date`), with Mon–Sun week nav limited to dates present in the live `returns` payload.
+2. Table collapsed to one row per truck per Return Date: Truck, Return Date, Day (derived), Driver 1, Driver 2, Insurance (never Phone/CDL). Shared left-to-right spine with Out Schedule.
+3. Light filters, truck count, **Technical details**. Driver-row grain is collapsed for display and KPIs; source row count stays in Technical details.
+4. History caveat: only Return Dates still present in the current live list are navigable.
 
 ### Diesel (`/diesel`)
 

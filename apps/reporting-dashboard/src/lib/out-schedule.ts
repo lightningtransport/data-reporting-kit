@@ -9,6 +9,8 @@ export type OutScheduleRow = {
   day: string
   outDate: string
   team: string
+  /** Second driver when the share exposes Driver 2 on a single row. */
+  driver2: string
   owner: string
   dispatch: string
   flatbed: string
@@ -97,6 +99,7 @@ export function normalizeOutScheduleRow(
   const team =
     pickField(row, ["Team", "team"]) ||
     pickField(row, ["Driver 1", "Driver1", "Drivers", "Driver"])
+  const driver2 = pickField(row, ["Driver 2", "Driver2", "driver_2", "Driver_2"])
   const id =
     pickField(row, ["id", "ID", "Ninox_ID", "ninox_id"]) ||
     `${truck || "row"}-${outDate || index}`
@@ -107,6 +110,7 @@ export function normalizeOutScheduleRow(
     day: pickField(row, ["Day", "day"]) || (outDate ? weekdayFromIso(outDate) : ""),
     outDate,
     team,
+    driver2,
     owner: pickField(row, ["Owner", "owner"]),
     dispatch: pickField(row, ["Dispatch", "dispatch", "Dispatch_Name_"]),
     flatbed: pickField(row, ["Flatbed", "flatbed"]),
@@ -170,7 +174,7 @@ export async function getOutSchedule(): Promise<OutSchedulePayload> {
           url: SCHEDULE_TEAMS_URL,
           sort: "Out Date asc, Truck asc",
           fields:
-            "Truck, Out Date, Team, Owner, Dispatch, Flatbed, solo (+ Day derived)",
+            "Truck, Out Date, Team/Driver 1, Driver 2, Owner, Dispatch, Flatbed, solo (+ Day derived)",
           note: "live query only; no embedded snapshot",
         },
       },
