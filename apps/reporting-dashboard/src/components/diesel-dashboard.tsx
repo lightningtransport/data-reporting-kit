@@ -494,14 +494,13 @@ export function DieselDashboard({ data }: { data: FuelPayload }) {
         <CardHeader>
           <CardTitle>Monthly trend</CardTitle>
           <CardDescription>
-            Gallons (bars) and adjusted spend (line) · respects owner and product
+            Gallons (left axis, bars) and adjusted spend (right axis, line) ·
+            respects owner and product
             {trendUpdating
               ? trendFromCache
                 ? " · local cache · updating…"
                 : " · loading history…"
-              : trendFromCache
-                ? ""
-                : ""}
+              : ""}
           </CardDescription>
         </CardHeader>
         <CardContent>
