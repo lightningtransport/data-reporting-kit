@@ -9,7 +9,7 @@ Read `AGENTS.md` first. These rules are for **Grok Bot and Cursor agents** that 
 The live reporting screens live in [`apps/reporting-dashboard`](../apps/reporting-dashboard): Next.js App Router + **real shadcn/ui** (Button, Tabs, Card, Badge, Input, Table, Checkbox, Select, Popover + Command multi-select, Alert, Empty). Do not rebuild them as a native `<select multiple>` or a hand-rolled CSS imitation.
 
 - **Live URL:** https://lightning-settlement-dashboard.vercel.app
-- **Deep links:** `/` Settlements · `/out-schedule` Out Schedule · `/trucks-return` Trucks Return · `/diesel` Diesel
+- **Deep links:** `/` Settlements · `/out-schedule` Out Schedule · `/trucks-return` Trucks Return · `/diesel` Diesel · `/v2` Executive Overview (read-only summary; not part of the top Tabs row)
 - **Grok bots:** when answering questions about these screens, **link the matching live URL**. Keep the app in sync from this repository. Do not generate a one-off HTML replacement.
 - Deploy: set Vercel Root Directory to `apps/reporting-dashboard`. See [`apps/reporting-dashboard/README.md`](../apps/reporting-dashboard/README.md). All dashboard views use **live queries** with short shared caches where documented (Diesel); Settlements, Trucks Return, and Diesel via server-only `AGENT_REPORTING_KEY` (never `NEXT_PUBLIC_*`, never git); Out Schedule via the documented live Ninox Schedule_Teams share. There is **no embedded settlements snapshot**. If the key is missing or a live fetch fails, the UI shows an explicit error instead of a snapshot.
 
@@ -71,6 +71,13 @@ Not established (do not display or approximate): Ninox “Full Week” / “No F
 3. Month navigation, exact historical `fuel.owner` filter, and product filter (default diesel excluding DEF).
 4. KPIs from monthly aggregates (not the capped detail table).
 5. Transaction detail capped per focus month via `/api/reporting/fuel-month`. **Technical details**. Do not count fuel rows as trucks or replace settlement Fuel Expenses.
+
+### Executive Overview (`/v2`)
+
+1. Separate read-only executive layer (not a replacement for Settlements or the operational Tabs). Do not redirect `/` to `/v2`.
+2. Controls: Week/Month grain, selected period, Team, Operating Fleet vs Accounting Total lens (URL search params).
+3. KPI strip (Gross, Net/margin, RPM, Productive Trucks), Attention Now exceptions, Gross/Net trend, Operating vs Accounting reconciliation (allocation buckets 1/2/3), Team Performance with accessible drill-down panels, links to existing operational routes, and **Technical details**.
+4. Uses the same governed settlement/returns loaders and business rules as Settlements. Cross-source diesel MPG is omitted when settlement and fuel periods cannot be matched safely at the requested grain; settlement Fuel Expenses remain authoritative for settlement fuel spend.
 
 ## Business-rule reminders that affect HTML
 

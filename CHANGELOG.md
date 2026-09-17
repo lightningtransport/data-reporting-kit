@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.8.19 - 2026-09-17
+
+- Reporting dashboard **V2 Phase 3**: drill-down panel keyboard/a11y polish (focus into panel, Escape/close copy, `aria-expanded`/`aria-haspopup`, preserve focus restore across team→truck nesting, reduced-motion-safe panel motion); document `/v2` Executive Overview in `docs/html-reporting.md` and `AGENTS.md`. Cross-source diesel MPG remains omitted when periods cannot be matched safely. Operational routes unchanged.
+
 ## 3.8.18 - 2026-09-17
 
 - Reporting dashboard **V2 Executive Overview** at `/v2` (Preview): Operating Fleet vs Accounting Total lenses, KPI strip, Attention Now, 12-month Gross/Net trend, Operating vs Accounting reconciliation (allocation buckets 1/2/3), Team Performance with URL-backed team/truck drill-down panels, operational-report links, and Technical details. Leaves `/`, `/out-schedule`, `/trucks-return`, and `/diesel` unchanged.

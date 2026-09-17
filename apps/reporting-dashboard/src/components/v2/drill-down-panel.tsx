@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useId } from "react"
+import { useEffect, useId, useRef } from "react"
 
 import { buttonVariants } from "@/components/ui/button"
 import {
@@ -26,6 +26,9 @@ import type {
   TruckAggregate,
   TruckPeriodRow,
 } from "@/lib/v2/metrics"
+
+const panelMotionClass =
+  "data-open:motion-safe:slide-in-from-right data-closed:motion-safe:slide-out-to-right motion-reduce:data-open:animate-none motion-reduce:data-closed:animate-none fixed inset-y-0 top-0 right-0 left-auto flex h-dvh max-h-dvh w-full max-w-full translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-none border-l p-0 sm:max-w-lg"
 
 function ComparisonText({ comparison }: { comparison: PeriodComparison }) {
   if (comparison.status !== "ok" || comparison.absolute == null) {
@@ -67,9 +70,18 @@ export function TeamDrillDownPanel({
   periodLabel: string
   filterSummary: string
   onClose: () => void
-  onSelectTruck: (truck: string) => void
+  onSelectTruck: (truck: string, trigger?: HTMLElement) => void
 }) {
   const titleId = useId()
+  const descriptionId = useId()
+  const headingRef = useRef<HTMLHeadingElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    // Move keyboard focus into the panel after open (Dialog also traps focus).
+    const id = window.setTimeout(() => headingRef.current?.focus(), 0)
+    return () => window.clearTimeout(id)
+  }, [open, team])
 
   return (
     <Dialog
@@ -80,15 +92,22 @@ export function TeamDrillDownPanel({
     >
       <DialogContent
         showCloseButton
-        className="data-open:slide-in-from-right data-closed:slide-out-to-right fixed inset-y-0 top-0 right-0 left-auto flex h-dvh max-h-dvh w-full max-w-full translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-none border-l p-0 sm:max-w-lg"
+        className={panelMotionClass}
         aria-labelledby={titleId}
+        aria-describedby={descriptionId}
       >
         <DialogHeader className="border-border/60 shrink-0 border-b px-4 py-4">
-          <DialogTitle id={titleId}>
+          <DialogTitle
+            id={titleId}
+            ref={headingRef}
+            tabIndex={-1}
+            className="outline-none focus-visible:ring-ring rounded-sm focus-visible:ring-2"
+          >
             {team ? `Team ${team}` : "Team"}
           </DialogTitle>
-          <DialogDescription>
-            {periodLabel}. {filterSummary}. Physical-truck metrics only.
+          <DialogDescription id={descriptionId}>
+            {periodLabel}. {filterSummary}. Physical-truck metrics only. Press
+            Escape to close.
           </DialogDescription>
         </DialogHeader>
 
@@ -168,8 +187,12 @@ export function TeamDrillDownPanel({
                           <TableCell>
                             <button
                               type="button"
+                              aria-haspopup="dialog"
+                              aria-label={`Open drill-down for truck ${truck.truck}`}
                               className="text-foreground hover:underline focus-visible:ring-ring rounded-sm font-medium focus-visible:ring-2 focus-visible:outline-none"
-                              onClick={() => onSelectTruck(truck.truck)}
+                              onClick={(event) =>
+                                onSelectTruck(truck.truck, event.currentTarget)
+                              }
                             >
                               {truck.truck}
                             </button>
@@ -239,6 +262,21 @@ export function TruckDrillDownPanel({
   onBackToTeam?: () => void
 }) {
   const titleId = useId()
+  const descriptionId = useId()
+  const headingRef = useRef<HTMLHeadingElement>(null)
+  const backRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const id = window.setTimeout(() => {
+      if (onBackToTeam && backRef.current) {
+        backRef.current.focus()
+        return
+      }
+      headingRef.current?.focus()
+    }, 0)
+    return () => window.clearTimeout(id)
+  }, [open, truck, onBackToTeam])
 
   return (
     <Dialog
@@ -249,16 +287,24 @@ export function TruckDrillDownPanel({
     >
       <DialogContent
         showCloseButton
-        className="data-open:slide-in-from-right data-closed:slide-out-to-right fixed inset-y-0 top-0 right-0 left-auto flex h-dvh max-h-dvh w-full max-w-full translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-none border-l p-0 sm:max-w-lg"
+        className={panelMotionClass}
         aria-labelledby={titleId}
+        aria-describedby={descriptionId}
       >
         <DialogHeader className="border-border/60 shrink-0 border-b px-4 py-4">
-          <DialogTitle id={titleId}>
+          <DialogTitle
+            id={titleId}
+            ref={headingRef}
+            tabIndex={-1}
+            className="outline-none focus-visible:ring-ring rounded-sm focus-visible:ring-2"
+          >
             {truck ? `Truck ${truck}` : "Truck"}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription id={descriptionId}>
             {periodLabel}. {filterSummary}.
-            {periodMetrics?.owner ? ` Team ${periodMetrics.owner}.` : ""}
+            {periodMetrics?.owner ? ` Team ${periodMetrics.owner}.` : ""} Press
+            Escape to close
+            {onBackToTeam ? " or use Back to team" : ""}.
           </DialogDescription>
         </DialogHeader>
 
@@ -361,12 +407,14 @@ export function TruckDrillDownPanel({
 
           <p className="text-muted-foreground text-xs">
             Diesel gallon matching is not joined here when settlement and fuel
-            periods cannot be reconciled safely. Open Diesel for fuel detail.
+            periods cannot be reconciled safely at truck grain. Open Diesel for
+            fuel detail.
           </p>
 
           <div className="flex flex-wrap gap-2">
             {onBackToTeam ? (
               <button
+                ref={backRef}
                 type="button"
                 className={buttonVariants({ variant: "outline", size: "sm" })}
                 onClick={onBackToTeam}
