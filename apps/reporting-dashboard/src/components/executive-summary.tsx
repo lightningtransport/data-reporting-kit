@@ -7,6 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { KpiValue } from "@/components/kpi-value"
 import {
   Table,
   TableBody,
@@ -91,7 +92,7 @@ function Kpi({
     <Card size="sm">
       <CardHeader>
         <CardDescription>{label}</CardDescription>
-        <CardTitle className="font-mono text-lg tabular-nums">{value}</CardTitle>
+        <KpiValue className="text-lg">{value}</KpiValue>
       </CardHeader>
       {hint ? (
         <CardContent>
@@ -149,7 +150,7 @@ export function ExecutiveSummary({
   return (
     <section className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
-        <h2 className="font-heading text-xl tracking-tight">Summary</h2>
+        <h2 className="font-heading text-lg font-bold tracking-tight">Summary</h2>
         <p className="text-muted-foreground text-sm">Totals for {scope}.</p>
       </div>
 

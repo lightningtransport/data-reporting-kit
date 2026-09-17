@@ -12,8 +12,10 @@ import {
   MonthlyTrendChart,
   WeeklyTrendChart,
 } from "@/components/settlement-charts"
+import { KpiValue } from "@/components/kpi-value"
 import { TruckFocusCard } from "@/components/truck-focus-card"
 import { TruckRankCard } from "@/components/truck-rank-card"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -24,6 +26,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
@@ -68,7 +71,7 @@ function KpiCard({ label, value }: { label: string; value: string }) {
     <Card size="sm">
       <CardHeader>
         <CardDescription>{label}</CardDescription>
-        <CardTitle className="font-mono text-xl tabular-nums">{value}</CardTitle>
+        <KpiValue>{value}</KpiValue>
       </CardHeader>
     </Card>
   )
@@ -158,18 +161,13 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
       live={Boolean(data.meta.live)}
     >
       {data.meta.error ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Couldn't load Settlements</CardTitle>
-            <CardDescription>
-              Live agent-reporting (settlements) only. There is no embedded
-              snapshot.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="text-muted-foreground text-sm">
-            {data.meta.error}
-          </CardContent>
-        </Card>
+        <Alert variant="destructive">
+          <AlertTitle>Couldn't load Settlements</AlertTitle>
+          <AlertDescription>
+            Live agent-reporting (settlements) only. There is no embedded
+            snapshot. {data.meta.error}
+          </AlertDescription>
+        </Alert>
       ) : null}
 
       <Card size="sm">
@@ -469,8 +467,12 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
               <TableBody>
                 {detailRows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={11} className="text-muted-foreground">
-                      No rows in this period
+                    <TableCell colSpan={11} className="p-0">
+                      <Empty className="border-0 py-8">
+                        <EmptyHeader>
+                          <EmptyTitle>No rows in this period</EmptyTitle>
+                        </EmptyHeader>
+                      </Empty>
                     </TableCell>
                   </TableRow>
                 ) : (

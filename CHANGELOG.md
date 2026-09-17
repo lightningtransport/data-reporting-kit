@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.8.11 - 2026-09-16
+
+- Reporting dashboard typography: literal Geist tokens, bold CardTitle, KPI values as mono figures (not titles), shared page/section/eyebrow hierarchy; load errors use Alert and main empty tables use Empty.
+
 ## 3.8.10 - 2026-09-16
 
 - Sticky table column headers in scrollable dashboard tables; Settlements Gross/Net rankings share column order with Sorted-by labels; Out Schedule / Trucks Return use calendar Mon±7 week nav plus a Mon–Sun day strip so incomplete live weeks are visible.

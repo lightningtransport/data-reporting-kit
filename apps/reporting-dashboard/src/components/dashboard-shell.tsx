@@ -117,10 +117,10 @@ export function DashboardShell({
             <LightningLogo />
           </Link>
           <div className="border-l border-border pl-3">
-            <p className="text-secondary text-xs font-semibold tracking-[0.16em] uppercase">
+            <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
               {eyebrow}
             </p>
-            <h1 className="font-heading text-xl font-semibold tracking-tight">{title}</h1>
+            <h1 className="font-heading text-2xl font-bold tracking-tight">{title}</h1>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
