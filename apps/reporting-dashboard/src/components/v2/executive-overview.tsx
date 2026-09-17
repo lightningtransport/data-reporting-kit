@@ -281,12 +281,14 @@ export function ExecutiveOverview({ data }: { data: V2DashboardData }) {
     })
   }
 
-  function rememberTrigger(target: EventTarget | null) {
+  function rememberTrigger(target: EventTarget | null | undefined) {
+    // Only overwrite when a real trigger is provided so nested team→truck
+    // navigation preserves the original focus restore target.
     if (target instanceof HTMLElement) lastTriggerRef.current = target
   }
 
   function openTeam(team: string, trigger?: EventTarget | null) {
-    rememberTrigger(trigger ?? null)
+    rememberTrigger(trigger)
     updateParams({ focus: team, truck: null })
   }
 
@@ -294,7 +296,7 @@ export function ExecutiveOverview({ data }: { data: V2DashboardData }) {
     truck: string,
     options?: { team?: string | null; trigger?: EventTarget | null }
   ) {
-    rememberTrigger(options?.trigger ?? null)
+    rememberTrigger(options?.trigger)
     updateParams({
       truck,
       focus: options?.team ?? focusTeam,
@@ -637,6 +639,8 @@ export function ExecutiveOverview({ data }: { data: V2DashboardData }) {
                         <li key={item.truck}>
                           <button
                             type="button"
+                            aria-haspopup="dialog"
+                            aria-label={`Open drill-down for truck ${item.truck}, negative net ${moneyExact(item.net)}`}
                             className="hover:text-foreground focus-visible:ring-ring rounded-sm text-left hover:underline focus-visible:ring-2 focus-visible:outline-none"
                             onClick={(event) =>
                               openTruck(item.truck, {
@@ -660,6 +664,8 @@ export function ExecutiveOverview({ data }: { data: V2DashboardData }) {
                         <li key={item.truck}>
                           <button
                             type="button"
+                            aria-haspopup="dialog"
+                            aria-label={`Open drill-down for truck ${item.truck}, gross ${moneyExact(item.gross)}`}
                             className="hover:text-foreground focus-visible:ring-ring rounded-sm text-left hover:underline focus-visible:ring-2 focus-visible:outline-none"
                             onClick={(event) =>
                               openTruck(item.truck, {
@@ -691,6 +697,8 @@ export function ExecutiveOverview({ data }: { data: V2DashboardData }) {
                             <li key={item.truck}>
                               <button
                                 type="button"
+                                aria-haspopup="dialog"
+                                aria-label={`Open drill-down for truck ${item.truck}, return-date gap`}
                                 className="hover:text-foreground focus-visible:ring-ring rounded-sm text-left hover:underline focus-visible:ring-2 focus-visible:outline-none"
                                 onClick={(event) =>
                                   openTruck(item.truck, {
@@ -820,11 +828,15 @@ export function ExecutiveOverview({ data }: { data: V2DashboardData }) {
                         <TableRow
                           key={team.team}
                           className={cn(
-                            "hover:bg-muted/50 cursor-pointer",
+                            "hover:bg-muted/50 focus-visible:ring-ring cursor-pointer focus-visible:ring-2 focus-visible:outline-none",
                             focusTeam === team.team && "bg-muted/60"
                           )}
                           tabIndex={0}
                           role="button"
+                          aria-haspopup="dialog"
+                          aria-expanded={
+                            focusTeam === team.team && !focusTruck
+                          }
                           aria-label={`Open team ${team.team} drill-down`}
                           onClick={(event) =>
                             openTeam(team.team, event.currentTarget)
@@ -937,6 +949,12 @@ export function ExecutiveOverview({ data }: { data: V2DashboardData }) {
               rows loaded: {num(allRows.length)}. Drill-down URL: focus=
               {focusTeam || "—"}, truck={focusTruck || "—"}.
             </p>
+            <p>
+              Diesel MPG is not shown on V2 when settlement weeks and fuel Store
+              Date matching cannot be reconciled at the same grain for the
+              active lens. Settlement Fuel Expenses ÷ miles remains available in
+              truck drill-down. Open Diesel for gallon detail.
+            </p>
           </div>
         </details>
       </main>
@@ -951,7 +969,9 @@ export function ExecutiveOverview({ data }: { data: V2DashboardData }) {
         periodLabel={periodLabel}
         filterSummary={filterSummary}
         onClose={closeTeamPanel}
-        onSelectTruck={(truck) => openTruck(truck, { team: focusTeam })}
+        onSelectTruck={(truck, trigger) =>
+          openTruck(truck, { team: focusTeam, trigger })
+        }
       />
 
       <TruckDrillDownPanel
