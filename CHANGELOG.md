@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.8.9 - 2026-09-16
+
+- Out Schedule and Trucks Return: collapse driver-grain rows to one truck per date (Driver 1 / Driver 2), add Mon–Sun week nav, and show distinct-truck KPIs for this week / next week (plus No date on returns). Week history is limited to dates still in each live payload.
+
+## 3.8.8 - 2026-09-16
+
+- Mobile density: tighter shell/filter spacing, 2-column KPIs from the smallest breakpoint, earlier `md` chart/rank grids, shorter chart heights on phones, and scroll-to-top when switching Views.
+
 ## 3.8.7 - 2026-09-16
 
 - Out Schedule and Trucks Return tables share a left-to-right spine: Truck → event date → Day → who → report-only columns. Trucks Return is now Truck, Return Date, Day, Driver Name, Insurance; shared `formatOpsDate` / `weekdayFromIso` helpers.

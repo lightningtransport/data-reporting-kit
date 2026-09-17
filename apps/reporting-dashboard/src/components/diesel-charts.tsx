@@ -46,8 +46,8 @@ export function DieselMonthlyTrendChart({
   data: DieselMonthlyPoint[]
 }) {
   return (
-    <ChartContainer config={monthlyConfig} className="aspect-auto h-72">
-      <ComposedChart data={data} margin={{ left: 8, right: 8 }}>
+    <ChartContainer config={monthlyConfig} className="aspect-auto h-52 md:h-72">
+      <ComposedChart data={data} margin={{ left: 4, right: 4, top: 4, bottom: 4 }}>
         <CartesianGrid vertical={false} />
         <XAxis dataKey="label" tickLine={false} axisLine={false} />
         <YAxis
@@ -55,6 +55,7 @@ export function DieselMonthlyTrendChart({
           tickLine={false}
           axisLine={false}
           tickFormatter={gallonsTick}
+          width={40}
         />
         <YAxis
           yAxisId="spend"
@@ -62,9 +63,10 @@ export function DieselMonthlyTrendChart({
           tickLine={false}
           axisLine={false}
           tickFormatter={moneyTick}
+          width={44}
         />
         <ChartTooltip content={<ChartTooltipContent />} />
-        <ChartLegend content={<ChartLegendContent />} />
+        <ChartLegend content={<ChartLegendContent className="gap-2 pt-2" />} />
         <Bar
           yAxisId="gallons"
           dataKey="gallons"

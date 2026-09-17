@@ -153,7 +153,7 @@ export function ExecutiveSummary({
         <p className="text-muted-foreground text-sm">Totals for {scope}.</p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4">
         <Kpi label="Avg Gross" value={avg(physical.avgGross, money)} />
         <Kpi label="Avg expenses" value={avg(physical.avgExp, money)} />
         <Kpi label="Avg driver pay" value={avg(physical.avgPay, money)} />

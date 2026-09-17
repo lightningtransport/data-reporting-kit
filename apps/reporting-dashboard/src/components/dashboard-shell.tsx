@@ -1,9 +1,9 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname } from "next/navigation"
 import { CheckIcon, ChevronDownIcon, LayoutDashboardIcon } from "lucide-react"
-import type { ReactNode } from "react"
+import { useEffect, type ReactNode } from "react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -60,7 +60,7 @@ function LightningLogo() {
       aria-label="Lightning Transportation & Logistics"
       role="img"
       viewBox="0 0 1536 894"
-      className="h-auto w-28 shrink-0 sm:w-32"
+      className="h-auto w-20 shrink-0 sm:w-28"
     >
       <title>Lightning Transportation & Logistics</title>
       <filter id="remove-logo-black" colorInterpolationFilters="sRGB">
@@ -102,13 +102,16 @@ export function DashboardShell({
   children: ReactNode
 }) {
   const pathname = usePathname()
-  const router = useRouter()
   const active = viewFromPath(pathname)
   const activeView = VIEWS.find((view) => view.id === active) ?? VIEWS[0]
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0 })
+  }, [pathname])
+
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 md:px-6 md:py-8">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-4 md:gap-6 md:px-6 md:py-8">
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
         <div className="flex items-center gap-3">
           <Link href="/" className="shrink-0" aria-label="Go to Settlements">
             <LightningLogo />
@@ -121,7 +124,9 @@ export function DashboardShell({
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {subtitle ? <div className="text-muted-foreground text-sm">{subtitle}</div> : null}
+          {subtitle ? (
+            <div className="text-muted-foreground hidden text-sm sm:block">{subtitle}</div>
+          ) : null}
           {live ? null : <Badge variant="secondary">Snapshot</Badge>}
           {actions}
           <DropdownMenu>
@@ -138,9 +143,7 @@ export function DashboardShell({
                 {VIEWS.map((view) => (
                   <DropdownMenuItem
                     key={view.id}
-                    onClick={() => {
-                      if (view.href !== pathname) router.push(view.href)
-                    }}
+                    render={<Link href={view.href} />}
                   >
                     <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                       <span className="font-medium">{view.label}</span>

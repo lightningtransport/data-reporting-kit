@@ -1,9 +1,11 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
+import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 
 import { DashboardShell } from "@/components/dashboard-shell"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -30,7 +32,17 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import type { ReturnsPayload } from "@/lib/returns"
-import { formatOpsDate, weekdayFromIso } from "@/lib/ops-table"
+import {
+  addDaysIso,
+  availableMondays,
+  collapseTruckRows,
+  defaultFocusMonday,
+  distinctTrucksInWeek,
+  distinctUndatedTrucks,
+  formatOpsDate,
+  shiftFocusMonday,
+  weekRangeLabel,
+} from "@/lib/ops-table"
 
 function insuranceBadgeClass(insurance: string): string {
   const code = insurance.trim().toUpperCase()
@@ -38,6 +50,18 @@ function insuranceBadgeClass(insurance: string): string {
   if (code === "LTL") return "border-lime-300 bg-lime-100 text-lime-950"
   if (code === "CDT") return "border-slate-400 bg-slate-800 text-white"
   return ""
+}
+
+function KpiCard({ label, value, hint }: { label: string; value: string; hint?: string }) {
+  return (
+    <Card size="sm">
+      <CardHeader className="pb-0">
+        <CardDescription>{label}</CardDescription>
+        <CardTitle className="font-heading text-xl tabular-nums">{value}</CardTitle>
+        {hint ? <p className="text-muted-foreground text-xs">{hint}</p> : null}
+      </CardHeader>
+    </Card>
+  )
 }
 
 export function TrucksReturnDashboard({ data }: { data: ReturnsPayload }) {
@@ -48,9 +72,21 @@ export function TrucksReturnDashboard({ data }: { data: ReturnsPayload }) {
       ),
     [data.rows]
   )
+
+  const mondays = useMemo(
+    () => availableMondays(data.rows.map((row) => row.returnDate)),
+    [data.rows]
+  )
+  const [focusMonday, setFocusMonday] = useState(() => defaultFocusMonday(mondays))
   const [truckQuery, setTruckQuery] = useState("")
   const [insurance, setInsurance] = useState("all")
   const [datedOnly, setDatedOnly] = useState("all")
+
+  useEffect(() => {
+    setFocusMonday((prev) =>
+      mondays.includes(prev) ? prev : defaultFocusMonday(mondays)
+    )
+  }, [mondays])
 
   const insuranceItems = useMemo(
     () => [
@@ -68,10 +104,14 @@ export function TrucksReturnDashboard({ data }: { data: ReturnsPayload }) {
     []
   )
 
-  const filtered = useMemo(() => {
+  const filteredSource = useMemo(() => {
     const query = truckQuery.trim().toLowerCase()
     return data.rows.filter((row) => {
-      if (query && !row.truck.toLowerCase().includes(query) && !row.driverName.toLowerCase().includes(query)) {
+      if (
+        query &&
+        !row.truck.toLowerCase().includes(query) &&
+        !row.driverName.toLowerCase().includes(query)
+      ) {
         return false
       }
       if (insurance !== "all" && row.insurance !== insurance) return false
@@ -81,15 +121,62 @@ export function TrucksReturnDashboard({ data }: { data: ReturnsPayload }) {
     })
   }, [data.rows, truckQuery, insurance, datedOnly])
 
-  const distinctTrucks = useMemo(
-    () => new Set(filtered.map((row) => row.truck)).size,
-    [filtered]
+  const collapsedAll = useMemo(
+    () =>
+      collapseTruckRows(
+        filteredSource.map((row) => ({
+          truck: row.truck,
+          eventDate: row.returnDate,
+          drivers: [row.driverName],
+          fields: { insurance: row.insurance },
+        }))
+      ),
+    [filteredSource]
   )
+
+  const nextMonday = addDaysIso(focusMonday, 7)
+  const returningThisWeek = useMemo(
+    () => distinctTrucksInWeek(collapsedAll, focusMonday),
+    [collapsedAll, focusMonday]
+  )
+  const returningNextWeek = useMemo(
+    () => distinctTrucksInWeek(collapsedAll, nextMonday),
+    [collapsedAll, nextMonday]
+  )
+  const noDateTrucks = useMemo(
+    () => distinctUndatedTrucks(collapsedAll),
+    [collapsedAll]
+  )
+
+  const tableRows = useMemo(() => {
+    if (datedOnly === "undated") {
+      return collapsedAll.filter((row) => !row.eventDate)
+    }
+    const sunday = addDaysIso(focusMonday, 6)
+    const inWeek = collapsedAll.filter(
+      (row) => row.eventDate && row.eventDate >= focusMonday && row.eventDate <= sunday
+    )
+    if (datedOnly === "dated") return inWeek
+    // "all": week rows plus undated so managers still see trucks with no date
+    const undated = collapsedAll.filter((row) => !row.eventDate)
+    return [...inWeek, ...undated]
+  }, [collapsedAll, focusMonday, datedOnly])
+
+  const focusIdx = mondays.indexOf(focusMonday)
+  const canPrev = focusIdx > 0 || (focusIdx < 0 && mondays.some((m) => m < focusMonday))
+  const canNext =
+    (focusIdx >= 0 && focusIdx < mondays.length - 1) ||
+    (focusIdx < 0 && mondays.some((m) => m > focusMonday))
+
+  const extraDrivers = tableRows.some((row) => row.extraDrivers)
+  const thisLabel = weekRangeLabel(focusMonday)
+  const nextLabel = weekRangeLabel(nextMonday)
+  const truckCount = new Set(tableRows.map((row) => row.truck)).size
 
   return (
     <DashboardShell
       title="Trucks Return"
-      subtitle={`${filtered.length} rows · ${distinctTrucks} trucks`}
+      subtitle={`${truckCount} trucks · ${thisLabel}`}
       live={Boolean(data.meta.live)}
     >
       {data.meta.error ? (
@@ -104,9 +191,33 @@ export function TrucksReturnDashboard({ data }: { data: ReturnsPayload }) {
         </Card>
       ) : null}
 
-      <Card>
+      <Card size="sm">
         <CardContent className="pt-(--card-spacing)">
-          <FieldGroup className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <FieldGroup className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <Field>
+              <FieldLabel>Week</FieldLabel>
+              <div className="flex w-full items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="icon-sm"
+                  disabled={!canPrev || datedOnly === "undated"}
+                  onClick={() => setFocusMonday(shiftFocusMonday(focusMonday, mondays, -1))}
+                >
+                  <ChevronLeftIcon />
+                </Button>
+                <div className="min-w-0 flex-1 rounded-lg border border-input px-2.5 py-1.5 text-sm">
+                  Mon–Sun · {thisLabel}
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon-sm"
+                  disabled={!canNext || datedOnly === "undated"}
+                  onClick={() => setFocusMonday(shiftFocusMonday(focusMonday, mondays, 1))}
+                >
+                  <ChevronRightIcon />
+                </Button>
+              </div>
+            </Field>
             <Field>
               <FieldLabel>Truck / driver</FieldLabel>
               <Input
@@ -165,11 +276,25 @@ export function TrucksReturnDashboard({ data }: { data: ReturnsPayload }) {
         </CardContent>
       </Card>
 
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+        <KpiCard
+          label="Returning this week"
+          value={String(returningThisWeek)}
+          hint={thisLabel}
+        />
+        <KpiCard
+          label="Returning next week"
+          value={String(returningNextWeek)}
+          hint={nextLabel}
+        />
+        <KpiCard label="No date" value={String(noDateTrucks)} hint="Distinct trucks" />
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle>Expected returns</CardTitle>
           <CardDescription>
-            returns report · driver-row grain (teams usually = 2 rows per truck)
+            One row per truck per Return Date · week {thisLabel}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -180,53 +305,50 @@ export function TrucksReturnDashboard({ data }: { data: ReturnsPayload }) {
                   <TableHead>Truck</TableHead>
                   <TableHead>Return Date</TableHead>
                   <TableHead>Day</TableHead>
-                  <TableHead>Driver Name</TableHead>
+                  <TableHead>Driver 1</TableHead>
+                  <TableHead>Driver 2</TableHead>
                   <TableHead>Insurance</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.length === 0 ? (
+                {tableRows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-muted-foreground">
+                    <TableCell colSpan={6} className="text-muted-foreground">
                       No rows
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filtered.map((row) => {
-                    const day = weekdayFromIso(row.returnDate)
-                    return (
-                      <TableRow key={`${row.id}-${row.truck}-${row.driverName}`}>
-                        <TableCell>
-                          <Badge variant="secondary">{row.truck}</Badge>
-                        </TableCell>
-                        <TableCell className="font-mono tabular-nums">
-                          {formatOpsDate(row.returnDate)}
-                        </TableCell>
-                        <TableCell>{day || "—"}</TableCell>
-                        <TableCell className="uppercase">
-                          {row.driverName || "—"}
-                        </TableCell>
-                        <TableCell>
-                          {row.insurance ? (
-                            <Badge
-                              variant="outline"
-                              className={insuranceBadgeClass(row.insurance)}
-                            >
-                              {row.insurance}
-                            </Badge>
-                          ) : (
-                            "—"
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })
+                  tableRows.map((row) => (
+                    <TableRow key={`${row.truck}-${row.eventDate || "undated"}`}>
+                      <TableCell>
+                        <Badge variant="secondary">{row.truck}</Badge>
+                      </TableCell>
+                      <TableCell className="font-mono tabular-nums">
+                        {formatOpsDate(row.eventDate)}
+                      </TableCell>
+                      <TableCell>{row.day || "—"}</TableCell>
+                      <TableCell className="uppercase">{row.driver1 || "—"}</TableCell>
+                      <TableCell className="uppercase">{row.driver2 || "—"}</TableCell>
+                      <TableCell>
+                        {row.fields.insurance ? (
+                          <Badge
+                            variant="outline"
+                            className={insuranceBadgeClass(row.fields.insurance)}
+                          >
+                            {row.fields.insurance}
+                          </Badge>
+                        ) : (
+                          "—"
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))
                 )}
               </TableBody>
             </Table>
           </div>
           <p className="text-muted-foreground mt-3 text-sm">
-            #{filtered.length} rows · {distinctTrucks} distinct trucks
+            #{truckCount} trucks · source rows {filteredSource.length}
           </p>
         </CardContent>
       </Card>
@@ -242,24 +364,36 @@ export function TrucksReturnDashboard({ data }: { data: ReturnsPayload }) {
               <strong>{data.meta.fetched_count}</strong> · pagination_complete=
               <strong>{String(data.meta.pagination_complete)}</strong> · live=
               <strong>{String(Boolean(data.meta.live))}</strong> · distinct_trucks
-              (fuente)=<strong>{data.meta.distinct_trucks}</strong>.
+              (source)=<strong>{data.meta.distinct_trucks}</strong>.
+            </p>
+            <p>
+              Focus week Mon–Sun <strong>{focusMonday}</strong>–
+              <strong>{addDaysIso(focusMonday, 6)}</strong> ({thisLabel}) · returning this
+              week=<strong>{returningThisWeek}</strong> · returning next week=
+              <strong>{returningNextWeek}</strong> ({nextLabel}) · no date=
+              <strong>{noDateTrucks}</strong>.
             </p>
             <p>
               UI filters: search=&quot;{truckQuery}&quot;, insurance=
               <strong>{insurance}</strong>, return_date=<strong>{datedOnly}</strong> ·
-              selection=<strong>{filtered.length}</strong> rows · distinct trucks=
-              <strong>{distinctTrucks}</strong>.
+              table=<strong>{tableRows.length}</strong> truck-date rows · source rows=
+              <strong>{filteredSource.length}</strong> · weeks in payload=
+              <strong>{mondays.length}</strong>.
             </p>
             <p>
               as_of=<strong>{data.meta.as_of}</strong> · source_freshness=
               <strong>{data.meta.source_freshness}</strong>.
             </p>
             <p>
-              Caveats: driver-row grain (teams usually have two rows). Count
-              distinct Truck for truck totals. Null Return Date = no stored date.
-              Phone Number and CDL are sensitive and are not requested. Do not use
-              Ninox_ID or a name as a CDL substitute. as_of is request time, not a
-              Ninox sync stamp.
+              Caveats: KPIs and table use distinct trucks after collapsing driver-grain
+              rows on (Truck, Return Date) into Driver 1 / Driver 2. Week nav only walks
+              Mondays present in the live returns payload. Null Return Date = no stored
+              date. Phone Number and CDL are sensitive and are not requested. Do not use
+              Ninox_ID or a name as a CDL substitute. as_of is request time, not a Ninox
+              sync stamp.
+              {extraDrivers
+                ? " One or more trucks had more than two driver names; extras are appended in Driver 2."
+                : ""}
             </p>
           </div>
         </details>
