@@ -4,6 +4,7 @@ import { describe, it } from "node:test"
 import {
   accountingNet,
   allocationImpact,
+  buildGrossNetTrend,
   compareMetric,
   filterRowsForPeriod,
   isAllocationTruck,
@@ -22,7 +23,10 @@ import {
   reconcileNets,
   returnDateGaps,
   revenuePerMile,
+  shiftCalendarMonth,
   teamPerformance,
+  truckSettlementHistory,
+  trucksInSelection,
   type SettlementMetricRow,
 } from "./metrics.ts"
 
@@ -229,5 +233,64 @@ describe("period helpers and comparisons", () => {
     const zeroPrior = compareMetric(current, { value: 0, status: "ok" })
     assert.equal(zeroPrior.pct, null)
     assert.equal(zeroPrior.status, "unavailable")
+  })
+})
+
+describe("trend and truck drill-down helpers", () => {
+  it("builds monthly Gross/Net trend excluding allocation under operating lens", () => {
+    const rows = [
+      row({ t: "101", pf: "2026-08-04", o: "Carlos", g: 10000, n: 2000 }),
+      row({ t: "1", pf: "2026-08-04", o: "Carlos", g: 5000, n: 4000 }),
+      row({ t: "101", pf: "2026-09-08", o: "Carlos", g: 12000, n: 3000 }),
+      row({ t: "102", pf: "2026-09-08", o: "Jorge", g: 8000, n: -500 }),
+    ]
+    const monthly = buildGrossNetTrend(rows, "month", "operating", {
+      endDate: "2026-09-08",
+      maxMonths: 12,
+    })
+    assert.equal(monthly.length, 2)
+    const sep = monthly.find((p) => p.period === "2026-09")
+    assert.equal(sep?.gross, 20000)
+    assert.equal(sep?.net, 2500)
+
+    const accounting = buildGrossNetTrend(rows, "month", "accounting", {
+      endDate: "2026-09-08",
+    })
+    const aug = accounting.find((p) => p.period === "2026-08")
+    assert.equal(aug?.gross, 15000)
+    assert.equal(aug?.net, 6000)
+  })
+
+  it("marks incomplete trend points unavailable instead of zero", () => {
+    const rows = [row({ t: "101", pf: WEEK, g: 10000, n: 1000 })]
+    const points = buildGrossNetTrend(rows, "week", "operating", {
+      incomplete: true,
+      endDate: WEEK,
+    })
+    assert.equal(points[0]?.status, "partial")
+    assert.equal(points[0]?.gross, null)
+    assert.equal(points[0]?.net, null)
+  })
+
+  it("lists physical trucks and settlement history for drill-down", () => {
+    const rows = [
+      row({ t: "101", pf: PREV_WEEK, o: "Carlos", g: 10000, n: 1000, m: 500, f: 200 }),
+      row({ t: "101", pf: WEEK, o: "Carlos", g: 12000, n: -100, m: 600, f: 250 }),
+      row({ t: "1", pf: WEEK, o: "Carlos", g: 5000, n: 4000, m: 0, f: 0 }),
+    ]
+    const trucks = trucksInSelection(filterRowsForPeriod(rows, "week", WEEK))
+    assert.equal(trucks.length, 1)
+    assert.equal(trucks[0]?.truck, "101")
+    assert.equal(trucks[0]?.net, -100)
+
+    const history = truckSettlementHistory(rows, "101")
+    assert.equal(history.length, 2)
+    assert.equal(history[0]?.period, WEEK)
+    assert.equal(truckSettlementHistory(rows, "1").length, 0)
+  })
+
+  it("shifts calendar months for the 12-month window", () => {
+    assert.equal(shiftCalendarMonth("2026-09", -11), "2025-10")
+    assert.equal(shiftCalendarMonth("2026-01", -1), "2025-12")
   })
 })

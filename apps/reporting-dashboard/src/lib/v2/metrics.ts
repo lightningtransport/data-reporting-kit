@@ -606,3 +606,173 @@ export function lensNet(
     ? operatingNet(rows, options)
     : accountingNet(rows, options)
 }
+
+export type TrendPoint = {
+  period: string
+  label: string
+  gross: number | null
+  net: number | null
+  status: MetricStatus
+  reason?: string
+}
+
+export type TruckPeriodRow = {
+  truck: string
+  owner: string
+  period: string
+  gross: number
+  net: number
+  miles: number
+  fuel: number
+  rpm: number | null
+}
+
+export type TruckAggregate = {
+  truck: string
+  owner: string
+  gross: number
+  net: number
+  miles: number
+  fuel: number
+  rpm: number | null
+  fuelPerMile: number | null
+}
+
+/** Calendar month `YYYY-MM` shifted by `delta` months (negative = earlier). */
+export function shiftCalendarMonth(ym: string, delta: number): string {
+  const [year, month] = ym.split("-").map(Number)
+  const date = new Date(Date.UTC(year, month - 1 + delta, 1))
+  return date.toISOString().slice(0, 7)
+}
+
+/**
+ * Up to 12 calendar months of Gross/Net by selected grain and lens.
+ * Incomplete pagination marks every point unavailable (not zero).
+ */
+export function buildGrossNetTrend(
+  rows: SettlementMetricRow[],
+  grain: ExecutiveGrain,
+  lens: ExecutiveLens,
+  options?: {
+    incomplete?: boolean
+    teams?: string[]
+    maxMonths?: number
+    endDate?: string
+  }
+): TrendPoint[] {
+  const maxMonths = options?.maxMonths ?? 12
+  const teamSet =
+    options?.teams && options.teams.length > 0
+      ? new Set(options.teams)
+      : null
+  const scoped = teamSet
+    ? rows.filter((row) => teamSet.has(row.o))
+    : rows
+
+  const endDate =
+    options?.endDate ??
+    scoped.reduce(
+      (latest, row) => (row.pf > latest ? row.pf : latest),
+      "0000-00-00"
+    )
+  if (!endDate || endDate === "0000-00-00") return []
+
+  const endYm = endDate.slice(0, 7)
+  const startYm = shiftCalendarMonth(endYm, -(maxMonths - 1))
+
+  const periods = new Set<string>()
+  for (const row of scoped) {
+    const ym = row.pf.slice(0, 7)
+    if (ym < startYm || ym > endYm) continue
+    periods.add(grain === "week" ? row.pf : ym)
+  }
+
+  const ordered = [...periods].sort()
+  const opts = { incomplete: options?.incomplete }
+
+  return ordered.map((period) => {
+    const periodRows = filterRowsForPeriod(scoped, grain, period)
+    const gross = lensGross(periodRows, lens, opts)
+    const net = lensNet(periodRows, lens, opts)
+    const status =
+      gross.status === "partial" || net.status === "partial"
+        ? "partial"
+        : gross.status === "empty" && net.status === "empty"
+          ? "empty"
+          : gross.status === "ok" && net.status === "ok"
+            ? "ok"
+            : "unavailable"
+    return {
+      period,
+      label: period,
+      gross: gross.value,
+      net: net.value,
+      status,
+      reason: gross.reason ?? net.reason,
+    }
+  })
+}
+
+/** Physical trucks in a team for the active row set, sorted by lowest net. */
+export function trucksInSelection(
+  rows: SettlementMetricRow[]
+): TruckAggregate[] {
+  const map = aggregatePhysicalByTruck(rows)
+  const out: TruckAggregate[] = []
+  for (const [truck, agg] of map) {
+    out.push({
+      truck,
+      owner: agg.owner,
+      gross: agg.gross,
+      net: agg.net,
+      miles: agg.miles,
+      fuel: agg.fuel,
+      rpm: agg.miles > 0 ? agg.gross / agg.miles : null,
+      fuelPerMile: agg.miles > 0 ? agg.fuel / agg.miles : null,
+    })
+  }
+  return out.sort(
+    (a, b) => a.net - b.net || a.truck.localeCompare(b.truck, undefined, { numeric: true })
+  )
+}
+
+/** Settlement history for one physical truck across the loaded window. */
+export function truckSettlementHistory(
+  rows: SettlementMetricRow[],
+  truck: string
+): TruckPeriodRow[] {
+  const id = normalizeTruckId(truck)
+  if (!id || isAllocationTruck(id)) return []
+  const byPeriod = new Map<
+    string,
+    { owner: string; gross: number; net: number; miles: number; fuel: number }
+  >()
+  for (const row of rows) {
+    if (normalizeTruckId(row.t) !== id) continue
+    const current = byPeriod.get(row.pf) ?? {
+      owner: row.o,
+      gross: 0,
+      net: 0,
+      miles: 0,
+      fuel: 0,
+    }
+    current.owner = row.o || current.owner
+    current.gross += row.g
+    current.net += row.n
+    current.miles += row.m
+    current.fuel += row.f
+    byPeriod.set(row.pf, current)
+  }
+  return [...byPeriod.entries()]
+    .sort(([a], [b]) => b.localeCompare(a))
+    .map(([period, agg]) => ({
+      truck: id,
+      owner: agg.owner,
+      period,
+      gross: agg.gross,
+      net: agg.net,
+      miles: agg.miles,
+      fuel: agg.fuel,
+      rpm: agg.miles > 0 ? agg.gross / agg.miles : null,
+    }))
+}

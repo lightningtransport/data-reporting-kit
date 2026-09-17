@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useTransition } from "react"
+import { useEffect, useRef, useTransition } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 
 import { Badge } from "@/components/ui/badge"
@@ -30,6 +30,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import {
+  TeamDrillDownPanel,
+  TruckDrillDownPanel,
+} from "@/components/v2/drill-down-panel"
+import {
+  GrossNetTrendChart,
+  toChartTrendPoints,
+} from "@/components/v2/trend-chart"
 import { money, moneyExact, num, pct } from "@/lib/format"
 import {
   monthsFromWeeks,
@@ -44,6 +52,7 @@ import {
 } from "@/lib/v2/filters"
 import type { V2DashboardData } from "@/lib/v2/load"
 import {
+  buildGrossNetTrend,
   compareMetric,
   filterRowsForPeriod,
   lensGross,
@@ -58,6 +67,8 @@ import {
   returnDateGaps,
   revenuePerMile,
   teamPerformance,
+  truckSettlementHistory,
+  trucksInSelection,
   type MetricValue,
   type PeriodComparison,
 } from "@/lib/v2/metrics"
@@ -144,6 +155,7 @@ export function ExecutiveOverview({ data }: { data: V2DashboardData }) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const [pending, startTransition] = useTransition()
+  const lastTriggerRef = useRef<HTMLElement | null>(null)
 
   const params: V2SearchParams = {
     grain: searchParams.get("grain") ?? undefined,
@@ -209,6 +221,55 @@ export function ExecutiveOverview({ data }: { data: V2DashboardData }) {
     previousPartial: priorPartial,
   })
 
+  const trendPoints = buildGrossNetTrend(allRows, filters.grain, filters.lens, {
+    incomplete,
+    teams: filters.teams.length ? filters.teams : undefined,
+    endDate: filters.period || undefined,
+    maxMonths: 12,
+  })
+  const partialPeriods = new Set(
+    trendPoints
+      .filter((point) => isPeriodPartial(filters.grain, point.period))
+      .map((point) => point.period)
+  )
+  const chartPoints = toChartTrendPoints(trendPoints, partialPeriods)
+
+  const focusTeam = filters.focusTeam
+  const focusTruck = filters.focusTruck
+  const focusedTeamMetrics =
+    focusTeam != null
+      ? (teams.find((team) => team.team === focusTeam) ?? null)
+      : null
+  const focusTeamRows =
+    focusTeam != null
+      ? activeRows.filter((row) => row.o === focusTeam)
+      : []
+  const focusTeamTrucks = trucksInSelection(focusTeamRows)
+  const focusTeamPriorRows =
+    focusTeam != null
+      ? priorRows.filter((row) => row.o === focusTeam)
+      : []
+  const focusTeamGrossCmp = compareMetric(
+    lensGross(focusTeamRows, "operating", opts),
+    lensGross(focusTeamPriorRows, "operating", opts),
+    { currentPartial: periodPartial, previousPartial: priorPartial }
+  )
+  const focusTeamNetCmp = compareMetric(
+    lensNet(focusTeamRows, "operating", opts),
+    lensNet(focusTeamPriorRows, "operating", opts),
+    { currentPartial: periodPartial, previousPartial: priorPartial }
+  )
+  const focusTruckHistory =
+    focusTruck != null ? truckSettlementHistory(allRows, focusTruck) : []
+  const focusTruckPeriod =
+    focusTruck != null
+      ? (trucksInSelection(activeRows).find((t) => t.truck === focusTruck) ??
+        null)
+      : null
+
+  const periodLabel = `${filters.grain === "week" ? "Week" : "Month"} ${filters.period || "—"}`
+  const filterSummary = `Lens ${filters.lens === "operating" ? "Operating Fleet" : "Accounting Total"}; team filter ${filters.teams.join("|") || "all"}`
+
   function updateParams(patch: Record<string, string | null>) {
     const next = new URLSearchParams(searchParams.toString())
     for (const [key, value] of Object.entries(patch)) {
@@ -219,6 +280,47 @@ export function ExecutiveOverview({ data }: { data: V2DashboardData }) {
       router.replace(`${pathname}?${next.toString()}`, { scroll: false })
     })
   }
+
+  function rememberTrigger(target: EventTarget | null) {
+    if (target instanceof HTMLElement) lastTriggerRef.current = target
+  }
+
+  function openTeam(team: string, trigger?: EventTarget | null) {
+    rememberTrigger(trigger ?? null)
+    updateParams({ focus: team, truck: null })
+  }
+
+  function openTruck(
+    truck: string,
+    options?: { team?: string | null; trigger?: EventTarget | null }
+  ) {
+    rememberTrigger(options?.trigger ?? null)
+    updateParams({
+      truck,
+      focus: options?.team ?? focusTeam,
+    })
+  }
+
+  function closeTruckPanel() {
+    if (focusTeam) {
+      updateParams({ truck: null })
+      return
+    }
+    updateParams({ truck: null, focus: null })
+  }
+
+  function closeTeamPanel() {
+    updateParams({ focus: null, truck: null })
+  }
+
+  useEffect(() => {
+    if (focusTeam || focusTruck) return
+    const trigger = lastTriggerRef.current
+    if (trigger) {
+      trigger.focus()
+      lastTriggerRef.current = null
+    }
+  }, [focusTeam, focusTruck])
 
   const settlementFailed = data.sources.settlements.status === "error"
   const asOf = data.sources.settlements.asOf
@@ -533,7 +635,18 @@ export function ExecutiveOverview({ data }: { data: V2DashboardData }) {
                     <ul className="text-muted-foreground mt-2 space-y-1 text-xs">
                       {neg.slice(0, 5).map((item) => (
                         <li key={item.truck}>
-                          Truck {item.truck} · {moneyExact(item.net)}
+                          <button
+                            type="button"
+                            className="hover:text-foreground focus-visible:ring-ring rounded-sm text-left hover:underline focus-visible:ring-2 focus-visible:outline-none"
+                            onClick={(event) =>
+                              openTruck(item.truck, {
+                                team: item.owner,
+                                trigger: event.currentTarget,
+                              })
+                            }
+                          >
+                            Truck {item.truck} · {moneyExact(item.net)}
+                          </button>
                         </li>
                       ))}
                       {neg.length === 0 ? <li>None in selection</li> : null}
@@ -545,7 +658,18 @@ export function ExecutiveOverview({ data }: { data: V2DashboardData }) {
                     <ul className="text-muted-foreground mt-2 space-y-1 text-xs">
                       {low.slice(0, 5).map((item) => (
                         <li key={item.truck}>
-                          Truck {item.truck} · {moneyExact(item.gross)}
+                          <button
+                            type="button"
+                            className="hover:text-foreground focus-visible:ring-ring rounded-sm text-left hover:underline focus-visible:ring-2 focus-visible:outline-none"
+                            onClick={(event) =>
+                              openTruck(item.truck, {
+                                team: item.owner,
+                                trigger: event.currentTarget,
+                              })
+                            }
+                          >
+                            Truck {item.truck} · {moneyExact(item.gross)}
+                          </button>
                         </li>
                       ))}
                       {low.length === 0 ? <li>None in selection</li> : null}
@@ -564,7 +688,19 @@ export function ExecutiveOverview({ data }: { data: V2DashboardData }) {
                         </p>
                         <ul className="text-muted-foreground mt-2 space-y-1 text-xs">
                           {gaps.slice(0, 5).map((item) => (
-                            <li key={item.truck}>Truck {item.truck}</li>
+                            <li key={item.truck}>
+                              <button
+                                type="button"
+                                className="hover:text-foreground focus-visible:ring-ring rounded-sm text-left hover:underline focus-visible:ring-2 focus-visible:outline-none"
+                                onClick={(event) =>
+                                  openTruck(item.truck, {
+                                    trigger: event.currentTarget,
+                                  })
+                                }
+                              >
+                                Truck {item.truck}
+                              </button>
+                            </li>
                           ))}
                           {gaps.length === 0 ? (
                             <li>None in current returns load</li>
@@ -585,16 +721,22 @@ export function ExecutiveOverview({ data }: { data: V2DashboardData }) {
                       Gross and Net Trend
                     </CardTitle>
                     <CardDescription>
-                      Phase 1 placeholder — chart lands in Phase 2 using the
-                      same lens and ≥12-month history already loaded.
+                      Up to 12 calendar months ending at the selected period ·
+                      same lens and team filter · partial periods marked
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-muted-foreground text-sm">
-                      History rows loaded: {num(allRows.length)}. Active period{" "}
-                      {filters.period}
-                      {periodPartial ? " (partial)" : ""}.
-                    </p>
+                    {incomplete ? (
+                      <p className="text-muted-foreground text-sm">
+                        Trend unavailable · settlement pagination incomplete.
+                      </p>
+                    ) : (
+                      <GrossNetTrendChart
+                        data={chartPoints}
+                        grain={filters.grain}
+                        lens={filters.lens}
+                      />
+                    )}
                   </CardContent>
                 </Card>
               </section>
@@ -675,7 +817,25 @@ export function ExecutiveOverview({ data }: { data: V2DashboardData }) {
                     </TableHeader>
                     <TableBody>
                       {teams.map((team) => (
-                        <TableRow key={team.team}>
+                        <TableRow
+                          key={team.team}
+                          className={cn(
+                            "hover:bg-muted/50 cursor-pointer",
+                            focusTeam === team.team && "bg-muted/60"
+                          )}
+                          tabIndex={0}
+                          role="button"
+                          aria-label={`Open team ${team.team} drill-down`}
+                          onClick={(event) =>
+                            openTeam(team.team, event.currentTarget)
+                          }
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault()
+                              openTeam(team.team, event.currentTarget)
+                            }
+                          }}
+                        >
                           <TableCell className="font-medium">
                             {team.team}
                           </TableCell>
@@ -772,9 +932,42 @@ export function ExecutiveOverview({ data }: { data: V2DashboardData }) {
               Productive Trucks = distinct physical trucks with a settlement
               row in the selection (activity, not utilization).
             </p>
+            <p>
+              Trend points: {trendPoints.length} ({filters.grain}). History
+              rows loaded: {num(allRows.length)}. Drill-down URL: focus=
+              {focusTeam || "—"}, truck={focusTruck || "—"}.
+            </p>
           </div>
         </details>
       </main>
+
+      <TeamDrillDownPanel
+        open={Boolean(focusTeam) && !focusTruck}
+        team={focusTeam}
+        metrics={focusedTeamMetrics}
+        trucks={focusTeamTrucks}
+        grossComparison={focusTeamGrossCmp}
+        netComparison={focusTeamNetCmp}
+        periodLabel={periodLabel}
+        filterSummary={filterSummary}
+        onClose={closeTeamPanel}
+        onSelectTruck={(truck) => openTruck(truck, { team: focusTeam })}
+      />
+
+      <TruckDrillDownPanel
+        open={Boolean(focusTruck)}
+        truck={focusTruck}
+        periodMetrics={focusTruckPeriod}
+        history={focusTruckHistory}
+        periodLabel={periodLabel}
+        filterSummary={filterSummary}
+        onClose={closeTruckPanel}
+        onBackToTeam={
+          focusTeam
+            ? () => updateParams({ truck: null, focus: focusTeam })
+            : undefined
+        }
+      />
     </div>
   )
 }
