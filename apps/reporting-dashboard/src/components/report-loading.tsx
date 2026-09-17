@@ -16,7 +16,7 @@ export function ReportLoading({
       aria-busy="true"
     >
       <Loader2Icon
-        className="text-muted-foreground size-8 animate-spin"
+        className="text-muted-foreground size-8 motion-safe:animate-spin"
         aria-hidden="true"
       />
       <div className="flex flex-col gap-1.5">

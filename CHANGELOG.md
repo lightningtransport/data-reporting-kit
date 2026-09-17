@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.8.13 - 2026-09-16
+
+- Reporting dashboard UX polish: no header flicker on tab switch, prefers-reduced-motion + motion-safe fade/spinner, larger Tabs/week/day touch targets, shared Technical details focus, Diesel English copy (trucks/Transactions).
+
 ## 3.8.12 - 2026-09-16
 
 - Reporting dashboard: persistent `(reports)` chrome with fixed shadcn Tabs (no jumping view dropdown), content-only loading, Settlements 120s revalidate, and client router `staleTimes` for faster report switches. Out Schedule / Trucks Return stay live.
