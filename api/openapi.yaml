@@ -89,6 +89,10 @@ paths:
         - name: return_to
           in: query
           schema: {$ref: '#/components/schemas/IsoDate'}
+        - name: return_null
+          in: query
+          schema: {type: boolean}
+          description: When true on driver_pay, keep only rows with Return Date null and Out Date present (open assignment). Cannot combine with return_from or return_to.
         - name: transfer
           in: query
           schema: {type: string}

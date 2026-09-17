@@ -51,19 +51,18 @@ Not established (do not display or approximate): Ninox “Full Week” / “No F
 
 ### Out Schedule (`/out-schedule`)
 
-1. Distinct-truck KPIs for the focused Monday–Sunday week and the next week (leaving counts). Week nav is calendar Mon ±7 days (empty weeks allowed).
+1. Distinct-truck KPIs: **Currently out** (DriverPay open assignment: Out Date set, Return Date null), plus leaving this week / next week from Schedule_Teams. Week nav is calendar Mon ±7 days (empty weeks allowed).
 2. Mon–Sun day strip with distinct-truck counts per weekday so incomplete live weeks are visible (Schedule_Teams drops past planned days).
 3. Table collapsed to one row per truck per Out Date: Truck, Out Date, Day (derived), Driver 1, Driver 2, Owner, Dispatch, Flatbed, Solo. Sticky column headers in the scroll area.
 4. Light filters (truck/driver search, owner, dispatch), Export CSV of collapsed rows, truck count, **Technical details**.
-5. Do not substitute DriverPay history when the Ninox share fails; show an explicit error state. Insurance / Team Status / Truck Status / Notes are not in this share. Past planned days not still in the live share cannot be reconstructed here.
+5. Do not substitute DriverPay history when the Ninox share fails; show an explicit error state. Insurance / Team Status / Truck Status / Notes are not in this share. Past planned days not still in the live share cannot be reconstructed here. Currently out is DriverPay-only and is not exact Ninox in-yard/on-road.
 
 ### Trucks Return (`/trucks-return`)
 
-1. Distinct-truck KPIs: returning this week, returning next week, and no date (empty `Return Date`). Calendar Mon ±7 week nav; Mon–Sun day strip for dated weeks.
+1. Distinct-truck KPIs: **Currently out** (DriverPay open assignment), returning this week, returning next week, and no date (empty `returns.Return Date`). Calendar Mon ±7 week nav; Mon–Sun day strip for dated weeks.
 2. Table collapsed to one row per truck per Return Date: Truck, Return Date, Day (derived), Driver 1, Driver 2, Insurance (never Phone/CDL). Sticky headers.
 3. Light filters, truck count, **Technical details**. Driver-row grain is collapsed for display and KPIs; source row count stays in Technical details.
-4. Live `returns` is volatile; historical returns need DriverPay (not this screen).
-
+4. Live `returns` is volatile; historical returns need DriverPay (not this screen). Currently out is DriverPay-only and is not exact Ninox in-yard/on-road.
 
 ### Diesel (`/diesel`)
 

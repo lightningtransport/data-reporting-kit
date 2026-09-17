@@ -55,8 +55,9 @@ Only in `settlements` and settlement-derived reports, `Truck` 1=Carlos, 2=Jorge,
 | Trucks returning historically | Distinct `Truck_Number` filtered by `Return Date` only. | `DriverPay` |
 | Current expected returns | Current Returns rows by nullable date; deduplicate `Truck` for truck count. | `returns` |
 | Current fleet assignment | Current owner/dispatcher/mechanic metadata, not history. | `trucks` |
+| Trucks currently out (open assignment) | Distinct `Truck_Number` where `Out Date` is present and `Return Date` is null. Use `driver_pay` with `return_null=true` and a lookback `out_from`. Not the exact Ninox in-yard/on-road formula. | `DriverPay` |
 | Planned departures | Not available in these Supabase tables; use approved live Ninox Schedule_Teams source. | external |
-| Exact in-yard/on-road count | Not available because Supabase lacks Ninox `days_in_yard_` and numeric insurance-choice fields. | external |
+| Exact in-yard/on-road count | Not available because Supabase lacks Ninox `days_in_yard_` and numeric insurance-choice fields. Prefer open-assignment count above when “currently out” is requested. | external |
 
 ## Fuel metrics
 

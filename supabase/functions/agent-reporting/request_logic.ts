@@ -29,6 +29,7 @@ export const reportFilters: Record<SupportedReport, Set<string>> = {
     "out_to",
     "return_from",
     "return_to",
+    "return_null",
     "transfer",
     "termination",
     "solo",
@@ -247,6 +248,12 @@ export function validateReportValues(
       );
     }
     parseBoolean(params.get("solo"), "solo");
+    parseBoolean(params.get("return_null"), "return_null");
+    if (params.get("return_null") === "true") {
+      if (params.get("return_from") || params.get("return_to")) {
+        invalid("return_null cannot be combined with return_from or return_to");
+      }
+    }
     const temporalDriver = params.get("temporal_driver");
     if (
       temporalDriver !== null && temporalDriver !== "Yes" &&

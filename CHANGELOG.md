@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.8.15 - 2026-09-17
+
+- Out Schedule and Trucks Return show **Currently out**: distinct DriverPay trucks with Out Date set and Return Date null (`return_null=true`, 18-month `out_from` lookback). Not exact Ninox in-yard/on-road. Agent-reporting gains `return_null` for `driver_pay` (deploy Edge Function with this change).
+
 ## 3.8.14 - 2026-09-17
 
 - Reporting dashboard loaders: content-region skeleton (filters → KPIs → table) instead of a centered spinner; shadcn Skeleton with motion-safe pulse; chrome title no longer duplicated in the body loader.

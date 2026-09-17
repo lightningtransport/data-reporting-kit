@@ -283,6 +283,8 @@ export const REPORTS = {
       out_to: "inclusive upper Out Date, YYYY-MM-DD",
       return_from: "inclusive lower Return Date, YYYY-MM-DD",
       return_to: "inclusive upper Return Date, YYYY-MM-DD",
+      return_null:
+        "true = Return Date IS NULL and Out Date IS NOT NULL (open assignment / currently out). Cannot combine with return_from or return_to.",
       transfer: "exact Transfer",
       termination: "exact Termination",
       solo: "true means Solo_Driver_if_1 = 1; false includes null and values other than 1",

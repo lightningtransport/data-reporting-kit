@@ -316,6 +316,9 @@ Deno.serve(async (req: Request) => {
       if (params.get("out_to")) query = query.lte("Out Date", params.get("out_to"));
       if (params.get("return_from")) query = query.gte("Return Date", params.get("return_from"));
       if (params.get("return_to")) query = query.lte("Return Date", params.get("return_to"));
+      if (params.get("return_null") === "true") {
+        query = query.is("Return Date", null).not("Out Date", "is", null);
+      }
       if (params.get("solo") === "true") query = query.eq("Solo_Driver_if_1", 1);
       if (params.get("solo") === "false") query = query.or('"Solo_Driver_if_1".neq.1,"Solo_Driver_if_1".is.null');
       query = query.order("Out Date", { ascending: true, nullsFirst: false }).order("ID", { ascending: true });
