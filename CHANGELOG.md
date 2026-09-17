@@ -1,8 +1,12 @@
 # Changelog
 
-## 3.8.22 - 2026-09-17
+## 3.8.23 - 2026-09-17
 
 - Settlements Fuel by team / Fuel vs expenses charts: design-token colors (`chart-1`/`chart-2`), dynamic height so owner labels do not overlap, wider truncated Y labels.
+
+## 3.8.22 - 2026-09-17
+
+- V2 Performance trend tooltip: one card per period (Gross, Net, Net margin %); stop duplicating the period and mis-formatting margin as money ($0 Gross).
 
 ## 3.8.21 - 2026-09-17
 

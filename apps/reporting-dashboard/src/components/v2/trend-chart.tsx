@@ -16,7 +16,6 @@ import {
   ChartLegend,
   ChartLegendContent,
   ChartTooltip,
-  ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart"
 import {
@@ -44,46 +43,46 @@ export type ChartTrendPoint = TrendPoint & {
   chartMargin: number | undefined
 }
 
-function trendTooltip(
-  value: number | string | ReadonlyArray<number | string> | undefined,
-  name: number | string | undefined,
-  item: unknown
-) {
-  const n = typeof value === "number" ? value : Number(value)
-  const payload =
-    item && typeof item === "object" && "payload" in item
-      ? (item as { payload?: ChartTrendPoint }).payload
-      : undefined
-  const key = String(name ?? "")
-  const isMargin = key === "chartMargin"
+/**
+ * Single-shot tooltip for the dual-axis composed chart.
+ * Do not use ChartTooltipContent+formatter here: formatter runs once per
+ * series and duplicates Net/period while formatting margin as money ($0).
+ */
+function TrendTooltipContent({
+  active,
+  payload,
+}: {
+  active?: boolean
+  payload?: Array<{ payload?: ChartTrendPoint }>
+}) {
+  if (!active || !payload?.length) return null
+  const point = payload.find((item) => item.payload)?.payload
+  if (!point) return null
+
   return (
-    <div className="flex w-full flex-col gap-1 text-xs">
-      <div className="flex w-full items-center justify-between gap-4">
-        <span className="text-muted-foreground">
-          {isMargin ? "Net margin" : "Gross"}
-        </span>
+    <div className="grid min-w-40 gap-1.5 rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs shadow-xl">
+      <p className="font-medium tabular-nums">
+        {point.period}
+        {point.partial ? " · Partial" : ""}
+      </p>
+      <div className="flex items-center justify-between gap-6">
+        <span className="text-muted-foreground">Gross</span>
         <span className="tabular-nums font-medium">
-          {!Number.isFinite(n)
-            ? "Not available"
-            : isMargin
-              ? pct(n)
-              : money(n)}
+          {point.gross == null ? "Not available" : money(point.gross)}
         </span>
       </div>
-      {payload ? (
-        <>
-          <div className="flex w-full items-center justify-between gap-4">
-            <span className="text-muted-foreground">Net</span>
-            <span className="tabular-nums font-medium">
-              {payload.net == null ? "Not available" : money(payload.net)}
-            </span>
-          </div>
-          <p className="text-muted-foreground">
-            {payload.period}
-            {payload.partial ? " · Partial period" : ""}
-          </p>
-        </>
-      ) : null}
+      <div className="flex items-center justify-between gap-6">
+        <span className="text-muted-foreground">Net</span>
+        <span className="tabular-nums font-medium">
+          {point.net == null ? "Not available" : money(point.net)}
+        </span>
+      </div>
+      <div className="flex items-center justify-between gap-6">
+        <span className="text-muted-foreground">Net margin</span>
+        <span className="tabular-nums font-medium">
+          {point.margin == null ? "Not available" : pct(point.margin)}
+        </span>
+      </div>
     </div>
   )
 }
@@ -205,7 +204,8 @@ export function GrossNetTrendChart({
             strokeDasharray="3 3"
           />
           <ChartTooltip
-            content={<ChartTooltipContent formatter={trendTooltip} />}
+            cursor={{ fill: "var(--muted)", opacity: 0.35 }}
+            content={<TrendTooltipContent />}
           />
           <ChartLegend content={<ChartLegendContent className="gap-2 pt-2" />} />
           <Bar
