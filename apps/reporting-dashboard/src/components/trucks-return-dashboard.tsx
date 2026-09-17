@@ -35,6 +35,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import type { ReturnsPayload } from "@/lib/returns"
+import type { TrucksCurrentlyOutPayload } from "@/lib/trucks-currently-out"
 import {
   addDaysIso,
   collapseTruckRows,
@@ -67,7 +68,13 @@ function KpiCard({ label, value, hint }: { label: string; value: string; hint?: 
   )
 }
 
-export function TrucksReturnDashboard({ data }: { data: ReturnsPayload }) {
+export function TrucksReturnDashboard({
+  data,
+  currentlyOut,
+}: {
+  data: ReturnsPayload
+  currentlyOut: TrucksCurrentlyOutPayload
+}) {
   const insurers = useMemo(
     () =>
       [...new Set(data.rows.map((row) => row.insurance).filter(Boolean))].sort((a, b) =>
@@ -268,7 +275,18 @@ export function TrucksReturnDashboard({ data }: { data: ReturnsPayload }) {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <KpiCard
+          label="Currently out"
+          value={
+            currentlyOut.meta.error ? "—" : String(currentlyOut.count)
+          }
+          hint={
+            currentlyOut.meta.error
+              ? "DriverPay unavailable"
+              : "DriverPay · no Return Date"
+          }
+        />
         <KpiCard
           label="Returning this week"
           value={String(returningThisWeek)}
@@ -401,6 +419,20 @@ export function TrucksReturnDashboard({ data }: { data: ReturnsPayload }) {
             <p>
               as_of=<strong>{data.meta.as_of}</strong> · source_freshness=
               <strong>{data.meta.source_freshness}</strong>.
+            </p>
+            <p>
+              Currently out (DriverPay): distinct trucks=
+              <strong>{currentlyOut.count}</strong> · out_from=
+              <strong>{String(currentlyOut.meta.filters.out_from ?? "")}</strong> ·
+              return_null=<strong>true</strong> · fetched=
+              <strong>{currentlyOut.meta.fetched_count}</strong> ·
+              pagination_complete=
+              <strong>{String(currentlyOut.meta.pagination_complete)}</strong>
+              {currentlyOut.meta.error
+                ? ` · error=${currentlyOut.meta.error}`
+                : ""}
+              . Open assignment only (Out Date set, Return Date null) — not exact
+              Ninox in-yard/on-road.
             </p>
             <p>
               Caveats: KPIs and table use distinct trucks after collapsing driver-grain

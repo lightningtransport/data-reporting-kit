@@ -16,6 +16,7 @@ These rules govern every Lightning Transportation answer.
 - Select settlement cycles by explicit period, not `To Report` alone.
 - HTML reports and analytical settlement/fleet-history answers (trends, rankings) must load at least three calendar months ending today or at the user-named end date. The live settlement dashboard loads at least twelve calendar months of `settlements`. The named week or day is UI focus, not the sole query window. See `docs/html-reporting.md`.
 - Departures use `DriverPay.Out Date` only; historical returns use `DriverPay.Return Date` only.
+- “Trucks currently out” / open assignment = distinct `Truck_Number` with `Out Date` present and `Return Date` null (`driver_pay` + `return_null=true`). This is not the exact Ninox in-yard/on-road count.
 - A current-week “how many trucks are leaving” total is a union, not a single-source count: use distinct DriverPay trucks whose `Out Date` is in the Monday–Sunday window plus distinct live Ninox Schedule_Teams trucks whose `Out Date` is in that same window, then deduplicate by truck number. State source totals, overlap, source-only counts, and the union total.
 - `returns.Return Date` is a nullable PostgreSQL date. Null means no date stored, not a free-text status.
 

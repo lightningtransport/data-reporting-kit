@@ -53,6 +53,24 @@ Deno.test("settlement summary uses the exact declared projection", () => {
   );
 });
 
+Deno.test("driver_pay return_null cannot combine with return_from", () => {
+  try {
+    validateReportValues(
+      new URLSearchParams(
+        "report=driver_pay&out_from=2026-01-01&return_null=true&return_from=2026-01-01",
+      ),
+      "driver_pay",
+    );
+    throw new Error("expected invalid");
+  } catch (error) {
+    assert(
+      error instanceof Error &&
+        error.message.includes("return_null cannot be combined"),
+      `unexpected: ${error}`,
+    );
+  }
+});
+
 Deno.test("drivers omit Gender and other sensitive fields by default", () => {
   const defaultProjection = tableSelect("drivers", false);
   assert(
