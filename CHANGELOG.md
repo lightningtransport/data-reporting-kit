@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.8.14 - 2026-09-17
+
+- Reporting dashboard loaders: content-region skeleton (filters → KPIs → table) instead of a centered spinner; shadcn Skeleton with motion-safe pulse; chrome title no longer duplicated in the body loader.
+
 ## 3.8.13 - 2026-09-16
 
 - Reporting dashboard UX polish: no header flicker on tab switch, prefers-reduced-motion + motion-safe fade/spinner, larger Tabs/week/day touch targets, shared Technical details focus, Diesel English copy (trucks/Transactions).
