@@ -2,7 +2,7 @@
 
 ## 3.8.17 - 2026-09-17
 
-- Reporting dashboard primary Tabs: equal 4-column strip with no nested horizontal scroll; wrap-safe labels and ≥44px tap targets on mobile.
+- Reporting dashboard primary Tabs: equal 4-column strip with no nested horizontal scroll; height auto so wrapped labels are not cropped; ≥44px tap targets on mobile.
 
 ## 3.8.16 - 2026-09-17
 
