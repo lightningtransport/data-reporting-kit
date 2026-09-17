@@ -153,17 +153,17 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
 
   return (
     <DashboardShell
-      title="Liquidaciones"
+      title="Settlements"
       subtitle={scope}
       live={Boolean(data.meta.live)}
     >
       {data.meta.error ? (
         <Card>
           <CardHeader>
-            <CardTitle>No se pudo cargar Liquidaciones</CardTitle>
+            <CardTitle>Couldn't load Settlements</CardTitle>
             <CardDescription>
-              Solo consulta live de agent-reporting (settlements). No hay snapshot
-              embebido.
+              Live agent-reporting (settlements) only. There is no embedded
+              snapshot.
             </CardDescription>
           </CardHeader>
           <CardContent className="text-muted-foreground text-sm">
@@ -176,7 +176,7 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
         <CardContent className="pt-(--card-spacing)">
           <FieldGroup className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
             <Field className="w-full md:col-span-2 xl:col-span-1">
-              <FieldLabel>Periodo</FieldLabel>
+              <FieldLabel>Period</FieldLabel>
               <Tabs
                 value={vista === "mensual" ? "mensual" : "semanal"}
                 onValueChange={(value) => setVista(value as Vista)}
@@ -184,10 +184,10 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
               >
                 <TabsList className="h-9 w-full">
                   <TabsTrigger className="flex-1" value="semanal">
-                    Semana
+                    Week
                   </TabsTrigger>
                   <TabsTrigger className="flex-1" value="mensual">
-                    Mes
+                    Month
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
@@ -195,7 +195,7 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
 
             {vista !== "mensual" ? (
               <Field className="w-full md:col-span-2 xl:col-span-1">
-                <FieldLabel>Semana</FieldLabel>
+                <FieldLabel>Week</FieldLabel>
                 <div className="flex w-full items-center gap-2">
                   <Button
                     variant="outline"
@@ -237,7 +237,7 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
               </Field>
             ) : (
               <Field className="w-full">
-                <FieldLabel>Mes</FieldLabel>
+                <FieldLabel>Month</FieldLabel>
                 <Select
                   items={monthItems}
                   value={month}
@@ -258,12 +258,12 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
                     </SelectGroup>
                   </SelectContent>
                 </Select>
-                <p className="text-muted-foreground text-xs">Suma de las semanas de ese mes.</p>
+                <p className="text-muted-foreground text-xs">Sum of settlement weeks in that month.</p>
               </Field>
             )}
 
             <Field className="w-full">
-              <FieldLabel>Equipo</FieldLabel>
+              <FieldLabel>Team</FieldLabel>
               <OwnerMultiSelect
                 owners={ownersAll}
                 selected={owners}
@@ -272,7 +272,7 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
             </Field>
 
             <Field className="w-full">
-              <FieldLabel>Camión</FieldLabel>
+              <FieldLabel>Truck</FieldLabel>
               <Input
                 type="search"
                 value={truckQuery}
@@ -283,14 +283,14 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
 
             {dispatches.length > 0 ? (
               <Field className="w-full md:col-span-2 xl:col-span-4">
-                <FieldLabel>Despacho</FieldLabel>
+                <FieldLabel>Dispatch</FieldLabel>
                 <div className="flex flex-wrap gap-2">
                   <Button
                     size="sm"
                     variant={dispatch === "" ? "default" : "outline"}
                     onClick={() => setDispatch("")}
                   >
-                    Todos
+                    All
                   </Button>
                   {dispatches.map((value) => (
                     <Button
@@ -316,7 +316,7 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
                 onCheckedChange={(checked) => setPhysicalOnly(checked === true)}
               />
               <FieldLabel htmlFor="physical-only">
-                Ocultar asignaciones 1/2/3
+                Hide allocation trucks 1/2/3
               </FieldLabel>
             </Field>
           </FieldGroup>
@@ -340,20 +340,20 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <KpiCard label="Gross" value={money(agg.kpi.gross)} />
-        <KpiCard label="Gastos" value={money(agg.kpi.exp)} />
+        <KpiCard label="Expenses" value={money(agg.kpi.exp)} />
         <KpiCard label="Net" value={money(agg.kpi.net)} />
         <KpiCard
-          label="Combustible"
+          label="Fuel"
           value={`${money(agg.kpi.fuel)}${fuelPct ? ` · ${pct(fuelPct)}` : ""}`}
         />
-        <KpiCard label="Camiones" value={String(agg.kpi.phys)} />
-        <KpiCard label="Millas" value={num(agg.kpi.miles)} />
+        <KpiCard label="Trucks" value={String(agg.kpi.phys)} />
+        <KpiCard label="Miles" value={num(agg.kpi.miles)} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Gross y net por semana</CardTitle>
+            <CardTitle>Gross and Net by week</CardTitle>
           </CardHeader>
           <CardContent>
             <WeeklyTrendChart data={trendWeekly} />
@@ -361,7 +361,7 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Gross y net por mes</CardTitle>
+            <CardTitle>Gross and Net by month</CardTitle>
           </CardHeader>
           <CardContent>
             <MonthlyTrendChart data={trendMonthly} />
@@ -369,7 +369,7 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Combustible por equipo</CardTitle>
+            <CardTitle>Fuel by team</CardTitle>
           </CardHeader>
           <CardContent>
             <FuelOwnerChart data={fuelChart} />
@@ -377,7 +377,7 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Combustible vs gastos</CardTitle>
+            <CardTitle>Fuel vs expenses</CardTitle>
           </CardHeader>
           <CardContent>
             <FuelPctChart data={fuelPctChart} />
@@ -387,14 +387,14 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
 
       <div className="grid gap-4 lg:grid-cols-2">
         <TruckRankCard
-          title={`Camiones · Gross · ${scope}`}
-          description="Los primeros 15. Ver más muestra todos."
+          title={`Trucks · Gross · ${scope}`}
+          description="Top 15 preview. Show all lists the full selection."
           trucks={grossTrucks}
           primary="g"
         />
         <TruckRankCard
-          title={`Camiones · Net · ${scope}`}
-          description="Los primeros 15. Ver más muestra todos."
+          title={`Trucks · Net · ${scope}`}
+          description="Top 15 preview. Show all lists the full selection."
           trucks={netTrucks}
           primary="n"
         />
@@ -402,9 +402,9 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
 
       <div className="grid gap-4 lg:grid-cols-3">
         <RankTable
-          title="Equipos · Gross"
-          description="Incluye asignaciones 1/2/3"
-          headers={["#", "Equipo", "Gross", "Net"]}
+          title="Teams · Gross"
+          description="Includes allocation trucks 1/2/3"
+          headers={["#", "Team", "Gross", "Net"]}
           rows={ownerGross.map((owner, index) => [
             String(index + 1),
             owner.o,
@@ -413,9 +413,9 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
           ])}
         />
         <RankTable
-          title="Equipos · Net"
-          description="Incluye asignaciones 1/2/3"
-          headers={["#", "Equipo", "Net", "Gross"]}
+          title="Teams · Net"
+          description="Includes allocation trucks 1/2/3"
+          headers={["#", "Team", "Net", "Gross"]}
           rows={ownerNet.map((owner, index) => [
             String(index + 1),
             owner.o,
@@ -424,8 +424,8 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
           ])}
         />
         <RankTable
-          title="Combustible por equipo"
-          headers={["#", "Equipo", "Combustible", "% gastos"]}
+          title="Fuel by team"
+          headers={["#", "Team", "Fuel", "% expenses"]}
           rows={ownerFuel.map((owner, index) => [
             String(index + 1),
             owner.o,
@@ -437,9 +437,9 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Detalle</CardTitle>
+          <CardTitle>Detail</CardTitle>
           <CardDescription>
-            {detailRows.length} {detailRows.length === 1 ? "fila" : "filas"}
+            {detailRows.length} {detailRows.length === 1 ? "row" : "rows"}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -448,17 +448,17 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
               <TableHeader>
                 <TableRow>
                   {[
-                    "Camión",
-                    "Equipo",
-                    "Despacho",
-                    "Desde",
-                    "Hasta",
+                    "Truck",
+                    "Team",
+                    "Dispatch",
+                    "From",
+                    "To",
                     "Gross",
-                    "Gastos",
-                    "Combustible",
+                    "Expenses",
+                    "Fuel",
                     "Net",
-                    "Millas",
-                    "Pago",
+                    "Miles",
+                    "Pay",
                   ].map((header) => (
                     <TableHead key={header}>{header}</TableHead>
                   ))}
@@ -468,7 +468,7 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
                 {detailRows.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={11} className="text-muted-foreground">
-                      Sin datos en este periodo
+                      No rows in this period
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -477,7 +477,7 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
                       <TableCell>
                         {row.t}{" "}
                         {row.t === "1" || row.t === "2" || row.t === "3" ? (
-                          <Badge variant="outline">No físico</Badge>
+                          <Badge variant="outline">Non-physical</Badge>
                         ) : null}
                       </TableCell>
                       <TableCell>{row.o}</TableCell>
@@ -512,14 +512,14 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
       </Card>
 
       <footer className="text-muted-foreground flex flex-col gap-2 text-sm">
-        <p>Números de liquidación semanal (mar–lun).</p>
+        <p>Weekly settlement figures (Tue–Mon).</p>
         <details>
-          <summary className="cursor-pointer text-foreground">Datos técnicos</summary>
+          <summary className="cursor-pointer text-foreground">Technical details</summary>
           <div className="mt-3 flex flex-col gap-2">
             <p>
               Filtros: vista=<strong>{vista}</strong>,{" "}
               {vista === "mensual" ? `mes=${month}` : `semana=${week}`}, dispatch=
-              <strong>{dispatch || "todos"}</strong>, owners=
+              <strong>{dispatch || "all"}</strong>, owners=
               {owners.length}/{ownersAll.length}, truck_search=&quot;{truckQuery}
               &quot;, physical_only_rankings=<strong>{String(physicalOnly)}</strong>.
             </p>
@@ -531,7 +531,7 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
               <strong>{String(Boolean(data.meta.live))}</strong>.
             </p>
             <p>
-              Fuel (galones): fetched=
+              Fuel (gallons): fetched=
               <strong>{data.meta.fuel_fetched_count ?? 0}</strong> /
               <strong>{data.meta.fuel_total_count ?? 0}</strong> · pagination_complete=
               <strong>{String(Boolean(data.meta.fuel_pagination_complete))}</strong>.
@@ -541,18 +541,18 @@ export function SettlementDashboard({ data }: { data: SettlementPayload }) {
               <strong>{data.meta.source_freshness}</strong>.
             </p>
             <p>
-              Selección: <strong>{selectedRows.length}</strong> filas · periodo rows=
+              Selection: <strong>{selectedRows.length}</strong> rows · period rows=
               <strong>{periodRows.length}</strong> · Gross {moneyExact(agg.kpi.gross)} ·
-              Combustible {moneyExact(agg.kpi.fuel)}.
+              Fuel {moneyExact(agg.kpi.fuel)}.
             </p>
             <p>
-              Caveats: grano semanal mar–lun. Camiones 1/2/3 son buckets de owner:
-              incluidos en totales de equipo, excluidos de conteos físicos.
-              Facturado Compass es tonu y ya está en Gross. Peajes+PrePass =
-              Tolls+PrePass (sin BestPass). Galones/MPG salen de fuel, no de Fuel
-              Expenses. Full Week y Other Deductions+Previous no están en estas
-              tablas. as_of es hora de request, no sync Ninox. Solo live
-              agent-reporting; no hay snapshot embebido.
+              Caveats: weekly grain Tue–Mon. Trucks 1/2/3 are owner-allocation
+              buckets: included in team totals, excluded from physical counts.
+              Compass billed is tonu and already inside Gross. Tolls+PrePass =
+              Tolls+PrePass (no BestPass). Gallons/MPG come from fuel, not Fuel
+              Expenses. Full Week and Other Deductions+Previous are not in these
+              tables. as_of is request time, not a Ninox sync stamp. Live
+              agent-reporting only; no embedded snapshot.
             </p>
           </div>
         </details>
@@ -592,7 +592,7 @@ function RankTable({
               {rows.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={headers.length} className="text-muted-foreground">
-                    Sin datos
+                    No data
                   </TableCell>
                 </TableRow>
               ) : (

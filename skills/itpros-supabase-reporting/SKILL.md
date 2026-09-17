@@ -1,7 +1,7 @@
 ---
 name: itpros-supabase-reporting
 description: Answer Lightning reports through the approved reporting APIs.
-version: 0.9.4
+version: 0.9.5
 author: Ibrain Ortega, Hermes Agent
 license: Proprietary
 platforms: [linux, macos, windows]
@@ -53,9 +53,9 @@ Use schedule `0 10,14 * * *`. The job updates instructions only and must report 
 
 ## HTML reports
 
-The reporting dashboard is [`apps/reporting-dashboard`](../../apps/reporting-dashboard) (Next.js + real shadcn/ui). Grok Bot and Cursor agents **link** the matching live URL and keep that app in sync from this repository. Do not generate a one-off HTML replacement or a native `<select multiple>` for Owner/equipo.
+The reporting dashboard is [`apps/reporting-dashboard`](../../apps/reporting-dashboard) (Next.js + real shadcn/ui). Grok Bot and Cursor agents **link** the matching live URL and keep that app in sync from this repository. Do not generate a one-off HTML replacement or a native `<select multiple>` for Owner/team.
 
-- Liquidaciones: https://lightning-settlement-dashboard.vercel.app
+- Settlements: https://lightning-settlement-dashboard.vercel.app
 - Out Schedule: https://lightning-settlement-dashboard.vercel.app/out-schedule
 - Trucks Return: https://lightning-settlement-dashboard.vercel.app/trucks-return
 - Diesel: https://lightning-settlement-dashboard.vercel.app/diesel
@@ -64,7 +64,7 @@ When the user asks to see Out Schedule, Trucks Return, or Diesel (planned depart
 
 Sibling skills: [`agent-reporting-html`](../agent-reporting-html/SKILL.md) and [`reporting-html-shadcn`](../reporting-html-shadcn/SKILL.md). Copy [`../reporting-html-shadcn/assets/report-ui.css`](../reporting-html-shadcn/assets/report-ui.css) only for other static reports (local skill-cache fallback: `$HERMES_HOME/cache/data-reporting-kit/skills/reporting-html-shadcn/assets/report-ui.css`). Do not invent one-off styles.
 
-Every Liquidaciones view must include the slim **Liquidaciones** header, truck focus card under filters, **Resumen**, weekly/monthly review modes, truck and owner rankings with Ver más for the full physical selection, fuel spend by owner, a KPI strip, a closed **Datos técnicos** evidence accordion, and the shared light minimal theme. Do not show Full Week or Other Deductions+Previous. Out Schedule, Trucks Return, and Diesel share the same shell and **Vistas** menu. Write other static candidates in the agent's workspace (`reports/candidates/`), not in this knowledge repository.
+Every Settlements view must include the slim **Settlements** header, truck focus card under filters, **Summary**, weekly/monthly review modes, truck and owner rankings with Show all for the full physical selection, fuel spend by owner, a KPI strip, a closed **Technical details** evidence accordion, and the shared light minimal theme. Visible copy is English. Do not show Full Week or Other Deductions+Previous. Out Schedule, Trucks Return, and Diesel share the same shell and **Views** menu. Write other static candidates in the agent's workspace (`reports/candidates/`), not in this knowledge repository.
 
 ## User-correction webhook — required shared feedback event
 

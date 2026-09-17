@@ -9,9 +9,9 @@ Read `AGENTS.md` first. These rules are for **Grok Bot and Cursor agents** that 
 The live reporting screens live in [`apps/reporting-dashboard`](../apps/reporting-dashboard): Next.js App Router + **real shadcn/ui** (Button, Tabs, Card, Badge, Input, Table, Checkbox, Select, Popover + Command multi-select, DropdownMenu). Do not rebuild them as a native `<select multiple>` or a hand-rolled CSS imitation.
 
 - **Live URL:** https://lightning-settlement-dashboard.vercel.app
-- **Deep links:** `/` Liquidaciones · `/out-schedule` Out Schedule · `/trucks-return` Trucks Return · `/diesel` Diesel
+- **Deep links:** `/` Settlements · `/out-schedule` Out Schedule · `/trucks-return` Trucks Return · `/diesel` Diesel
 - **Grok bots:** when answering questions about these screens, **link the matching live URL**. Keep the app in sync from this repository. Do not generate a one-off HTML replacement.
-- Deploy: set Vercel Root Directory to `apps/reporting-dashboard`. See [`apps/reporting-dashboard/README.md`](../apps/reporting-dashboard/README.md). All dashboard views use **live queries only** (`cache: "no-store"`, `force-dynamic`): Liquidaciones, Trucks Return, and Diesel via server-only `AGENT_REPORTING_KEY` (never `NEXT_PUBLIC_*`, never git); Out Schedule via the documented live Ninox Schedule_Teams share. There is **no embedded settlements snapshot**. If the key is missing or a live fetch fails, the UI shows an explicit error instead of a copia.
+- Deploy: set Vercel Root Directory to `apps/reporting-dashboard`. See [`apps/reporting-dashboard/README.md`](../apps/reporting-dashboard/README.md). All dashboard views use **live queries** with short shared caches where documented (Diesel); Settlements, Trucks Return, and Diesel via server-only `AGENT_REPORTING_KEY` (never `NEXT_PUBLIC_*`, never git); Out Schedule via the documented live Ninox Schedule_Teams share. There is **no embedded settlements snapshot**. If the key is missing or a live fetch fails, the UI shows an explicit error instead of a snapshot.
 
 ## Portable skills (other static reports)
 
@@ -27,38 +27,38 @@ The **settlement dashboard** loads **at least twelve calendar months** of `settl
 
 - Settlements: `period_from` = Tuesday on or before `history_start`; `period_to` inclusive on `From`.
 - Fuel gallons/MPG on the dashboard: `store_from` / `store_to` covering the loaded window; bucket transactions onto settlement weeks by `Store Date` between `From` and `To`. Attribute `fuel.owner` historically. Do not replace stored `Fuel Expenses` with fuel subtotals.
-- Follow `next_offset` until `has_more=false`. Never present a truncated page as a complete ranking or KPI. Truck Gross/Net lists may preview a top-N in the card; **Ver más** must list every selected physical truck.
+- Follow `next_offset` until `has_more=false`. Never present a truncated page as a complete ranking or KPI. Truck Gross/Net lists may preview a top-N in the card; **Show all** must list every selected physical truck.
 
 A one-week headline question that is not an HTML report and not a trend/ranking analysis still uses an explicit Tuesday–Monday period.
 
 ## Required HTML sections
 
-Shared shell for every dashboard view: Lightning logo, view title, **Copia** badge when data is not live, and a top-right **Vistas** DropdownMenu linking Liquidaciones / Out Schedule / Trucks Return.
+Shared shell for every dashboard view: Lightning logo, view title, **Snapshot** badge when data is not live, and a top-right **Views** DropdownMenu linking Settlements / Out Schedule / Trucks Return / Diesel. Route-level loading screens use a shared spinner with report-specific English copy.
 
-### Liquidaciones (`/`)
+### Settlements (`/`)
 
-1. Slim header: title **Liquidaciones**, focused period, and a **Copia** badge only when data is not live.
-2. Mobile-first filters (Periodo Semana/Mes, Equipo, Camión, Despacho). Truck search renders a **Camión** focus card immediately under the filters (Gross, gastos, net, combustible, millas, equipo, weeks in the selection).
-3. **Resumen**: owner matrix (TOTAL + exact stored `Owner` columns), physical-truck averages, Gross below $11,000 count, net+/net−, LTR Invoices, Tolls+PrePass, optional gallons/MPG from `fuel`. Visible labels are Spanish operational copy, not API field names.
+1. Slim header: title **Settlements**, focused period, and a **Snapshot** badge only when data is not live.
+2. Mobile-first filters (Period Week/Month, Team, Truck, Dispatch). Truck search renders a **Truck** focus card immediately under the filters (Gross, expenses, net, fuel, miles, team, weeks in the selection).
+3. **Summary**: owner matrix (TOTAL + exact stored `Owner` columns), physical-truck averages, Gross below $11,000 count, net+/net−, LTR Invoices, Tolls+PrePass, optional gallons/MPG from `fuel`. Visible labels are English operational copy.
 4. Weekly and monthly review modes, with the named date selected in the toolbar. Historical `Dispatch` filter uses exact `settlements.Dispatch` values (not current `trucks.dispatcher`).
-5. Truck rankings and owner rankings by stored Gross and Net. Truck lists: preview plus **Ver más** for the full selection. Non-physical buckets use badge **No físico**.
+5. Truck rankings and owner rankings by stored Gross and Net. Truck lists: preview plus **Show all** for the full selection. Non-physical buckets use badge **Non-physical**.
 6. Fuel spend by owner for the focused week and month, using stored `Fuel Expenses` (settlement) and `fuel.owner` only for gallon attribution.
-7. KPI strip: Gross, Gastos, Net, Combustible, physical-truck count, millas.
-8. Evidence stays in a closed **Datos técnicos** accordion (source report(s), normalized filters, exact period/window, row/distinct count, pagination completeness, `as_of`, source-freshness limitation, material caveats). Humans see one line: weekly Tue–Mon settlement numbers.
-9. Real shadcn/ui components. Owner/equipo is a Popover + Command multi-select, never a native multi `<select>`.
+7. KPI strip: Gross, Expenses, Net, Fuel, physical-truck count, miles.
+8. Evidence stays in a closed **Technical details** accordion (source report(s), normalized filters, exact period/window, row/distinct count, pagination completeness, `as_of`, source-freshness limitation, material caveats). Humans see one line: weekly Tue–Mon settlement numbers.
+9. Real shadcn/ui components. Owner/team is a Popover + Command multi-select, never a native multi `<select>`.
 
 Not established (do not display or approximate): Ninox “Full Week” / “No Full Week”, and “Other Deductions+Previous”. There is no matching `public.settlements` column.
 
 ### Out Schedule (`/out-schedule`)
 
 1. Table of live Schedule_Teams rows from the documented share: Truck, Out Date, Day (derived), Team, Owner, Dispatch, Flatbed, Solo.
-2. Light filters (truck/team search, owner, dispatch), Export CSV, row count, **Datos técnicos**.
+2. Light filters (truck/team search, owner, dispatch), Export CSV, row count, **Technical details**.
 3. Do not substitute DriverPay history when the Ninox share fails; show an explicit error state. Insurance / Team Status / Truck Status / Notes are not in this share.
 
 ### Trucks Return (`/trucks-return`)
 
 1. Table of current `returns` rows: Truck, Insurance, Driver Name, Return Date (never Phone/CDL).
-2. Light filters, distinct-truck count, **Datos técnicos**.
+2. Light filters, distinct-truck count, **Technical details**.
 3. Driver-row grain: teams usually produce two rows per truck.
 
 ### Diesel (`/diesel`)
@@ -67,7 +67,7 @@ Not established (do not display or approximate): Ninox “Full Week” / “No F
 2. Shared caches (real live rows only): Next/Vercel data cache (month ~120s, trend ~180s), CDN `s-maxage` + `stale-while-revalidate`, and browser `sessionStorage` for instant reopen of the trend while revalidating.
 3. Month navigation, exact historical `fuel.owner` filter, and product filter (default diesel excluding DEF).
 4. KPIs from monthly aggregates (not the capped detail table).
-5. Transaction detail capped per focus month via `/api/reporting/fuel-month`. **Datos técnicos**. Do not count fuel rows as trucks or replace settlement Fuel Expenses.
+5. Transaction detail capped per focus month via `/api/reporting/fuel-month`. **Technical details**. Do not count fuel rows as trucks or replace settlement Fuel Expenses.
 
 ## Business-rule reminders that affect HTML
 

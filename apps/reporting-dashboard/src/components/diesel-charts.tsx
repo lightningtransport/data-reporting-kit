@@ -29,8 +29,8 @@ const gallonsTick = (value: number) =>
   Math.abs(value) >= 1000 ? `${(value / 1000).toFixed(0)}k` : String(Math.round(value))
 
 const monthlyConfig = {
-  gallons: { label: "Galones", color: "var(--chart-1)" },
-  spend: { label: "Gasto ajustado", color: "var(--chart-3)" },
+  gallons: { label: "Gallons", color: "var(--chart-1)" },
+  spend: { label: "Adjusted spend", color: "var(--chart-3)" },
 } satisfies ChartConfig
 
 export type DieselMonthlyPoint = {

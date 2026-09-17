@@ -30,8 +30,8 @@ const trendConfig = {
 } satisfies ChartConfig
 
 const fuelConfig = {
-  fuel: { label: "Combustible", color: "var(--chart-3)" },
-  pct: { label: "% combustible / gastos", color: "var(--chart-4)" },
+  fuel: { label: "Fuel", color: "var(--chart-3)" },
+  pct: { label: "% fuel / expenses", color: "var(--chart-4)" },
 } satisfies ChartConfig
 
 export function WeeklyTrendChart({

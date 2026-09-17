@@ -5,7 +5,7 @@ description: >-
   reports — auto-configure from this kit, fetch ≥12 months for the
   settlement dashboard and ≥3 months for other HTML/analytical settlement
   history, and ship the confirmed report sections.
-version: 0.2.4
+version: 0.2.5
 license: Proprietary
 platforms: [linux, macos, windows]
 metadata:
@@ -33,7 +33,7 @@ A Grok Bot or Cursor agent is building or updating HTML reports from the `agent-
 - The live settlement dashboard must fetch **at least 12 months** of `settlements` (paginated) plus `fuel` gallons for MPG. Use `report=settlements`, not the 11-field `settlement_summary` recorte, for that screen.
 - Use the named date as the **focus** (selected week/month in the UI), not as the only data loaded.
 - Compute `history_start` as three calendar months (dashboard: twelve) before today or the named end date. For `settlements` / `settlement_summary`, set `period_from` to the Tuesday on or before `history_start`. For `fuel`, set `store_from` to `history_start` as the required fuel anchor.
-- Paginate until complete (`next_offset` while `has_more`). `count` / `page_count` is one page; `total_count` is the filtered total. Truck rankings may preview top-N; **Ver más** must list the full physical selection.
+- Paginate until complete (`next_offset` while `has_more`). `count` / `page_count` is one page; `total_count` is the filtered total. Truck rankings may preview top-N; **Show all** must list the full physical selection.
 
 ## Query rules
 
@@ -47,22 +47,22 @@ A Grok Bot or Cursor agent is building or updating HTML reports from the `agent-
 
 The reporting dashboard is [`apps/reporting-dashboard`](../../apps/reporting-dashboard). Link the matching live URL; do not replace it with a native multi `<select>` or a one-off HTML file.
 
-- Liquidaciones: https://lightning-settlement-dashboard.vercel.app
+- Settlements: https://lightning-settlement-dashboard.vercel.app
 - Out Schedule: https://lightning-settlement-dashboard.vercel.app/out-schedule
 - Trucks Return: https://lightning-settlement-dashboard.vercel.app/trucks-return
 - Diesel: https://lightning-settlement-dashboard.vercel.app/diesel
 
-Always apply the confirmed Liquidaciones sections:
+Always apply the confirmed Settlements sections:
 
-- Slim **Liquidaciones** header plus a **Camión** focus card immediately under filters when searching a truck.
-- **Resumen** from `settlements` (owner matrix, physical averages, $11k Gross count, net+/−, LTR, Tolls+PrePass). Compass = `tonu` (already in Gross). Visible copy is Spanish operational wording.
+- Slim **Settlements** header plus a **Truck** focus card immediately under filters when searching a truck.
+- **Summary** from `settlements` (owner matrix, physical averages, $11k Gross count, net+/−, LTR, Tolls+PrePass). Compass = `tonu` (already in Gross). Visible copy is English operational wording.
 - Dispatch filter = exact historical `settlements.Dispatch`.
 - Weekly and monthly review modes (named date is toolbar focus).
-- Truck rankings and owner rankings (Gross and Net); exclude settlement trucks 1/2/3 from physical-truck rankings; include them in matching owner totals; Ver más = full selection; badge **No físico**.
+- Truck rankings and owner rankings (Gross and Net); exclude settlement trucks 1/2/3 from physical-truck rankings; include them in matching owner totals; Show all = full selection; badge **Non-physical**.
 - Fuel spend by owner from stored Fuel Expenses; gallons/MPG from `fuel`.
-- KPI strip: Gross, Gastos, Net, Combustible, physical trucks, millas.
-- Evidence in a closed **Datos técnicos** accordion: source report(s), normalized filters, exact period/window, row/distinct count, pagination completeness, `as_of`, source-freshness limitation, material caveats.
-- Real shadcn/ui in the Next app; Popover + Command for owner multi-select; top-right **Vistas** menu for Liquidaciones / Out Schedule / Trucks Return / Diesel.
+- KPI strip: Gross, Expenses, Net, Fuel, physical trucks, miles.
+- Evidence in a closed **Technical details** accordion: source report(s), normalized filters, exact period/window, row/distinct count, pagination completeness, `as_of`, source-freshness limitation, material caveats.
+- Real shadcn/ui in the Next app; Popover + Command for owner multi-select; top-right **Views** menu for Settlements / Out Schedule / Trucks Return / Diesel. Route loaders show report-specific English copy.
 - Do not display Full Week or Other Deductions+Previous.
 
 When the user asks to **see** / open / show Out Schedule, Trucks Return, or Diesel (planned departures / expected returns / fuel screens), answer with the matching live dashboard URL above. Do not generate a replacement one-off HTML file.
