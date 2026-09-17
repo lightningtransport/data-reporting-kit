@@ -26,11 +26,22 @@ const trendConfig = {
 } satisfies ChartConfig
 
 const fuelConfig = {
-  fuel: { label: "Fuel", color: "var(--chart-3)" },
-  pct: { label: "% fuel / expenses", color: "var(--chart-4)" },
+  fuel: { label: "Fuel", color: "var(--chart-1)" },
+  pct: { label: "% fuel / expenses", color: "var(--chart-2)" },
 } satisfies ChartConfig
 
 const chartMargin = { left: 4, right: 4, top: 4, bottom: 4 }
+const ownerChartMargin = { left: 8, right: 8, top: 4, bottom: 4 }
+
+/** Enough vertical room per category so Y labels do not stack. */
+function ownerChartHeightPx(rows: number): number {
+  return Math.min(520, Math.max(200, rows * 32 + 48))
+}
+
+function shortenOwnerLabel(value: string): string {
+  const label = value.trim() || "(unassigned)"
+  return label.length > 16 ? `${label.slice(0, 14)}…` : label
+}
 
 function moneyTooltip(
   value: number | string | ReadonlyArray<number | string> | undefined,
@@ -145,9 +156,22 @@ export function FuelOwnerChart({
 }: {
   data: Array<{ owner: string; fuel: number }>
 }) {
+  const rows = data.map((row) => ({
+    ...row,
+    owner: row.owner.trim() || "(unassigned)",
+  }))
   return (
-    <ChartContainer config={fuelConfig} className="aspect-auto h-44 md:h-60">
-      <BarChart data={data} layout="vertical" margin={chartMargin}>
+    <ChartContainer
+      config={fuelConfig}
+      className="aspect-auto w-full"
+      style={{ height: ownerChartHeightPx(rows.length) }}
+    >
+      <BarChart
+        data={rows}
+        layout="vertical"
+        margin={ownerChartMargin}
+        barCategoryGap={8}
+      >
         <CartesianGrid horizontal={false} />
         <XAxis
           type="number"
@@ -160,7 +184,10 @@ export function FuelOwnerChart({
           dataKey="owner"
           tickLine={false}
           axisLine={false}
-          width={64}
+          width={108}
+          interval={0}
+          tickFormatter={shortenOwnerLabel}
+          tick={{ fontSize: 11 }}
         />
         <ChartTooltip
           content={<ChartTooltipContent formatter={moneyTooltip} />}
@@ -176,9 +203,22 @@ export function FuelPctChart({
 }: {
   data: Array<{ owner: string; pct: number }>
 }) {
+  const rows = data.map((row) => ({
+    ...row,
+    owner: row.owner.trim() || "(unassigned)",
+  }))
   return (
-    <ChartContainer config={fuelConfig} className="aspect-auto h-44 md:h-60">
-      <BarChart data={data} layout="vertical" margin={chartMargin}>
+    <ChartContainer
+      config={fuelConfig}
+      className="aspect-auto w-full"
+      style={{ height: ownerChartHeightPx(rows.length) }}
+    >
+      <BarChart
+        data={rows}
+        layout="vertical"
+        margin={ownerChartMargin}
+        barCategoryGap={8}
+      >
         <CartesianGrid horizontal={false} />
         <XAxis
           type="number"
@@ -192,7 +232,10 @@ export function FuelPctChart({
           dataKey="owner"
           tickLine={false}
           axisLine={false}
-          width={64}
+          width={108}
+          interval={0}
+          tickFormatter={shortenOwnerLabel}
+          tick={{ fontSize: 11 }}
         />
         <ChartTooltip
           content={<ChartTooltipContent formatter={pctTooltip} />}
