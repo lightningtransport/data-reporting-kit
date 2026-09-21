@@ -13,7 +13,7 @@ This repository is the canonical reporting contract for Lightning Transportation
 7. Authenticated runtime catalog: `GET /functions/v1/agent-reporting?report=catalog`
 8. Reporting dashboard (Grok Bot / Cursor): `docs/html-reporting.md` and `apps/reporting-dashboard` (Settlements `/`, Out Schedule `/out-schedule`, Trucks Return `/trucks-return`, Diesel `/diesel`, Executive Overview `/v2`). HTML skills: `skills/agent-reporting-html/SKILL.md`, `skills/reporting-html-shadcn/SKILL.md`
 
-The six reporting-source schemas and 107 physical columns were verified on **2026-09-14**. The deployed catalog is the runtime contract. If it conflicts with the repository, stop and report the contradiction instead of guessing.
+The six reporting-source schemas and 109 physical columns were verified on **2026-09-21**. The deployed catalog is the runtime contract. If it conflicts with the repository, stop and report the contradiction instead of guessing.
 
 ## Approved interfaces
 
@@ -36,6 +36,7 @@ The six reporting-source schemas and 107 physical columns were verified on **202
 - Settlements run Tuesday through Monday. Use an explicit period; never infer the current cycle from `To Report` alone.
 - For HTML reports and analytical settlement/fleet-history answers (trends, rankings), always fetch **at least three calendar months** ending today or at the user-named end date. The **settlement dashboard** loads **at least twelve calendar months**. The named week or day is UI focus only, not the sole data window. Paginate until complete. See `docs/html-reporting.md`.
 - Stored `Gross`, `Total Expenses`, and `Net` are authoritative. `tonu` is an additional/Compass income component already included in Gross; expense components are already included in Total Expenses.
+- For `settlement_summary`, `settlements`, and `fuel` owner questions, an `owner` filter matches either the primary owner or `shared_owner`. `shared_owner` identifies the underlying owner for a truck operating under `SOLO INC.` or `FLATBED INC.`; preserve both fields and do not apply this rule to `trucks`, DriverPay, or returns.
 - Settlement Truck 1, 2, and 3 are owner-allocation buckets for Carlos, Jorge, and CDT—not physical trucks. Include them in the matching owner's general settlement totals; exclude them from physical-truck counts/rankings.
 - `DriverPay` and `returns` are driver-row sources; count distinct truck identifiers for truck totals.
 - Departures use only `DriverPay.Out Date`; historical returns use only `DriverPay.Return Date`. Intersect both only for an explicitly requested assignment-overlap analysis.
