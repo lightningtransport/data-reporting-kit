@@ -39,6 +39,7 @@ These rules govern every Lightning Transportation answer.
 - Use stored `Total Expenses`; do not add expense components or driver pay again.
 - Use stored `Net`. Treat `Gross_with_%_deduction_All − Total Expenses` as the intended formula, not a universal replacement for stored Net.
 - Attribute historical owner/dispatch from settlements, not current trucks.
+- For settlement, settlement-summary, and fuel owner filters, include records where either the primary owner or `shared_owner` exactly matches the requested owner. `shared_owner` is supplemental underlying-owner attribution for trucks operating under `SOLO INC.` or `FLATBED INC.`; retain both values and do not apply it to `trucks`, DriverPay, or returns.
 - For fuel analysis, use `Adjusted SubTotal` only when it is populated; report nulls rather than silently substituting `SubTotal`. Aggregate price per gallon is applicable spend divided by gallons, not an average of transaction rates.
 - Only in `settlements` and settlement-derived reports, Truck 1=Carlos, 2=Jorge, 3=CDT are non-physical owner-expense allocation buckets. Each holds its owner's total `truck_loans` and `Insurance` that are not assigned to a specific physical truck. Include it in that owner's general settlement total, label it as a non-physical owner-expense allocation bucket, and exclude it from physical-truck counts/rankings. Do not apply this rule to `trucks`, DriverPay, or returns.
 

@@ -45,7 +45,7 @@ check("organization" not in json.dumps(body).lower(), "server error leaked organ
 checks.append("server-error=sanitized-500")
 
 status, catalog = call([("report", "catalog")])
-check(status == 200 and catalog.get("schema_version") == "3.2.0", "catalog contract failed")
+check(status == 200 and catalog.get("schema_version") == "3.3.1", "catalog contract failed")
 check(set(catalog.get("reports", {})) == {"settlement_summary", "settlements", "driver_pay", "drivers", "returns", "trucks", "fuel"}, "catalog reports differ")
 check(catalog.get("principal", {}).get("sensitive_access") is True, "default agent key should have sensitive access")
 checks.append("catalog=all-reports-sensitive-enabled")

@@ -1,7 +1,7 @@
 ---
 name: itpros-supabase-reporting
 description: Answer Lightning reports through the approved reporting APIs.
-version: 0.9.5
+version: 0.9.6
 author: Ibrain Ortega, Hermes Agent
 license: Proprietary
 platforms: [linux, macos, windows]
@@ -138,6 +138,7 @@ Agent-key reports are `settlement_summary`, `settlements`, `driver_pay`, `driver
 - Departures use `Out Date` only; historical returns use `Return Date` only.
 - For “how many trucks are leaving” in a current week, DriverPay and live Schedule_Teams are both required. Deduplicate their same-window truck union and disclose reconciliation counts.
 - Settlement weeks run Tuesday through Monday and require an explicit period.
+- For `settlement_summary`, `settlements`, and `fuel`, an `owner` filter includes rows where either the primary owner or `shared_owner` exactly matches. `shared_owner` is supplemental attribution for trucks operating under `SOLO INC.` or `FLATBED INC.`; preserve both values and do not use it for `trucks`, DriverPay, or returns.
 - Only in `settlements` and settlement-derived reports, Trucks 1/2/3 are Carlos/Jorge/CDT non-physical owner-expense allocation buckets. Each holds that owner's total `truck_loans` and `Insurance` amounts not assigned to a specific physical truck; include it in the owner's general settlement total, label it as non-physical, and exclude it from physical-truck counts/rankings. Do not apply this rule to `trucks`, DriverPay, or returns.
 - Stored Gross, Total Expenses, and Net take precedence; do not add included components again.
 - Fuel is transaction-grain history: filter by `truck_number`, `store_from`, or `ninox_id`; use populated `Adjusted SubTotal` for adjusted-spend totals and calculate aggregate price per gallon as applicable spend divided by gallons.

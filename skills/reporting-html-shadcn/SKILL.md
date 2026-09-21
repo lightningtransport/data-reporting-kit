@@ -56,7 +56,7 @@ Map mentally to shadcn: Card, Badge, Button, Tabs, Input, Select, Table, Separat
 
 - English primary labels for dashboard UI; keep domain terms that match stored/API fields (Owner, Dispatch, Gross, Net, Fuel Expenses).
 - Focus period in the toolbar; data payload always includes **≥3 months** history for trends/rankings. See [`agent-reporting-html`](../agent-reporting-html/SKILL.md) and [`docs/html-reporting.md`](../../docs/html-reporting.md).
-- Fuel spend by owner (focused week + month) using stored `fuel.owner`.
+- Fuel spend by owner (focused week + month) using stored `fuel.owner`; owner-filtered totals also include exact `fuel.shared_owner` matches without replacing the primary owner.
 - Top trucks/owners by Gross and Net from stored settlement values.
 - Settlement trucks `1` / `2` / `3`: label non-physical; exclude from physical rankings; include in owner totals.
 - Evidence accordion (**Technical details**, closed by default) on every report.

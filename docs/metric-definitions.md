@@ -21,7 +21,7 @@ Read `AGENTS.md` and the report metadata before calculating.
 | Other Deductions+Previous | Not established. Not `Otro` and not a YTD reconstruction. Do not approximate. | unavailable |
 | Current reporting cycle | Select by an explicit Tuesday `From` period. `To Report` alone is unsafe because historical rows contain `Yes` and newer rows contain `true`. | `settlements.From` |
 
-Settlement periods run Tuesday through Monday. Attribute historical owner/dispatch using the settlement row.
+Settlement periods run Tuesday through Monday. Attribute historical owner/dispatch using the settlement row. For an owner-filtered settlement total, include rows where either `settlements.Owner` or `settlements.shared_owner` exactly matches the requested owner; preserve both values rather than replacing primary `Owner`.
 
 ### HTML and analytical history window
 
@@ -30,7 +30,7 @@ For HTML reports and analytical settlement/fleet-history answers, the query wind
 - `history_start` = three calendar months before the end date for non-dashboard HTML; twelve months for Settlements in `apps/reporting-dashboard`.
 - Out Schedule and Trucks Return are current operational screens (live Schedule_Teams share and `returns`); they are not multi-month settlement history. When the user asks to see those reports, **link** https://lightning-settlement-dashboard.vercel.app/out-schedule or https://lightning-settlement-dashboard.vercel.app/trucks-return.
 - Settlements: `period_from` = Tuesday on or before `history_start`; `period_to` = Tuesday of the latest included week (inclusive bounds on `From`).
-- Fuel: `store_from` = `history_start`. Attribute fuel spend by stored `fuel.owner`, not current `trucks.owner`.
+- Fuel: `store_from` = `history_start`. Attribute fuel spend by stored `fuel.owner` and, for an owner-filtered total, include rows where `fuel.shared_owner` exactly matches the requested owner. Do not substitute current `trucks.owner`.
 - Paginate until `has_more=false` before ranking or totaling.
 
 A single-week headline that is not HTML and not a trend/ranking analysis still uses one explicit Tuesday–Monday period.

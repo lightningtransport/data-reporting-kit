@@ -41,6 +41,7 @@ A Grok Bot or Cursor agent is building or updating HTML reports from the `agent-
 - Smallest report plus `metadata=true` when meaning, filters, joins, grain, or calculations are unclear.
 - Follow kit business rules: Tuesday–Monday settlements; stored Gross / Total Expenses / Net; settlement trucks 1/2/3 are non-physical owner-allocation buckets.
 - Fuel spend by owner uses stored `fuel.owner` (historical transaction attribution). Do not substitute current `trucks.owner`.
+- For settlement and fuel owner filters, include a row when either the primary owner or `shared_owner` exactly matches. `shared_owner` is supplemental attribution for a truck operated under `SOLO INC.` or `FLATBED INC.`; preserve both values.
 - Request sensitive fields only for an explicit user need. Minimize and redact HTML output.
 
 ## HTML every time

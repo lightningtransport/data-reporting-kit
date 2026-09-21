@@ -1,5 +1,5 @@
-export const SCHEMA_VERSION = "3.2.0";
-export const SCHEMA_VERIFIED_AT = "2026-09-14T18:32:46Z";
+export const SCHEMA_VERSION = "3.3.1";
+export const SCHEMA_VERIFIED_AT = "2026-09-21T16:01:54Z";
 
 const field = (
   type: string,
@@ -25,6 +25,7 @@ export const GLOBAL_GUIDANCE = {
     "Historical truck keys in DriverPay, returns, and settlements are text while trucks.truck_number is numeric. Normalize to the same representation before comparing.",
     "Use a LEFT JOIN from historical tables to the current trucks master. Historical truck numbers can be absent from the current master; an inner join silently drops valid history.",
     "returns.Ninox_ID identifies the Returns source record and is not a driver ID. Do not join it to drivers.Ninox_ID.",
+    "For settlements and fuel owner-filtered questions, match either the row's primary owner or shared_owner. shared_owner attributes a truck operated under SOLO INC. or FLATBED INC. to its underlying owner; it supplements rather than replaces the primary owner value.",
   ],
 };
 
@@ -151,6 +152,7 @@ export const TABLES = {
       "Use stored Net as authoritative. Gross_with_%_deduction_All − Total Expenses is the intended formula but verified live data contains rare exceptions and rows with null expense totals.",
       "Gross_with_%_deduction_All = Gross × (%AppliedSaved / 100) for eligible verified rows.",
       "Attribute historical totals using settlements.Owner and settlements.Dispatch, never current trucks.owner or trucks.dispatcher.",
+      "For an owner-filtered settlement report, include a row when either Owner or shared_owner exactly matches the requested owner. Preserve and disclose both fields; shared_owner does not overwrite the historical primary Owner.",
     ],
     fields: {
       Truck: field("text", true, "Truck number or settlement-only non-physical owner-expense allocation bucket (1=Carlos, 2=Jorge, 3=CDT).", { ninox_field: "DE.K" }),
@@ -180,6 +182,7 @@ export const TABLES = {
       "Gross_with_%_deduction_All": field("numeric", true, "Gross after applying %AppliedSaved.", { ninox_field: "DE.G8" }),
       Driven_miles: field("numeric", true, "Miles driven during the settlement period.", { ninox_field: "DE.S5" }),
       ID: field("bigint", false, "Supabase identity primary key for this imported row."),
+      shared_owner: field("text", true, "Underlying owner for a truck operated under SOLO INC. or FLATBED INC. For owner-filtered settlement questions, include the row when shared_owner exactly matches the requested owner as well as when Owner matches. It supplements, not replaces, Owner."),
     },
   },
   trucks: {
@@ -227,6 +230,7 @@ export const TABLES = {
       "Use Adjusted SubTotal for adjusted fuel-spend totals when it is populated; report nulls rather than substituting SubTotal without an explicit instruction.",
       "Use Price_Per_Gallon as the stored transaction rate. For aggregate price-per-gallon, calculate total applicable spend divided by total gallons rather than averaging row rates.",
       "Unit is a numeric truck identifier. Normalize only its numeric representation before joining to current trucks.truck_number; use a left join because historical fuel can refer to absent current trucks.",
+      "For an owner-filtered fuel report, include a row when either owner or shared_owner exactly matches the requested owner. Preserve both fields; shared_owner does not overwrite the historical primary owner.",
     ],
     fields: {
       id: field("bigint", false, "Supabase identity primary key for this imported fuel transaction."),
@@ -242,6 +246,7 @@ export const TABLES = {
       Price_Per_Gallon: field("numeric", true, "Stored price per gallon for this transaction."),
       owner: field("text", true, "Owner/entity value stored with this fuel transaction; it is historical transaction attribution, not necessarily current truck ownership."),
       Ninox_ID: field("numeric", true, "Ninox source-record identifier for this fuel transaction when populated; it is not a driver ID."),
+      shared_owner: field("text", true, "Underlying owner for a truck operated under SOLO INC. or FLATBED INC. For owner-filtered fuel questions, include the row when shared_owner exactly matches the requested owner as well as when owner matches. It supplements, not replaces, owner."),
     },
   },
 } as const;
@@ -250,10 +255,10 @@ export const REPORTS = {
   settlement_summary: {
     source: "reporting.settlement_summary",
     row_grain: TABLES.settlements.row_grain,
-    returned_fields: ["settlement_id", "truck", "owner", "period_from", "period_to", "gross", "total_expenses", "net", "total_driver_pay", "fuel_expenses", "driven_miles"],
+    returned_fields: ["settlement_id", "truck", "owner", "shared_owner", "period_from", "period_to", "gross", "total_expenses", "net", "total_driver_pay", "fuel_expenses", "driven_miles"],
     filters: {
       truck: "exact text truck/bucket identifier",
-      owner: "exact historical owner",
+      owner: "exact historical Owner or shared_owner",
       period_from: "inclusive lower bound on period_from, YYYY-MM-DD",
       period_to: "inclusive upper bound on period_from, YYYY-MM-DD",
     },
@@ -264,7 +269,7 @@ export const REPORTS = {
     ...TABLES.settlements,
     filters: {
       truck: "exact Truck",
-      owner: "exact historical Owner",
+      owner: "exact historical Owner or shared_owner",
       dispatch: "exact historical Dispatch",
       insurance: "exact truck_insurance",
       to_report: "exact stored To Report value; never use alone to infer current cycle",
@@ -352,7 +357,7 @@ export const REPORTS = {
       product: "exact Product",
       city: "case-insensitive partial City discovery search",
       state: "exact State",
-      owner: "exact historical fuel owner",
+      owner: "exact historical fuel owner or shared_owner",
       ninox_id: "exact numeric fuel source-record Ninox_ID",
     },
     required_anchor: "truck_number, store_from, or ninox_id",

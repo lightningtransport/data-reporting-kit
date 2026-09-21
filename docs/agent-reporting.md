@@ -38,6 +38,8 @@ Explicit reports reject:
 
 Global data parameters are `report`, `limit` (1–1000), `offset` (0–100000), and `include_sensitive` (`true`/`false`). Metadata requests accept only `report` and `metadata=true`.
 
+For `settlement_summary`, `settlements`, and `fuel`, an exact `owner` filter matches either the historical primary owner or `shared_owner`. `shared_owner` is supplemental attribution for a truck operated under `SOLO INC.` or `FLATBED INC.` and must be returned/disclosed alongside—not substituted for—the primary owner.
+
 ## Pagination and evidence
 
 Explicit data responses include:

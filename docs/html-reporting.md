@@ -42,7 +42,7 @@ Shared shell for every dashboard view: Lightning logo, view title, **Snapshot** 
 3. **Summary**: owner matrix (TOTAL + exact stored `Owner` columns), physical-truck averages, Gross below $11,000 count, net+/net−, LTR Invoices, Tolls+PrePass, optional gallons/MPG from `fuel`. Visible labels are English operational copy.
 4. Weekly and monthly review modes, with the named date selected in the toolbar. Historical `Dispatch` filter uses exact `settlements.Dispatch` values (not current `trucks.dispatcher`).
 5. Truck rankings and owner rankings by stored Gross and Net (same column order Gross then Net; each card labeled Sorted by Gross or Sorted by Net). Truck lists: preview plus **Show all** for the full selection. Non-physical buckets use badge **Non-physical**.
-6. Fuel spend by owner for the focused week and month, using stored `Fuel Expenses` (settlement) and `fuel.owner` only for gallon attribution.
+6. Fuel spend by owner for the focused week and month, using stored `Fuel Expenses` (settlement) and `fuel.owner` only for gallon attribution. For owner-filtered settlement and fuel results, include an exact `shared_owner` match too; preserve the primary owner.
 7. KPI strip: Gross, Expenses, Net, Fuel, physical-truck count, miles.
 8. Evidence stays in a closed **Technical details** accordion (source report(s), normalized filters, exact period/window, row/distinct count, pagination completeness, `as_of`, source-freshness limitation, material caveats). Humans see one line: weekly Tue–Mon settlement numbers.
 9. Real shadcn/ui components. Owner/team is a Popover + Command multi-select, never a native multi `<select>`.
@@ -87,7 +87,7 @@ Not established (do not display or approximate): Ninox “Full Week” / “No F
 - Ave. RPM on the dashboard = physical Gross ÷ physical miles when miles > 0. Ave. MPG = physical miles ÷ `fuel.Gallons` when gallons > 0. These are derived, not stored.
 - The $11,000 Gross count is a C-level physical-truck threshold on stored Gross.
 - Settlement trucks 1, 2, and 3 are non-physical owner-allocation buckets. Include them in matching owner totals; exclude them from physical-truck counts and rankings; badge them as non-physical.
-- Historical owner/dispatch and `fuel.owner` come from the historical row, not current `trucks`.
+- Historical owner/dispatch and `fuel.owner` come from the historical row, not current `trucks`. In settlement and fuel owner-filtered reports, include exact `shared_owner` matches too; it is supplemental attribution for trucks operated under `SOLO INC.` or `FLATBED INC.`, not a replacement for the primary owner.
 - Planned Schedule_Teams UI is the dashboard `/out-schedule` view (live Ninox share). Exact in-yard/on-road metrics remain unavailable from Supabase tables.
 - `as_of` is request time. Source tables do not expose a Ninox sync timestamp; “up to date” means the latest imported rows, not proof that Ninox has closed the week.
 

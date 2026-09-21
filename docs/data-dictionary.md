@@ -1,6 +1,6 @@
 # Data dictionary
 
-Schema verified against Supabase project `aaqquwhdglueqlnbifvn` on **2026-09-14**. The six reporting sources contain **107 physical columns**: `DriverPay` 26, `drivers` 17, `returns` 8, `settlements` 27, `trucks` 16, and `fuel` 13. The reporting system is single-organization; these source tables have RLS enabled. PostgreSQL column comments are currently absent; business semantics below come from the local Ninox field catalog, verified live schema/data, and confirmed business rules.
+Schema verified against Supabase project `aaqquwhdglueqlnbifvn` on **2026-09-21**. The six reporting sources contain **109 physical columns**: `DriverPay` 26, `drivers` 17, `returns` 8, `settlements` 28, `trucks` 16, and `fuel` 14. The reporting system is single-organization; these source tables have RLS enabled. PostgreSQL column comments are currently absent; business semantics below come from the local Ninox field catalog, verified live schema/data, and confirmed business rules.
 
 The authenticated `agent-reporting` metadata routes are the runtime contract. Call `?report=catalog` for the complete catalog or `?report=<name>&metadata=true` for one report.
 
@@ -12,6 +12,7 @@ The authenticated `agent-reporting` metadata routes are the runtime contract. Ca
 - Historical text truck keys must be normalized before comparing them to numeric `trucks.truck_number`. Use a **left join** from history because retired/historical truck numbers may not exist in the current master. Do not replace an absent CDL or truck key with a name or a Supabase `ID`.
 - `DriverPay.DriversDB_ID` is text and joins to `drivers.Ninox_ID::text`; it remains available for legacy source linkage but CDL is the designated driver key for fallback lookups.
 - `returns.Ninox_ID` is a Returns source-record ID, not a driver ID. `returns.CDL` is now available as a sensitive exact driver key; use it only when it matches a related approved record's verified CDL.
+- **Shared-owner attribution rule (approved business rule, 2026-09-21):** In `settlements` and `fuel`, an owner-filtered report includes rows where either the primary owner field or `shared_owner` exactly matches the requested owner. `shared_owner` identifies the underlying owner for a truck operating under `SOLO INC.` or `FLATBED INC.`; it supplements and never replaces the historical primary-owner value. Preserve both fields in the result and do not apply this rule to `trucks`, DriverPay, or returns.
 
 ## `trucks` — current fleet master
 
@@ -153,6 +154,7 @@ For a current-week departure total, DriverPay is one required source, not a comp
 | `Gross_with_%_deduction_All` | numeric | yes | Gross after percentage; verified formula `Gross × (%AppliedSaved/100)` for eligible live rows. Ninox `DE.G8`. |
 | `Driven_miles` | numeric | yes | Miles driven in the period. Ninox `DE.S5`. |
 | `ID` | bigint | no | Supabase identity primary key. |
+| `shared_owner` | text | yes | Supplemental underlying owner for a truck operating under `SOLO INC.` or `FLATBED INC.`. An owner-filtered settlement query includes a row when either `Owner` or `shared_owner` exactly matches; retain both values. |
 
 Use stored `Gross`, `Total Expenses`, and `Net`. Do not add `tonu` to Gross or expense components to Total Expenses. Require an explicit period; historical `To Report=Yes` rows make the flag unsafe as a current-cycle selector.
 
@@ -177,3 +179,4 @@ Use `Unit` as the numeric historic truck identifier. For a current-truck lookup,
 | `Price_Per_Gallon` | numeric | yes | Stored transaction price per gallon. For aggregates, divide applicable total spend by total gallons instead of averaging this field. |
 | `owner` | text | yes | Historical owner/entity stored on this transaction; not necessarily current truck ownership. |
 | `Ninox_ID` | numeric | yes | Fuel source-record identifier when populated; not a driver ID. |
+| `shared_owner` | text | yes | Supplemental underlying owner for a truck operating under `SOLO INC.` or `FLATBED INC.`. An owner-filtered fuel query includes a row when either `owner` or `shared_owner` exactly matches; retain both values. |

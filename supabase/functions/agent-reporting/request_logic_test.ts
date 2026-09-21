@@ -2,6 +2,7 @@ import {
   buildAuditFilters,
   isReportAuthorized,
   normalizedFilters,
+  postgrestExactText,
   reportFilters,
   requireExactCount,
   resolveRequestedReport,
@@ -48,7 +49,7 @@ Deno.test("omitted report resolves to settlement_summary and obeys report allowl
 Deno.test("settlement summary uses the exact declared projection", () => {
   assert(
     settlementSummarySelect() ===
-      "settlement_id,truck,owner,period_from,period_to,gross,total_expenses,net,total_driver_pay,fuel_expenses,driven_miles",
+      "settlement_id,truck,owner,shared_owner,period_from,period_to,gross,total_expenses,net,total_driver_pay,fuel_expenses,driven_miles",
     "settlement summary projection drifted",
   );
 });
@@ -69,6 +70,11 @@ Deno.test("driver_pay return_null cannot combine with return_from", () => {
       `unexpected: ${error}`,
     );
   }
+});
+
+Deno.test("owner OR-filter values are quoted as PostgREST literals", () => {
+  assert(postgrestExactText("Jorge") === '"Jorge"', "simple owner was not quoted");
+  assert(postgrestExactText('A"B\\C') === '"A\\"B\\\\C"', "owner literal escaping drifted");
 });
 
 Deno.test("drivers omit Gender and other sensitive fields by default", () => {

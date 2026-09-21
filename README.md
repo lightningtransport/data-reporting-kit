@@ -10,7 +10,7 @@ Grok Bot and Cursor agents: the reporting dashboard lives in [`apps/reporting-da
 
 ## What this kit provides
 
-- Complete 107-column data dictionary for DriverPay, drivers, returns, settlements, trucks, and fuel.
+- Complete 109-column data dictionary for DriverPay, drivers, returns, settlements, trucks, and fuel, including shared-owner attribution for settlement and fuel reporting.
 - Question routing, metric definitions, Ninox mappings, joins, date windows, allocation-bucket rules, and double-counting guardrails.
 - Source and OpenAPI contract for the custom-key `agent-reporting` Edge Function.
 - Source for the separate membership/JWT `reporting-query` Edge Function.

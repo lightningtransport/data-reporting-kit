@@ -133,6 +133,12 @@
 
 - Recorded the production settlement dashboard URL `https://lightning-settlement-dashboard.vercel.app` in `AGENTS.md`, `docs/html-reporting.md`, the dashboard env example/README, routing/rules, and HTML reporting skills (`agent-reporting-html` 0.1.1, `reporting-html-shadcn` 0.2.1, `itpros-supabase-reporting` 0.8.2) so Grok bots link the live host instead of a pending placeholder.
 
+## 3.3.1 - 2026-09-21
+
+- Added the verified `shared_owner` text field to `settlements` and `fuel`, increasing documented schema coverage to 109 physical columns.
+- For `settlement_summary`, `settlements`, and `fuel`, an exact `owner` filter now includes rows where either the primary owner or `shared_owner` matches. This captures underlying-owner records for trucks operated under `SOLO INC.` or `FLATBED INC.` without replacing the historical primary owner.
+- Extended the settlement-summary view/API projection, runtime metadata, OpenAPI contract, reporting instructions, portable skills, and contract tests. Owner-specific answers preserve and disclose both owner values.
+
 ## 3.3.0 - 2026-09-15
 
 - Added portable HTML reporting guidance for **Grok Bot and Cursor agents** that auto-configure from this kit, so they reuse the confirmed settlement-report sections.

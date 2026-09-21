@@ -7,6 +7,7 @@ import {
   normalizedFilters,
   parseInteger,
   parseNumber,
+  postgrestExactText,
   requireExactCount,
   RequestValidationError,
   resolveRequestedReport,
@@ -198,7 +199,8 @@ async function runLegacySettlementSummary(params: URLSearchParams) {
   }
   if (owner !== null) {
     filters.owner = owner;
-    query = query.eq("owner", owner);
+    const ownerValue = postgrestExactText(owner);
+    query = query.or(`owner.eq.${ownerValue},shared_owner.eq.${ownerValue}`);
   }
   if (periodFrom !== null) {
     filters.period_from = periodFrom;
@@ -293,15 +295,22 @@ Deno.serve(async (req: Request) => {
     if (report === "settlement_summary") {
       query = admin.schema("reporting").from("settlement_summary").select(settlementSummarySelect(), { count: "exact" });
       if (params.get("truck")) query = query.eq("truck", params.get("truck"));
-      if (params.get("owner")) query = query.eq("owner", params.get("owner"));
+      if (params.get("owner")) {
+        const ownerValue = postgrestExactText(params.get("owner")!);
+        query = query.or(`owner.eq.${ownerValue},shared_owner.eq.${ownerValue}`);
+      }
       if (params.get("period_from")) query = query.gte("period_from", params.get("period_from"));
       if (params.get("period_to")) query = query.lte("period_from", params.get("period_to"));
       query = query.order("period_from", { ascending: true }).order("settlement_id", { ascending: true });
       sort = ["period_from asc", "settlement_id asc"];
     } else if (report === "settlements") {
       query = admin.from("settlements").select(tableSelect("settlements", includeSensitive), { count: "exact" });
-      for (const [parameter, column] of [["truck", "Truck"], ["owner", "Owner"], ["dispatch", "Dispatch"], ["insurance", "truck_insurance"], ["to_report", "To Report"]]) {
+      for (const [parameter, column] of [["truck", "Truck"], ["dispatch", "Dispatch"], ["insurance", "truck_insurance"], ["to_report", "To Report"]]) {
         if (params.get(parameter)) query = query.eq(column, params.get(parameter));
+      }
+      if (params.get("owner")) {
+        const ownerValue = postgrestExactText(params.get("owner")!);
+        query = query.or(`Owner.eq.${ownerValue},shared_owner.eq.${ownerValue}`);
       }
       if (params.get("period_from")) query = query.gte("From", params.get("period_from"));
       if (params.get("period_to")) query = query.lte("From", params.get("period_to"));
@@ -359,8 +368,12 @@ Deno.serve(async (req: Request) => {
       query = admin.from("fuel").select(tableSelect("fuel", includeSensitive), { count: "exact" });
       if (truckNumber !== null) query = query.eq("Unit", truckNumber);
       if (ninoxId !== null) query = query.eq("Ninox_ID", ninoxId);
-      for (const [parameter, column] of [["product", "Product"], ["state", "State"], ["owner", "owner"]]) {
+      for (const [parameter, column] of [["product", "Product"], ["state", "State"]]) {
         if (params.get(parameter)) query = query.eq(column, params.get(parameter));
+      }
+      if (params.get("owner")) {
+        const ownerValue = postgrestExactText(params.get("owner")!);
+        query = query.or(`owner.eq.${ownerValue},shared_owner.eq.${ownerValue}`);
       }
       if (params.get("city")) query = query.ilike("City", `%${params.get("city")}%`);
       if (params.get("store_from")) query = query.gte("Store Date", params.get("store_from"));

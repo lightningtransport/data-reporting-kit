@@ -342,6 +342,11 @@ export function settlementSummarySelect(): string {
   return REPORTS.settlement_summary.returned_fields.map(quoteColumn).join(",");
 }
 
+/** Quotes URL-derived text for PostgREST's raw `or` filter grammar. */
+export function postgrestExactText(value: string): string {
+  return `"${value.replaceAll("\\", "\\\\").replaceAll('"', '\\"')}"`;
+}
+
 export function normalizedFilters(
   params: URLSearchParams,
   report: SupportedReport,
