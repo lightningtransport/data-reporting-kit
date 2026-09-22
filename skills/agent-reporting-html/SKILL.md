@@ -68,7 +68,7 @@ Always apply the confirmed Settlements sections:
 
 When the user asks to **see** / open / show Out Schedule, Trucks Return, or Diesel (planned departures / expected returns / fuel screens), answer with the matching live dashboard URL above. Do not generate a replacement one-off HTML file.
 
-For Out Schedule / Trucks Return / Diesel UI questions, link the deep URLs above. Out Schedule uses live Schedule_Teams; Trucks Return uses `returns` without Phone/CDL; Diesel uses live `fuel` by month and historical `fuel.owner`.
+For Out Schedule / Trucks Return / Diesel UI questions, link the deep URLs above. Out Schedule uses live Schedule_Teams; Trucks Return uses the governed `returns` + filtered DriverPay union without Phone/CDL; Diesel uses live `fuel` by month and historical `fuel.owner`.
 
 ## Don't
 

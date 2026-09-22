@@ -1,7 +1,7 @@
 ---
 name: itpros-supabase-reporting
 description: Answer Lightning reports through the approved reporting APIs.
-version: 0.9.6
+version: 0.9.7
 author: Ibrain Ortega, Hermes Agent
 license: Proprietary
 platforms: [linux, macos, windows]
@@ -49,7 +49,8 @@ Use schedule `0 10,14 * * *`. The job updates instructions only and must report 
 4. Run the helper and reconcile `fetched_count` with `total_count` when a complete answer is required.
 5. Apply grain, date, join, allocation-bucket, stored-value, and sensitive-output rules. When a needed field is absent from the selected record, use approved-report relational fallback before finalizing: CDL is the unique driver key across `drivers` and `DriverPay`; truck number is the vehicle key across documented field variants. Never substitute names, Supabase IDs, or `returns.Ninox_ID`; `returns` has no direct CDL/driver key, so report an unresolved driver link unless a related record provides a verified CDL match.
 6. For a current-week “how many trucks are leaving” report, query `driver_pay` by the Monday–Sunday `out_from`/`out_to` range and fetch live Ninox Schedule_Teams from `https://lightningtransport.ninoxdb.com/share/p10ce94o8paa2q4a1z4nw0emznn2ubhriza6?locale=en&utcoffset=-240`. Filter its `Out Date` to the same range, validate it is a JSON array, normalize only truck-key format, and union distinct DriverPay `Truck_Number` with Schedule_Teams `Truck`. Do not substitute either source for the other or double-count overlapping trucks.
-7. Answer with source, normalized filters, exact period, result and row/distinct count, pagination completeness, `as_of`, source-freshness limitation, and material caveats. For the current-week departure union, include both-source, DriverPay-only, Schedule_Teams-only, and union counts.
+7. For every returning-trucks question/report, query both `driver_pay` and `returns` with the same inclusive `return_from`/`return_to` period. Exclude DriverPay rows where `Termination = Driver Changed` or `Transfer = Transfer To Other Truck`; let `tc` be remaining rows with `Solo_Driver_if_1 != 1` and `ts` remaining rows with `Solo_Driver_if_1 = 1`; calculate `floor(tc / 2 + ts)`. Union distinct qualifying DriverPay `Truck_Number` with distinct `returns.Truck`, normalizing only truck-key format. Report both-source, source-only, overlap, final union, `tc`, `ts`, and whether the formula agrees with distinct qualifying DriverPay trucks. Never use either source alone.
+8. Answer with source, normalized filters, exact period, result and row/distinct count, pagination completeness, `as_of`, source-freshness limitation, and material caveats. For the current-week departure union, include both-source, DriverPay-only, Schedule_Teams-only, and union counts.
 
 ## HTML reports
 
@@ -134,8 +135,8 @@ Agent-key reports are `settlement_summary`, `settlements`, `driver_pay`, `driver
 
 - `count`/`page_count` is one page, not the total.
 - A successful zero-row page has `total_count=0`; an offset beyond the available range returns HTTP `416`.
-- DriverPay and returns can produce two rows per team truck; deduplicate trucks when asked for trucks.
-- Departures use `Out Date` only; historical returns use `Return Date` only.
+- DriverPay and returns can produce two rows per team truck. For any returning-trucks request, apply the exclusion/formula rule and deduplicate the required two-source union; never answer from one source alone.
+- Departures use `Out Date` only. Returns use the same inclusive `Return Date` range on both `driver_pay` and `returns`.
 - For “how many trucks are leaving” in a current week, DriverPay and live Schedule_Teams are both required. Deduplicate their same-window truck union and disclose reconciliation counts.
 - Settlement weeks run Tuesday through Monday and require an explicit period.
 - For `settlement_summary`, `settlements`, and `fuel`, an `owner` filter includes rows where either the primary owner or `shared_owner` exactly matches. `shared_owner` is supplemental attribution for trucks operating under `SOLO INC.` or `FLATBED INC.`; preserve both values and do not use it for `trucks`, DriverPay, or returns.

@@ -15,16 +15,16 @@ These rules govern every Lightning Transportation answer.
 - “Last settlement week” means the latest completed Tuesday–Monday period with the requested financial fields populated.
 - Select settlement cycles by explicit period, not `To Report` alone.
 - HTML reports and analytical settlement/fleet-history answers (trends, rankings) must load at least three calendar months ending today or at the user-named end date. The live settlement dashboard loads at least twelve calendar months of `settlements`. The named week or day is UI focus, not the sole query window. See `docs/html-reporting.md`.
-- Departures use `DriverPay.Out Date` only; historical returns use `DriverPay.Return Date` only.
+- Departures use `DriverPay.Out Date` only. Every returning-trucks question/report uses the same inclusive `Return Date` range in both `DriverPay` and `returns`.
 - “Trucks currently out” / open assignment = distinct `Truck_Number` with `Out Date` present and `Return Date` null (`driver_pay` + `return_null=true`). This is not the exact Ninox in-yard/on-road count.
 - A current-week “how many trucks are leaving” total is a union, not a single-source count: use distinct DriverPay trucks whose `Out Date` is in the Monday–Sunday window plus distinct live Ninox Schedule_Teams trucks whose `Out Date` is in that same window, then deduplicate by truck number. State source totals, overlap, source-only counts, and the union total.
-- `returns.Return Date` is a nullable PostgreSQL date. Null means no date stored, not a free-text status.
+- Returning-trucks rule: exclude DriverPay rows where `Termination = Driver Changed` or `Transfer = Transfer To Other Truck`; set `tc` to remaining rows with `Solo_Driver_if_1 != 1` and `ts` to remaining rows with `Solo_Driver_if_1 = 1`; DriverPay formula count is `floor(tc / 2 + ts)`. Union distinct qualifying `Truck_Number` with distinct `returns.Truck`, normalize only truck-key format, and deduplicate. Report both-source, source-only, overlap, union, `tc`, `ts`, and formula-vs-distinct reconciliation. `returns.Return Date` null means no date stored, not a free-text status.
 
 ## 3. Grain, counting, and joins
 
 - `trucks` is current state. The settlement-only 1/2/3 allocation-bucket rule must not be applied to this table.
 - `settlements` is one truck-or-bucket/week row.
-- `DriverPay` and `returns` can have two driver rows per team truck. Deduplicate truck identifiers for truck counts.
+- `DriverPay` and `returns` can have two driver rows per team truck. Apply the return exclusions/formula first, then deduplicate the two-source truck-number union; never answer a returning-trucks question from one source alone.
 - Schedule_Teams is a volatile planned-departure source, not a replacement for DriverPay history. Its live JSON must be fetched immediately before a current-week departure-union report.
 - `fuel` is one historic transaction per row. Do not count rows as trucks or use transaction subtotals as a replacement for weekly settlement totals.
 - When an attribute needed for a report is missing from the primary record, perform an approved-report relational fallback before finalizing: use CDL as the unique driver key across `drivers` and `DriverPay`, and use truck number across documented vehicle-field variants (for example, `truck_number`, `Truck_Number`, `Truck`, `truck_no`, and `unit_number`). Normalize only the key's documented type/format; do not alter its business value.

@@ -52,8 +52,7 @@ Only in `settlements` and settlement-derived reports, `Truck` 1=Carlos, 2=Jorge,
 | Fleet count | Distinct `truck_number`; do not use the settlement-only 1/2/3 allocation-bucket rule to filter `trucks`. | `trucks` |
 | Trucks leaving | Distinct `Truck_Number` filtered by `Out Date` only. | `DriverPay` |
 | Current-week trucks leaving | Union of distinct DriverPay `Truck_Number` and distinct live Ninox Schedule_Teams `Truck` filtered by their respective `Out Date` in the same Monday–Sunday period. Report source counts, overlap, source-only counts, and the deduplicated union. | `DriverPay` + live Schedule_Teams |
-| Trucks returning historically | Distinct `Truck_Number` filtered by `Return Date` only. | `DriverPay` |
-| Current expected returns | Current Returns rows by nullable date; deduplicate `Truck` for truck count. | `returns` |
+| Returning trucks (all questions/reports) | For the same inclusive `Return Date` period, exclude DriverPay rows with `Termination = Driver Changed` or `Transfer = Transfer To Other Truck`. Let `tc` be remaining non-solo rows and `ts` remaining solo rows; DriverPay formula count = `floor(tc / 2 + ts)`. Union distinct qualifying `DriverPay.Truck_Number` with distinct `returns.Truck`, normalize only truck-key format, and count each truck once. Report source counts, overlap/source-only counts, union, `tc`, `ts`, and formula-vs-distinct reconciliation. | `DriverPay` + `returns` |
 | Current fleet assignment | Current owner/dispatcher/mechanic metadata, not history. | `trucks` |
 | Trucks currently out (open assignment) | Distinct `Truck_Number` where `Out Date` is present and `Return Date` is null. Use `driver_pay` with `return_null=true` and a lookback `out_from`. Not the exact Ninox in-yard/on-road formula. | `DriverPay` |
 | Planned departures | Not available in these Supabase tables; use approved live Ninox Schedule_Teams source. | external |

@@ -1,5 +1,5 @@
-export const SCHEMA_VERSION = "3.3.1";
-export const SCHEMA_VERIFIED_AT = "2026-09-21T16:01:54Z";
+export const SCHEMA_VERSION = "3.4.0";
+export const SCHEMA_VERIFIED_AT = "2026-09-22T13:31:40Z";
 
 const field = (
   type: string,
@@ -15,6 +15,12 @@ export const GLOBAL_GUIDANCE = {
     "State the report/table, normalized filters, exact period, result, page_count or total_count, as_of, and material caveats.",
     "Do not treat page_count as a total. Use total_count and follow next_offset while has_more is true when all rows are required.",
     "A successful 200 response with an empty page means no rows matched when total_count is 0. An offset beyond the final result is rejected with HTTP 416. Neither case proves the upstream Ninox source is current.",
+  ],
+  returning_trucks: [
+    "Every returning-trucks question or report uses both public.returns and public.\"DriverPay\" for the same inclusive Return Date range, then unions normalized truck numbers and counts each truck once.",
+    "For DriverPay, exclude rows where Termination = Driver Changed or Transfer = Transfer To Other Truck. Let tc be the remaining rows where Solo_Driver_if_1 != 1 and ts the remaining rows where Solo_Driver_if_1 = 1; the DriverPay formula count is floor(tc / 2 + ts).",
+    "For the merged list, take distinct qualifying DriverPay Truck_Number values and distinct returns.Truck values, normalize only truck-key format, and deduplicate their union. Report both source counts, overlap, source-only counts, union count, tc, ts, and whether the DriverPay formula count agrees with its distinct qualifying truck count.",
+    "Do not answer a returning-trucks question from public.returns or DriverPay alone. Use Return Date only, paginate both reports completely, and disclose source freshness limitations.",
   ],
   unsupported_or_external_questions: [
     "Planned/scheduled departures require the live Ninox Schedule_Teams source; that table is not available through this function.",
@@ -40,7 +46,8 @@ export const TABLES = {
     do_not_use_for: ["planned teams", "weekly truck financial totals", "counting rows as trucks"],
     calculation_rules: [
       "Departure questions filter Out Date only. Return questions filter Return Date only. Do not require both unless the user explicitly asks for assignment overlap.",
-      "Count distinct Truck_Number when the user asks for trucks; DriverPay rows count drivers/assignments.",
+      "For any returning-trucks question, exclude Termination = Driver Changed and Transfer = Transfer To Other Truck. Set tc to remaining non-solo rows and ts to remaining solo rows; the DriverPay formula count is floor(tc / 2 + ts). Build the merge input from distinct Truck_Number values in those same qualifying rows.",
+      "DriverPay is only one side of a returning-trucks result. Union its qualifying truck numbers with distinct public.returns Truck values from the same inclusive Return Date period.",
       "MoneyPerDaysigned is the stored daily rate and currently equals MoneyPerWeekSigned / 7 in verified live rows.",
       "For a matching settlement week, driver pay is MoneyPerWeekSigned + CPM × max(Driven_miles − Pay CPM after Miles, 0). Calculate per driver assignment; do not divide team pay unless explicitly instructed.",
       "For assignment overlap with a settlement period: Out Date <= settlement To and (Return Date is null or Return Date >= settlement From), then review transfers and terminations that occur inside the period.",
@@ -108,11 +115,11 @@ export const TABLES = {
     ninox_source: "Returns (S)",
     row_grain: "One current returning-driver/truck row. Team trucks normally have two rows; count distinct Truck for truck totals.",
     primary_key: "ID (Supabase identity)",
-    use_for: ["current operational expected returns", "return-date lists", "driver contact only when sensitive access is authorized"],
+    use_for: ["one side of the required two-source returning-truck union", "current operational return detail", "driver contact only when sensitive access is authorized"],
     do_not_use_for: ["historical returns", "departures", "financial calculations"],
     calculation_rules: [
-      "Return Date is a nullable PostgreSQL date. Filter it directly with inclusive ISO YYYY-MM-DD boundaries.",
-      "Use DriverPay.Return Date for historical returns. returns is a volatile current operational list.",
+      "Return Date is a nullable PostgreSQL date. Filter it directly with the same inclusive ISO YYYY-MM-DD boundaries used for DriverPay.",
+      "Every returning-trucks question or report must merge distinct returns.Truck with qualifying DriverPay Truck_Number values for the same Return Date period; never use this report alone.",
       "Ninox_ID is the Returns source-record ID, not a driver ID or DriversDB_ID. This representation also has a sensitive CDL field; use CDL only for an exact driver link when it matches a related approved record.",
     ],
     fields: {

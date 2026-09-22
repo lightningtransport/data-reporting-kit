@@ -59,10 +59,11 @@ Not established (do not display or approximate): Ninox “Full Week” / “No F
 
 ### Trucks Return (`/trucks-return`)
 
-1. Distinct-truck KPIs: **Currently out** (DriverPay open assignment), returning this week, returning next week, and no date (empty `returns.Return Date`). Calendar Mon ±7 week nav; Mon–Sun day strip for dated weeks.
-2. Table collapsed to one row per truck per Return Date: Truck, Return Date, Day (derived), Driver 1, Driver 2, Insurance (never Phone/CDL). Sticky headers.
-3. Light filters, truck count, **Technical details**. Driver-row grain is collapsed for display and KPIs; source row count stays in Technical details.
-4. Live `returns` is volatile; historical returns need DriverPay (not this screen). Currently out is DriverPay-only and is not exact Ninox in-yard/on-road.
+1. Distinct-truck KPIs: **Currently out** (DriverPay open assignment), returning this week, returning next week, and no date (empty `returns.Return Date`). Returning counts use the required union of `returns` plus qualifying DriverPay rows for the same Mon–Sun `Return Date` period. Calendar Mon ±7 week nav; Mon–Sun day strip for dated weeks.
+2. Before merging DriverPay, exclude `Termination = Driver Changed` and `Transfer = Transfer To Other Truck`; calculate `tc`, `ts`, and `floor(tc / 2 + ts)`. Union distinct qualifying `Truck_Number` with distinct `returns.Truck` and deduplicate. If both sources contain the same truck/date, prefer current `returns` details in the table.
+3. Table collapsed to one row per truck per Return Date: Truck, Return Date, Day (derived), Driver 1, Driver 2, Insurance (never Phone/CDL). Sticky headers.
+4. Light filters, truck count, **Technical details**. Show source row/truck counts, overlap, source-only counts, union, `tc`, `ts`, formula count, formula-vs-distinct mismatch, date coverage, and pagination completeness.
+5. Live `returns` is volatile and may omit old history; DriverPay is not a substitute but the second required source. Currently out is DriverPay-only and is not exact Ninox in-yard/on-road.
 
 ### Diesel (`/diesel`)
 

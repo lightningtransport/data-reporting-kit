@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test:returns": "node --experimental-strip-types --test src/lib/returns.test.ts",
     "test:v2-metrics": "node --experimental-strip-types --test src/lib/v2/metrics.test.ts"
   },
   "dependencies": {

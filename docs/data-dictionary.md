@@ -41,9 +41,9 @@ The settlement-only Truck 1/2/3 owner-expense allocation rule does not apply to 
 
 ## `DriverPay` — historical driver assignment/pay ledger
 
-**Grain:** one driver assignment/pay record. Team trucks normally produce two rows, one per driver; a solo normally produces one row with `Solo_Driver_if_1 = 1`. Count distinct `Truck_Number` for truck totals.
+**Grain:** one driver assignment/pay record. Team trucks normally produce two rows, one per driver; a solo normally produces one row with `Solo_Driver_if_1 = 1`.
 
-Use `Out Date` alone for departures and `Return Date` alone for returns. For overlap with a settlement week: `Out Date <= settlements.To` and (`Return Date` is null or `Return Date >= settlements.From`), then inspect transfers/terminations inside that period.
+Use `Out Date` alone for departures. For every returning-trucks question/report, apply the requested inclusive `Return Date` range to both DriverPay and `returns`. Exclude DriverPay rows where `Termination = Driver Changed` or `Transfer = Transfer To Other Truck`; let `tc` be remaining non-solo rows and `ts` remaining solo rows, with DriverPay formula count `floor(tc / 2 + ts)`. Build the DriverPay merge set from distinct `Truck_Number` values in those qualifying rows, union it with distinct `returns.Truck`, and deduplicate. For assignment overlap with a settlement week: `Out Date <= settlements.To` and (`Return Date` is null or `Return Date >= settlements.From`), then inspect transfers/terminations inside that period.
 
 For a current-week departure total, DriverPay is one required source, not a complete substitute for Schedule_Teams: union its distinct `Truck_Number` departures with distinct live Schedule_Teams `Truck` records for the same Monday–Sunday `Out Date` window. Deduplicate by truck number and preserve a reconciliation of both-source, DriverPay-only, and Schedule_Teams-only trucks.
 
@@ -104,9 +104,9 @@ For a current-week departure total, DriverPay is one required source, not a comp
 
 ## `returns` — current expected-return list
 
-**Grain:** one returning driver/truck row. Team trucks normally have two rows. Count distinct `Truck` for truck totals. This is volatile current operational data; use DriverPay for history.
+**Grain:** one returning driver/truck row. Team trucks normally have two rows. This is volatile current operational data and is one required side of every returning-trucks result; never use it or DriverPay alone.
 
-`Return Date` is a nullable PostgreSQL `date`, not a free-text status field. Filter with inclusive ISO dates. Supabase omits Ninox Returns fields `Solo`, `DriverDB_Id_saved`, and `Driver_id_Pay_`.
+`Return Date` is a nullable PostgreSQL `date`, not a free-text status field. Filter with the same inclusive ISO dates used for DriverPay, union distinct `Truck` with the qualifying DriverPay truck set, and report the two-source reconciliation. Supabase omits Ninox Returns fields `Solo`, `DriverDB_Id_saved`, and `Driver_id_Pay_`.
 
 | Column | Type | Null? | Meaning / safe use |
 |---|---|---:|---|

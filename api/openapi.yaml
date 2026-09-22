@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Lightning Reporting APIs
-  version: 3.3.1
+  version: 3.4.0
   license:
     name: Proprietary
     identifier: LicenseRef-Proprietary
@@ -19,6 +19,10 @@ paths:
         Explicit report requests use strict validation and pagination. A request that
         omits report is a legacy settlement_summary request, authorized as
         settlement_summary, with the unchanged successful {count,data} response shape.
+        Returning-trucks questions require complete driver_pay and returns requests for
+        the same Return Date range. Exclude DriverPay Termination=Driver Changed and
+        Transfer=Transfer To Other Truck, calculate floor(tc / 2 + ts), then union
+        distinct qualifying Truck_Number with distinct returns.Truck.
       security:
         - agentKey: []
       parameters:

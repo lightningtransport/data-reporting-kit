@@ -5,11 +5,11 @@ Read `AGENTS.md` first. Use the smallest `agent-reporting` report that answers t
 | User question | `agent-reporting` report | Required filters / analysis |
 |---|---|---|
 | Current truck facts or fleet list | `trucks` | Use current owner/dispatcher/mechanic fields only. The settlement-only 1/2/3 allocation rule does not filter or classify this source. |
-| Who/trucks are expected to return? | `returns` | Inclusive `return_from`/`return_to`. Count distinct `Truck` for trucks; rows represent drivers. For the operational UI, **link** https://lightning-settlement-dashboard.vercel.app/trucks-return. |
+| Who/trucks are returning or expected to return? | `driver_pay` + `returns` | Apply the same inclusive `return_from`/`return_to` range to both. In DriverPay exclude `Termination = Driver Changed` and `Transfer = Transfer To Other Truck`; calculate `tc` (non-solo rows), `ts` (solo rows), and `floor(tc / 2 + ts)`. Union distinct qualifying `Truck_Number` with distinct `returns.Truck`; report reconciliation and final unique count. For the operational UI, **link** https://lightning-settlement-dashboard.vercel.app/trucks-return. |
 | Historical assignment for a truck/driver | `driver_pay` | Anchor with `truck_number` or `driver_id`; review dates, transfers, and terminations. |
 | Which trucks left in a historical period? | `driver_pay` | Filter `out_from`/`out_to` only; count distinct `Truck_Number`. |
 | How many trucks are leaving this current week? | `driver_pay` + live Ninox `Schedule_Teams` | Use the same Monday–Sunday `Out Date` window for both sources. Union distinct truck numbers; report DriverPay-only, Schedule_Teams-only, overlap, and final total. Fetch Schedule_Teams immediately from its documented live JSON URL. For the planned-schedule UI, also **link** https://lightning-settlement-dashboard.vercel.app/out-schedule. |
-| Which trucks returned historically? | `driver_pay` | Filter `return_from`/`return_to` only; count distinct `Truck_Number`. |
+| Which trucks returned historically? | `driver_pay` + `returns` | Use the universal two-source return rule for the requested `Return Date` period; disclose that `returns` is volatile and may not retain historical rows. Never silently substitute DriverPay alone. |
 | Weekly headline gross/expense/net | `settlement_summary` | Supply `period_from` (and normally the same Tuesday in `period_to`) or a truck. An `owner` filter matches primary owner or `shared_owner`. |
 | Full weekly expenses/components | `settlements` | Supply `period_from` or truck; use explicit period for owner/dispatch totals. An `owner` filter matches `Owner` or `shared_owner`. |
 | Historic fuel transactions, gallons, or fuel spending | `fuel` | Anchor with `truck_number`, `store_from`, or `ninox_id`. An `owner` filter matches `owner` or `shared_owner`. Use `Adjusted SubTotal` when populated for adjusted-spend totals; calculate aggregate price per gallon as applicable spend ÷ gallons. For the operational UI, **link** https://lightning-settlement-dashboard.vercel.app/diesel. |
@@ -23,13 +23,12 @@ Read `AGENTS.md` first. Use the smallest `agent-reporting` report that answers t
 - Settlements: Tuesday `From` through the following Monday `To`. Use an exact Tuesday period anchor. Do not infer current cycle from `To Report` alone.
 - HTML reports and analytical settlement/fleet-history answers: load at least three calendar months; the settlement dashboard loads at least twelve. The named date is toolbar/focus only. See `docs/html-reporting.md`.
 - DriverPay departures: use only `Out Date` unless another date is explicitly requested.
-- DriverPay historical returns: use only `Return Date` unless another date is explicitly requested.
-- Current expected returns: use nullable `returns.Return Date` directly as an ISO date.
+- All returns: use only `Return Date`, with the same inclusive ISO bounds on both reports. The `returns` source is volatile; null means no stored date.
 - A populated row does not prove financial completion; check the requested metric for null values.
 
 ## Cardinality and join rules
 
-- `DriverPay` and `returns` are driver-row sources. Deduplicate truck identifiers for truck counts.
+- `DriverPay` and `returns` are driver-row sources. For returns, first exclude DriverPay `Driver Changed` / `Transfer To Other Truck` rows and calculate `floor(tc / 2 + ts)`; then deduplicate the qualifying DriverPay/returns truck-number union.
 - `settlements` is truck-or-bucket/week grain. Filter by `Truck` plus period for one row.
 - `fuel` is transaction grain. Multiple rows can exist per truck/date; never count its rows as trucks or replace settlement totals with fuel transaction subtotals.
 - In settlement, settlement-summary, and fuel owner-filtered reports, include a row when either its primary owner or `shared_owner` exactly matches the requested owner. `shared_owner` is supplemental attribution for trucks operated under `SOLO INC.` or `FLATBED INC.`; preserve it rather than overwriting the primary owner.

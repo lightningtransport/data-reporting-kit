@@ -40,6 +40,8 @@ Global data parameters are `report`, `limit` (1–1000), `offset` (0–100000), 
 
 For `settlement_summary`, `settlements`, and `fuel`, an exact `owner` filter matches either the historical primary owner or `shared_owner`. `shared_owner` is supplemental attribution for a truck operated under `SOLO INC.` or `FLATBED INC.` and must be returned/disclosed alongside—not substituted for—the primary owner.
 
+Returning-trucks questions/reports require two complete requests with the same inclusive `return_from`/`return_to`: `driver_pay` and `returns`. Exclude DriverPay rows whose `Termination` is `Driver Changed` or whose `Transfer` is `Transfer To Other Truck`. Let `tc` be the remaining non-solo rows and `ts` the remaining solo rows; the DriverPay formula count is `floor(tc / 2 + ts)`. Union distinct qualifying `Truck_Number` values with distinct `returns.Truck` values, normalize only truck-key format, and deduplicate. The API returns source rows; the caller performs this governed reconciliation and reports source/overlap/source-only/union counts plus formula-vs-distinct agreement.
+
 ## Pagination and evidence
 
 Explicit data responses include:

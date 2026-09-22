@@ -1,4 +1,4 @@
-import { REPORTS, TABLES } from "./metadata.ts";
+import { GLOBAL_GUIDANCE, REPORTS, TABLES } from "./metadata.ts";
 
 const expected: Record<keyof typeof TABLES, string[]> = {
   driver_pay: ["Truck_Number", "Out Date", "Return Date", "Transfer", "DriversDB_ID", "Termination", "Termination Date", "Transfer Date", "Transfer Truck", "Solo_Driver_if_1", "MoneyPerWeekSigned", "MoneyPerDaysigned", "CPM", "Pay CPM after Miles", "Driver Name", "First Name", "Last Name", "E-mail", "Phone Number", "CDL", "State", "owner", "Samsara_ID", "Dispatch_Name_", "Temporal_Driver", "ID"],
@@ -50,6 +50,10 @@ Deno.test("critical business rules are present", () => {
   assert(settlementText.includes("Do not infer current cycle") && settlementText.includes("do not treat as a tonnage"), "settlement safeguards missing");
   assert(returnText.includes("not a driver ID"), "returns ID warning missing");
   assert(driverPayText.includes("Out Date only") && driverPayText.includes("Return Date only"), "DriverPay date rules missing");
+  const globalText = JSON.stringify(GLOBAL_GUIDANCE);
+  assert(globalText.includes("Driver Changed") && globalText.includes("Transfer To Other Truck"), "return exclusions missing");
+  assert(globalText.includes("floor(tc / 2 + ts)"), "DriverPay return formula missing");
+  assert(globalText.includes("union") && globalText.includes("public.returns"), "two-source return union missing");
 });
 
 Deno.test("data dictionary references every exact live column", async () => {

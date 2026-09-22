@@ -180,9 +180,9 @@ export function TrucksReturnDashboard({
     >
       {data.meta.error ? (
         <Alert variant="destructive">
-          <AlertTitle>Couldn't load Trucks Return</AlertTitle>
+          <AlertTitle>Couldn’t load Trucks Return</AlertTitle>
           <AlertDescription>
-            Requires a server-only AGENT_REPORTING_KEY for the returns report.{" "}
+            Requires a server-only AGENT_REPORTING_KEY for the returns and DriverPay reports.{" "}
             {data.meta.error}
           </AlertDescription>
         </Alert>
@@ -317,8 +317,8 @@ export function TrucksReturnDashboard({
           </div>
           {daysWithData < 7 ? (
             <p className="text-muted-foreground -mt-2 text-xs">
-              Live returns only shows dates still in the list ({daysWithData}/7 days with
-              trucks). Past return days are not retained here.
+              The governed union has {daysWithData}/7 days with trucks in this week.
+              The returns source is volatile; DriverPay supplies its qualifying side of the union.
             </p>
           ) : null}
         </>
@@ -392,7 +392,7 @@ export function TrucksReturnDashboard({
       </Card>
 
       <footer className="text-muted-foreground flex flex-col gap-2 text-sm">
-        <p>Current expected returns list. Phone and CDL are not shown.</p>
+        <p>Governed returns + DriverPay union. Phone and CDL are not shown.</p>
         <TechnicalDetails>
             <p>
               Dataset: <strong>{data.meta.dataset}</strong> · total_count=
@@ -402,6 +402,19 @@ export function TrucksReturnDashboard({
               <strong>{String(Boolean(data.meta.live))}</strong> · distinct_trucks
               (source)=<strong>{data.meta.distinct_trucks}</strong>.
             </p>
+            {data.meta.source_counts ? (
+              <p>
+                Source reconciliation (loaded coverage): returns rows/trucks=
+                <strong>{data.meta.source_counts.returns_rows}/{data.meta.source_counts.returns_trucks}</strong>
+                {" · "}DriverPay rows/qualifying rows/trucks=
+                <strong>{data.meta.source_counts.driver_pay_rows}/{data.meta.source_counts.driver_pay_qualifying_rows}/{data.meta.source_counts.driver_pay_trucks}</strong>
+                {" · "}tc=<strong>{data.meta.source_counts.driver_pay_team_rows}</strong>
+                {" · "}ts=<strong>{data.meta.source_counts.driver_pay_solo_rows}</strong>
+                {" · "}floor(tc / 2 + ts)=<strong>{data.meta.source_counts.driver_pay_formula_count}</strong>
+                {" · "}overlap=<strong>{data.meta.source_counts.overlap_trucks}</strong>
+                {" · "}union=<strong>{data.meta.source_counts.union_trucks}</strong>.
+              </p>
+            ) : null}
             <p>
               Focus week Mon–Sun <strong>{focusMonday}</strong>–
               <strong>{addDaysIso(focusMonday, 6)}</strong> ({thisLabel}) · days with data=
@@ -435,10 +448,13 @@ export function TrucksReturnDashboard({
               Ninox in-yard/on-road.
             </p>
             <p>
-              Caveats: KPIs and table use distinct trucks after collapsing driver-grain
-              rows on (Truck, Return Date) into Driver 1 / Driver 2. Week nav is calendar
-              Mon–Sun (±7 days). The returns list is live/volatile — days or weeks with no
-              rows are not retained in this screen (historical returns need DriverPay).
+              Caveats: returning-truck KPIs use the unique union of `returns.Truck` and
+              qualifying `DriverPay.Truck_Number` after excluding Driver Changed and
+              Transfer To Other Truck rows. The table collapses driver-grain rows on
+              (Truck, Return Date) into Driver 1 / Driver 2 and prefers returns details
+              for a duplicate truck/date. Week nav is calendar Mon–Sun (±7 days). The
+              returns side is live/volatile and can omit old rows; DriverPay remains the
+              second required source, not a substitute.
               Null Return Date = no stored date. Phone Number and CDL are sensitive and are
               not requested. Do not use Ninox_ID or a name as a CDL substitute. as_of is
               request time, not a Ninox sync stamp.

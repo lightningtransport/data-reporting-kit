@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.8.24 - 2026-09-22
+
+- All returning-trucks questions and reports now use the governed two-source union: the same inclusive `Return Date` range on `driver_pay` and `returns`; exclude DriverPay `Termination = Driver Changed` and `Transfer = Transfer To Other Truck`; calculate `floor(tc / 2 + ts)`; union distinct qualifying `Truck_Number` with distinct `returns.Truck`; report source/overlap/source-only/union reconciliation and formula-vs-distinct agreement.
+- `agent-reporting` catalog/metadata and OpenAPI advanced to schema `3.4.0`; raw report response shapes are unchanged.
+- Trucks Return dashboard now loads both sources, applies the return exclusions, prefers current `returns` detail for duplicate truck/date rows, and exposes reconciliation evidence.
+- Portable reporting skill `0.9.7` carries the same mandatory return rule.
+
 ## 3.8.23 - 2026-09-17
 
 - Settlements Fuel by team / Fuel vs expenses charts: design-token colors (`chart-1`/`chart-2`), dynamic height so owner labels do not overlap, wider truncated Y labels.
