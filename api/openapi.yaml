@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Lightning Reporting APIs
-  version: 3.4.0
+  version: 3.5.0
   license:
     name: Proprietary
     identifier: LicenseRef-Proprietary
@@ -49,7 +49,7 @@ paths:
         - name: truck
           in: query
           schema: {type: string}
-          description: Exact settlements/returns truck identifier. In settlement reports only, 1/2/3 identify documented non-physical owner-expense allocation buckets.
+          description: Exact text identifier in settlements; numeric identifier in returns. Only in settlements, 1/2/3 identify documented non-physical owner-expense allocation buckets.
         - name: truck_number
           in: query
           schema: {type: string}
@@ -60,13 +60,14 @@ paths:
         - name: owner
           in: query
           schema: {type: string}
-          description: Exact owner filter. For settlements, settlement_summary, and fuel, returns rows where either the primary owner or shared_owner matches; shared_owner supplements rather than replaces the primary owner.
+          description: Exact owner filter. For returns, match the returns row Owner (no shared_owner/current-trucks fallback). For settlements, settlement_summary, and fuel, match either primary owner or shared_owner; preserve both values.
         - name: dispatch
           in: query
           schema: {type: string}
         - name: dispatcher
           in: query
           schema: {type: string}
+          description: Exact dispatcher filter. For returns, match the returns row Dispatcher; for trucks, match current dispatcher. Do not use current trucks for return-period attribution.
         - name: insurance
           in: query
           schema: {type: string}
@@ -91,9 +92,11 @@ paths:
         - name: return_from
           in: query
           schema: {$ref: '#/components/schemas/IsoDate'}
+          description: Inclusive Return Date lower bound on driver_pay and returns; use the same frame for both when counting returning trucks.
         - name: return_to
           in: query
           schema: {$ref: '#/components/schemas/IsoDate'}
+          description: Inclusive Return Date upper bound on driver_pay and returns.
         - name: return_null
           in: query
           schema: {type: boolean}

@@ -1,5 +1,5 @@
-export const SCHEMA_VERSION = "3.4.0";
-export const SCHEMA_VERIFIED_AT = "2026-09-22T13:31:40Z";
+export const SCHEMA_VERSION = "3.5.0";
+export const SCHEMA_VERIFIED_AT = "2026-09-25T19:58:01Z";
 
 const field = (
   type: string,
@@ -28,10 +28,11 @@ export const GLOBAL_GUIDANCE = {
   ],
   join_rules: [
     "DriverPay.DriversDB_ID is text while drivers.Ninox_ID is numeric. In SQL use DriverPay.DriversDB_ID = drivers.Ninox_ID::text; the API returns both as JSON values.",
-    "Historical truck keys in DriverPay, returns, and settlements are text while trucks.truck_number is numeric. Normalize to the same representation before comparing.",
+    "Historical truck keys in DriverPay and settlements are text while returns.Truck and trucks.truck_number are numeric. Normalize only the truck-key representation before comparing.",
     "Use a LEFT JOIN from historical tables to the current trucks master. Historical truck numbers can be absent from the current master; an inner join silently drops valid history.",
     "returns.Ninox_ID identifies the Returns source record and is not a driver ID. Do not join it to drivers.Ninox_ID.",
     "For settlements and fuel owner-filtered questions, match either the row's primary owner or shared_owner. shared_owner attributes a truck operated under SOLO INC. or FLATBED INC. to its underlying owner; it supplements rather than replaces the primary owner value.",
+    "For returns owner and dispatcher attribution use the physical Owner and Dispatcher on the Returns row, not current trucks or settlement shared_owner. Filter exact stored values.",
   ],
 };
 
@@ -120,17 +121,20 @@ export const TABLES = {
     calculation_rules: [
       "Return Date is a nullable PostgreSQL date. Filter it directly with the same inclusive ISO YYYY-MM-DD boundaries used for DriverPay.",
       "Every returning-trucks question or report must merge distinct returns.Truck with qualifying DriverPay Truck_Number values for the same Return Date period; never use this report alone.",
+      "For truck-dispatch or truck-owner questions over a return_from/return_to frame, match exact Dispatcher or Owner on returns rows and count distinct Truck, not returning-driver rows. Do not infer historical attribution from current trucks.",
       "Ninox_ID is the Returns source-record ID, not a driver ID or DriversDB_ID. This representation also has a sensitive CDL field; use CDL only for an exact driver link when it matches a related approved record.",
     ],
     fields: {
       Insurance: field("text", true, "Insurance category/code for the returning assignment/truck. Use the literal value; code expansion is not established."),
-      Truck: field("text", true, "Returning truck number. Deduplicate for truck counts.", { ninox_field: "S.A" }),
+      Truck: field("numeric", true, "Returning truck number. Deduplicate for truck counts; compare numeric truck-key representation across sources.", { ninox_field: "S.A" }),
       "Driver Name": field("text", true, "Driver display name for this return row.", { ninox_field: "S.B" }),
       "Phone Number": field("text", true, "Sensitive driver contact number.", { sensitive: true, ninox_field: "S.E" }),
       "Return Date": field("date", true, "Expected return date to yard/rest; null means no date is currently stored, not a text status.", { ninox_field: "S.H" }),
       ID: field("bigint", false, "Supabase identity primary key for this imported row."),
       Ninox_ID: field("numeric", true, "Ninox Returns source-record ID. Do not join to drivers.Ninox_ID."),
       CDL: field("text", true, "Sensitive commercial driver-license value for this return row. The physical column is verified; use it for an exact driver link only when a related approved record has the same verified CDL.", { sensitive: true }),
+      Dispatcher: field("text", true, "Truck dispatcher stored on this return row. Use for return-period attribution; do not substitute the current trucks dispatcher."),
+      Owner: field("text", true, "Truck owner stored on this return row. Use for return-period attribution; do not substitute the current trucks owner or apply settlement shared_owner logic."),
     },
     source_omissions: ["Ninox S.E3 Solo", "Ninox S.J3 DriverDB_Id_saved", "Ninox S.K3 Driver_id_Pay_ are not columns in this Supabase table"],
   },
@@ -327,12 +331,14 @@ export const REPORTS = {
   returns: {
     ...TABLES.returns,
     filters: {
-      truck: "exact Truck",
+      truck: "exact numeric Truck",
       insurance: "exact Insurance",
       ninox_id: "exact Returns source-record Ninox_ID",
       driver_name: "case-insensitive partial Driver Name discovery search",
       return_from: "inclusive Return Date lower bound, YYYY-MM-DD",
       return_to: "inclusive Return Date upper bound, YYYY-MM-DD",
+      dispatcher: "exact return-row Dispatcher; no current-trucks fallback",
+      owner: "exact return-row Owner; no shared_owner expansion",
     },
     sort: ["Return Date asc nulls last", "ID asc"],
   },

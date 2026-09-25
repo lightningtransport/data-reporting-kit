@@ -1,7 +1,7 @@
 ---
 name: itpros-supabase-reporting
 description: Answer Lightning reports through the approved reporting APIs.
-version: 0.9.7
+version: 0.9.8
 author: Ibrain Ortega, Hermes Agent
 license: Proprietary
 platforms: [linux, macos, windows]
@@ -47,9 +47,10 @@ Use schedule `0 10,14 * * *`. The job updates instructions only and must report 
 2. Call `catalog`, then report metadata when the current schema/rules are not loaded.
 3. Choose the smallest report and exact filters. Settlement reports require an explicit period or truck; DriverPay requires truck, driver, `out_from`, or `return_from`; fuel requires `truck_number`, `store_from`, or `ninox_id`. HTML reports and analytical settlement/fleet-history answers must fetch at least three calendar months; the settlement dashboard fetches at least twelve months of `settlements`. The named date is UI focus only.
 4. Run the helper and reconcile `fetched_count` with `total_count` when a complete answer is required.
-5. Apply grain, date, join, allocation-bucket, stored-value, and sensitive-output rules. When a needed field is absent from the selected record, use approved-report relational fallback before finalizing: CDL is the unique driver key across `drivers` and `DriverPay`; truck number is the vehicle key across documented field variants. Never substitute names, Supabase IDs, or `returns.Ninox_ID`; `returns` has no direct CDL/driver key, so report an unresolved driver link unless a related record provides a verified CDL match.
+5. Apply grain, date, join, allocation-bucket, stored-value, and sensitive-output rules. When a needed field is absent from the selected record, use approved-report relational fallback before finalizing: CDL is the unique driver key across `drivers` and `DriverPay`; truck number is the vehicle key across documented field variants. Never substitute names, Supabase IDs, or `returns.Ninox_ID`; `returns.CDL` is sensitive and may link a driver only after an exact match to a verified CDL in approved related data; otherwise report an unresolved driver link.
 6. For a current-week “how many trucks are leaving” report, query `driver_pay` by the Monday–Sunday `out_from`/`out_to` range and fetch live Ninox Schedule_Teams from `https://lightningtransport.ninoxdb.com/share/p10ce94o8paa2q4a1z4nw0emznn2ubhriza6?locale=en&utcoffset=-240`. Filter its `Out Date` to the same range, validate it is a JSON array, normalize only truck-key format, and union distinct DriverPay `Truck_Number` with Schedule_Teams `Truck`. Do not substitute either source for the other or double-count overlapping trucks.
 7. For every returning-trucks question/report, query both `driver_pay` and `returns` with the same inclusive `return_from`/`return_to` period. Exclude DriverPay rows where `Termination = Driver Changed` or `Transfer = Transfer To Other Truck`; let `tc` be remaining rows with `Solo_Driver_if_1 != 1` and `ts` remaining rows with `Solo_Driver_if_1 = 1`; calculate `floor(tc / 2 + ts)`. Union distinct qualifying DriverPay `Truck_Number` with distinct `returns.Truck`, normalizing only truck-key format. Report both-source, source-only, overlap, final union, `tc`, `ts`, and whether the formula agrees with distinct qualifying DriverPay trucks. Never use either source alone.
+   For return-period dispatcher/owner questions, use `returns` with the same inclusive date frame plus exact, case-sensitive `dispatcher` (`Dispatcher`) or `owner` (`Owner`) on stored return rows. Paginate, then count distinct numeric `Truck`, not driver rows; do not substitute current `trucks` or settlement `shared_owner`. This filtered Returns attribution does not automatically apply to DriverPay-only trucks in the two-source union; disclose that limitation and retain separate reconciliation for total returns.
 8. Answer with source, normalized filters, exact period, result and row/distinct count, pagination completeness, `as_of`, source-freshness limitation, and material caveats. For the current-week departure union, include both-source, DriverPay-only, Schedule_Teams-only, and union counts.
 
 ## HTML reports
@@ -144,6 +145,7 @@ Agent-key reports are `settlement_summary`, `settlements`, `driver_pay`, `driver
 - Stored Gross, Total Expenses, and Net take precedence; do not add included components again.
 - Fuel is transaction-grain history: filter by `truck_number`, `store_from`, or `ninox_id`; use populated `Adjusted SubTotal` for adjusted-spend totals and calculate aggregate price per gallon as applicable spend divided by gallons.
 - `returns.Ninox_ID` is not a driver ID.
+- `returns.Truck` is numeric; `returns.Dispatcher` and `returns.Owner` are nullable, non-sensitive truck-dispatch/owner fields on the return row. Use exact `dispatcher` / `owner` filters within `return_from` / `return_to` and distinct `Truck` for return-row attribution. Do not pull current `trucks` for these values.
 - Planned Schedule_Teams and exact Ninox in-yard/on-road metrics are unsupported by these Supabase tables.
 
 ## Verification

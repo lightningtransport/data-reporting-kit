@@ -57,6 +57,8 @@ export const reportFilters: Record<SupportedReport, Set<string>> = {
     "driver_name",
     "return_from",
     "return_to",
+    "dispatcher",
+    "owner",
   ]),
   trucks: new Set([
     "truck_number",
@@ -271,6 +273,7 @@ export function validateReportValues(
     }
   } else if (report === "returns") {
     validateDateRange(params, "return_from", "return_to");
+    parseNumber(params.get("truck"), "truck");
     parseNumber(params.get("ninox_id"), "ninox_id");
   } else if (report === "fuel") {
     validateDateRange(params, "store_from", "store_to");

@@ -352,9 +352,11 @@ Deno.serve(async (req: Request) => {
       sort = ["Ninox_ID asc nulls last", "ID asc"];
     } else if (report === "returns") {
       query = admin.from("returns").select(tableSelect("returns", includeSensitive), { count: "exact" });
+      const truck = parseNumber(params.get("truck"), "truck");
       const ninoxId = parseNumber(params.get("ninox_id"), "ninox_id");
+      if (truck !== null) query = query.eq("Truck", truck);
       if (ninoxId !== null) query = query.eq("Ninox_ID", ninoxId);
-      for (const [parameter, column] of [["truck", "Truck"], ["insurance", "Insurance"]]) {
+      for (const [parameter, column] of [["insurance", "Insurance"], ["dispatcher", "Dispatcher"], ["owner", "Owner"]]) {
         if (params.get(parameter)) query = query.eq(column, params.get(parameter));
       }
       if (params.get("driver_name")) query = query.ilike("Driver Name", `%${params.get("driver_name")}%`);

@@ -192,6 +192,31 @@ Deno.test("CDL is response-only and is never accepted as a GET filter", () => {
   assertThrows(() => validateStrictParameters(params, "returns", false), "Unsupported parameter");
 });
 
+Deno.test("returns permits exact dispatcher and owner with inclusive return date frame", () => {
+  const params = new URLSearchParams("report=returns&dispatcher=Group+1&owner=SOLO+INC.&return_from=2026-09-01&return_to=2026-09-07");
+  validateStrictParameters(params, "returns", false);
+  validateReportValues(params, "returns");
+  const filters = normalizedFilters(params, "returns");
+  assert(filters.dispatcher === "Group 1" && filters.owner === "SOLO INC." && filters.return_from === "2026-09-01" && filters.return_to === "2026-09-07", "return attribution filters changed");
+  assert(tableSelect("returns", false).includes("Dispatcher") && tableSelect("returns", false).includes("Owner"), "row attribution omitted from default projection");
+  assert(!tableSelect("returns", false).includes("CDL"), "sensitive CDL leaked");
+});
+
+Deno.test("returns rejects unknown dispatch alias, duplicate owner and malformed truck", () => {
+  assertThrows(() => validateStrictParameters(new URLSearchParams("report=returns&dispatch=Group+1"), "returns", false), "Unsupported parameter");
+  assertThrows(() => validateStrictParameters(new URLSearchParams("report=returns&owner=A&owner=B"), "returns", false), "Duplicate parameter");
+  assertThrows(() => validateReportValues(new URLSearchParams("report=returns&truck=not-a-number"), "returns"), "truck must be numeric");
+});
+
+Deno.test("returns exact attribution filters preserve case and reject malformed date frames", () => {
+  const params = new URLSearchParams("report=returns&owner=Owner+One&dispatcher=group+1");
+  validateStrictParameters(params, "returns", false);
+  validateReportValues(params, "returns");
+  const filters = normalizedFilters(params, "returns");
+  assert(filters.owner === "Owner One" && filters.dispatcher === "group 1", "exact filter values must not be case-normalized");
+  assertThrows(() => validateReportValues(new URLSearchParams("report=returns&owner=A&return_from=2026-09-10&return_to=2026-09-01"), "returns"), "return_from cannot be after return_to");
+});
+
 Deno.test("missing or invalid exact counts fail instead of using page count", () => {
   for (const value of [null, undefined, -1, 1.5, "2"]) {
     assertThrows(

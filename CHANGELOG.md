@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.8.25 - 2026-09-25
+
+- `agent-reporting` schema `3.5.0` exposes the verified nullable Returns `Dispatcher`/`Owner` columns in default and sensitive projections, adds strict exact `dispatcher`/`owner` filters on Returns rows, and corrects the physical type of `returns.Truck` to numeric with numeric truck-filter validation. Inclusive `return_from`/`return_to` and row `ID` pagination remain unchanged.
+- Document return-row attribution separately from current-trucks state and settlement `shared_owner`; count distinct trucks rather than driver rows while preserving the two-source returning-trucks reconciliation. OpenAPI, dictionary, routing, rules and portable skill `0.9.8` updated.
+
 ## 3.8.24 - 2026-09-22
 
 - All returning-trucks questions and reports now use the governed two-source union: the same inclusive `Return Date` range on `driver_pay` and `returns`; exclude DriverPay `Termination = Driver Changed` and `Transfer = Transfer To Other Truck`; calculate `floor(tc / 2 + ts)`; union distinct qualifying `Truck_Number` with distinct `returns.Truck`; report source/overlap/source-only/union reconciliation and formula-vs-distinct agreement.

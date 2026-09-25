@@ -1,6 +1,6 @@
 # Data dictionary
 
-Schema verified against Supabase project `aaqquwhdglueqlnbifvn` on **2026-09-21**. The six reporting sources contain **109 physical columns**: `DriverPay` 26, `drivers` 17, `returns` 8, `settlements` 28, `trucks` 16, and `fuel` 14. The reporting system is single-organization; these source tables have RLS enabled. PostgreSQL column comments are currently absent; business semantics below come from the local Ninox field catalog, verified live schema/data, and confirmed business rules.
+Schema verified against Supabase project `aaqquwhdglueqlnbifvn` on **2026-09-21**, with `returns` additions verified on **2026-09-25**. The six reporting sources contain **111 physical columns**: `DriverPay` 26, `drivers` 17, `returns` 10, `settlements` 28, `trucks` 16, and `fuel` 14. The reporting system is single-organization; these source tables have RLS enabled. PostgreSQL column comments are currently absent; business semantics below come from the local Ninox field catalog, verified live schema/data, and confirmed business rules.
 
 The authenticated `agent-reporting` metadata routes are the runtime contract. Call `?report=catalog` for the complete catalog or `?report=<name>&metadata=true` for one report.
 
@@ -106,18 +106,20 @@ For a current-week departure total, DriverPay is one required source, not a comp
 
 **Grain:** one returning driver/truck row. Team trucks normally have two rows. This is volatile current operational data and is one required side of every returning-trucks result; never use it or DriverPay alone.
 
-`Return Date` is a nullable PostgreSQL `date`, not a free-text status field. Filter with the same inclusive ISO dates used for DriverPay, union distinct `Truck` with the qualifying DriverPay truck set, and report the two-source reconciliation. Supabase omits Ninox Returns fields `Solo`, `DriverDB_Id_saved`, and `Driver_id_Pay_`.
+`Return Date` is a nullable PostgreSQL `date`, not a free-text status field. Filter with the same inclusive ISO dates used for DriverPay, union distinct `Truck` with the qualifying DriverPay truck set, and report the two-source reconciliation. For a return-frame dispatch/owner query, use exact `Dispatcher` and `Owner` on the return rows and count distinct `Truck` rather than driver rows; do not use current `trucks` or settlement `shared_owner` for row attribution. Supabase omits Ninox Returns fields `Solo`, `DriverDB_Id_saved`, and `Driver_id_Pay_`. *Evidence: business-owner field interpretation and live physical column types/nullability confirmed 2026-09-25.*
 
 | Column | Type | Null? | Meaning / safe use |
 |---|---|---:|---|
 | `Insurance` | text | yes | Insurance category/code; use literal value. |
-| `Truck` | text | yes | Returning truck number. Ninox `S.A`. |
+| `Truck` | numeric | yes | Returning truck number; distinct truck-count key. Ninox `S.A`. |
 | `Driver Name` | text | yes | Driver display name. Ninox `S.B`. |
 | `Phone Number` | text | yes | Sensitive phone. Ninox `S.E`. |
 | `Return Date` | date | yes | Expected return date; null means no date stored. Ninox `S.H`. |
 | `ID` | bigint | no | Supabase identity primary key. |
 | `Ninox_ID` | numeric | yes | Returns source-record ID; **not** a driver ID. |
 | `CDL` | text | yes | Sensitive commercial driver-license value. Use as an exact driver link only after confirming the same CDL in a related approved record. |
+| `Dispatcher` | text | yes | Truck dispatcher stored on this return row; exact `dispatcher` filter, not current `trucks.dispatcher`. |
+| `Owner` | text | yes | Truck owner stored on this return row; exact `owner` filter, not current `trucks.owner` or settlement `shared_owner`. |
 
 ## `settlements` — weekly financial ledger
 

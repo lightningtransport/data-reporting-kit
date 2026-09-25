@@ -3,7 +3,7 @@ import { GLOBAL_GUIDANCE, REPORTS, TABLES } from "./metadata.ts";
 const expected: Record<keyof typeof TABLES, string[]> = {
   driver_pay: ["Truck_Number", "Out Date", "Return Date", "Transfer", "DriversDB_ID", "Termination", "Termination Date", "Transfer Date", "Transfer Truck", "Solo_Driver_if_1", "MoneyPerWeekSigned", "MoneyPerDaysigned", "CPM", "Pay CPM after Miles", "Driver Name", "First Name", "Last Name", "E-mail", "Phone Number", "CDL", "State", "owner", "Samsara_ID", "Dispatch_Name_", "Temporal_Driver", "ID"],
   drivers: ["FullName", "First Name", "Middle Name", "Last Name", "E-mail", "Phone Number", "Years Of Experience", "DOB", "Company Name (This is NOT the Insurance)", "CDL", "State", "CDL Expiration", "Gender", "Insurance", "Ninox_ID", "ID", "Date of Hire"],
-  returns: ["Insurance", "Truck", "Driver Name", "Phone Number", "Return Date", "ID", "Ninox_ID", "CDL"],
+  returns: ["Insurance", "Truck", "Driver Name", "Phone Number", "Return Date", "ID", "Ninox_ID", "CDL", "Dispatcher", "Owner"],
   settlements: ["Truck", "truck_insurance", "Dispatch", "Owner", "Gross", "tonu", "Total Expenses", "Net", "From", "To", "truck_loans", "Otro", "LTR Invoices", "Tolls", "BestPass", "Insurance", "CabCards", "Trailer Rentals", "samsara", "PrePass", "Total Driver Pay", "Fuel Expenses", "To Report", "%AppliedSaved", "Gross_with_%_deduction_All", "Driven_miles", "ID", "shared_owner"],
   trucks: ["truck_number", "dispatcher", "insurance", "vin", "make", "odometer_miles", "owner", "last_known_address", "model_year", "license_plate", "yard_location", "samsara_last_connected_at", "samsara_vehicle_id", "mechanic_status", "ID", "Ninox_ID"],
   fuel: ["id", "created_at", "Unit", "Store Date", "Product", "SubTotal", "Adjusted SubTotal", "Gallons", "City", "State", "Price_Per_Gallon", "owner", "Ninox_ID", "shared_owner"],
@@ -13,14 +13,14 @@ function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
 }
 
-Deno.test("metadata covers all 109 live reporting columns exactly", () => {
+Deno.test("metadata covers all 111 live reporting columns exactly", () => {
   let count = 0;
   for (const [table, columns] of Object.entries(expected) as [keyof typeof TABLES, string[]][]) {
     const actual = Object.keys(TABLES[table].fields);
     assert(JSON.stringify(actual) === JSON.stringify(columns), `${table} columns differ`);
     count += actual.length;
   }
-  assert(count === 109, `expected 109 fields, got ${count}`);
+  assert(count === 111, `expected 111 fields, got ${count}`);
 });
 
 Deno.test("every field has a physical type, nullability, and meaning", () => {
@@ -49,11 +49,22 @@ Deno.test("critical business rules are present", () => {
   assert(!JSON.stringify(TABLES.trucks).includes("owner-assignment bucket"), "settlement-only bucket rule leaked into trucks metadata");
   assert(settlementText.includes("Do not infer current cycle") && settlementText.includes("do not treat as a tonnage"), "settlement safeguards missing");
   assert(returnText.includes("not a driver ID"), "returns ID warning missing");
+  assert(returnText.includes("historical") && returnText.includes("Dispatcher") && returnText.includes("Owner"), "row owner/dispatch rule missing");
   assert(driverPayText.includes("Out Date only") && driverPayText.includes("Return Date only"), "DriverPay date rules missing");
   const globalText = JSON.stringify(GLOBAL_GUIDANCE);
   assert(globalText.includes("Driver Changed") && globalText.includes("Transfer To Other Truck"), "return exclusions missing");
   assert(globalText.includes("floor(tc / 2 + ts)"), "DriverPay return formula missing");
   assert(globalText.includes("union") && globalText.includes("public.returns"), "two-source return union missing");
+});
+
+Deno.test("Returns row attribution is exact, non-sensitive, and separate from settlement shared_owner", () => {
+  const returns = TABLES.returns.fields;
+  assert(returns.Truck.type === "numeric" && returns.Truck.nullable, "returns truck must be nullable numeric");
+  for (const key of ["Dispatcher", "Owner"] as const) {
+    assert(returns[key].type === "text" && returns[key].nullable && !("sensitive" in returns[key]), `${key} must be nullable non-sensitive text`);
+  }
+  assert(REPORTS.returns.filters.dispatcher.includes("exact") && REPORTS.returns.filters.owner.includes("exact"), "metadata does not advertise exact return row filters");
+  assert(!("shared_owner" in returns), "settlement shared_owner leaked into returns");
 });
 
 Deno.test("data dictionary references every exact live column", async () => {

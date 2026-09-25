@@ -59,3 +59,12 @@ Deno.test("schema verification timestamp matches the OpenAPI date-time contract"
   const matches = specification.match(/schema_verified_at: \{type: string, format: date-time\}/g) ?? [];
   assert(matches.length === 2, "catalog and metadata schema_verified_at must both be date-time");
 });
+
+Deno.test("returns owner and dispatcher are exact row filters in runtime and API spec", async () => {
+  const handler = await Deno.readTextFile(new URL("./index.ts", import.meta.url));
+  const spec = await Deno.readTextFile(new URL("../../../api/openapi.yaml", import.meta.url));
+  const returnsBranch = handler.slice(handler.indexOf('} else if (report === "returns")'), handler.indexOf('} else if (report === "fuel")'));
+  assert(returnsBranch.includes('["dispatcher", "Dispatcher"]') && returnsBranch.includes('["owner", "Owner"]') && returnsBranch.includes('query.eq(column, params.get(parameter))'), "returns handler must apply exact filters to physical attribution columns");
+  assert(returnsBranch.includes('query.gte("Return Date"') && returnsBranch.includes('query.lte("Return Date"') && returnsBranch.includes('.order("ID"'), "returns date bounds and stable pagination changed");
+  assert(spec.includes("match the returns row Owner") && spec.includes("match the returns row Dispatcher"), "API spec missing returns-specific exact filters");
+});
