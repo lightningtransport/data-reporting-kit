@@ -74,4 +74,4 @@ For Out Schedule / Trucks Return / Diesel UI questions, link the deep URLs above
 
 - Don't ship a one-off date slice without the 3-month backdrop for HTML or analytical settlement/fleet history.
 - Don't invent metrics or recompute stored Gross / Total Expenses / Net for headlines.
-- Don't treat exact in-yard/on-road metrics as available from these Supabase tables; planned Schedule_Teams UI is the `/out-schedule` dashboard view.
+- The DriverPay on-road metric IS available via `on_road_at` (distinct trucks, Out Date <= date < Return Date). The separate Ninox insurance-choice/in-yard metric remains unavailable; planned Schedule_Teams UI is `/out-schedule`.

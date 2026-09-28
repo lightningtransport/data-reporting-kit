@@ -26,12 +26,14 @@ The seven reporting-source schemas contain 125 physical columns. The 14 `Outside
 
 - Choose the smallest report and load its current metadata when meaning, filters, joins, grain, or calculations are not already known.
 - Use exact documented filter names and exact stored values. Unknown/duplicate parameters are errors.
-- Supply required anchors: settlement reports need `period_from` or truck; DriverPay needs truck, driver, `out_from`, or `return_from`; fuel needs `truck_number`, `store_from`, or `ninox_id`; `outside_repairs` needs `truck`, `trailer`, `date_from`, or `ninox_id`.
+- Supply required anchors: settlement reports need `period_from` or truck; DriverPay needs truck, driver, `out_from`, `return_from`, or `on_road_at`; fuel needs `truck_number`, `store_from`, or `ninox_id`; `outside_repairs` needs `truck`, `trailer`, `date_from`, or `ninox_id`.
 - Follow `next_offset` until `has_more=false` when all rows are needed. `count`/`page_count` is one page; `total_count` is the filtered total.
 - Request sensitive fields only for an explicit user need. Every `AGENT_API_KEY` / `AGENT_API_KEY_<number>` is permitted to request the explicit sensitive-field allowlists by default; `AGENT_ALLOW_SENSITIVE_<n>=false` is the opt-out restriction for a specific key. Minimize and redact output.
 - Treat a denied/empty response as evidence only about that request, not proof that the business fact is false or that upstream data is current.
 
-## Non-negotiable analysis rules
+**Non-negotiable analysis rules**
+
+- **On-road trucks for date D** (today in America/New_York for “now”): query `driver_pay?on_road_at=D` and paginate completely. Count distinct nonblank `Truck_Number` where `Out Date <= D` and `Return Date > D`. Null return dates and the return day do **not** qualify. No 18-month lookback, `returns` union, or `return_null` shortcut. This is distinct from the Ninox insurance-choice/in-yard formula.
 
 - Settlements run Tuesday through Monday. Use an explicit period; never infer the current cycle from `To Report` alone.
 - For HTML reports and analytical settlement/fleet-history answers (trends, rankings), always fetch **at least three calendar months** ending today or at the user-named end date. The **settlement dashboard** loads **at least twelve calendar months**. The named week or day is UI focus only, not the sole data window. Paginate until complete. See `docs/html-reporting.md`.
@@ -49,7 +51,7 @@ The seven reporting-source schemas contain 125 physical columns. The 14 `Outside
 - `returns.CDL` is a sensitive exact driver key: use it to resolve a return only when it matches a verified CDL in related approved data. Never use a name, Supabase `ID`, or `returns.Ninox_ID` as a substitute.
 
 *Evidence: approved business rule confirmed 2026-09-11; `returns.CDL` and `drivers.Date of Hire` physical columns verified on 2026-09-11.*
-- Planned Schedule_Teams and exact Ninox in-yard/on-road metrics are not available from these Supabase tables. State the limitation; do not approximate from similar fields.
+- Planned Schedule_Teams and the separate Ninox insurance-choice/in-yard formula are not available from these Supabase tables; the owner-approved DriverPay on-road count below IS available.
 
 ## HTML reports
 

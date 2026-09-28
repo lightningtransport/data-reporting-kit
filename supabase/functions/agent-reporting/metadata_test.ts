@@ -56,6 +56,8 @@ Deno.test("critical business rules are present", () => {
   assert(globalText.includes("Driver Changed") && globalText.includes("Transfer To Other Truck"), "return exclusions missing");
   assert(globalText.includes("floor(tc / 2 + ts)"), "DriverPay return formula missing");
   assert(globalText.includes("union") && globalText.includes("public.returns"), "two-source return union missing");
+  assert(GLOBAL_GUIDANCE.on_road_trucks.join(" ").includes('"Out Date" <= date') && GLOBAL_GUIDANCE.on_road_trucks.join(" ").includes('"Return Date" > date'), "on-road date boundaries missing");
+  assert(REPORTS.driver_pay.filters.on_road_at.includes("YYYY-MM-DD"), "on-road filter not in catalog");
 });
 
 Deno.test("Returns row attribution is exact, non-sensitive, and separate from settlement shared_owner", () => {

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Lightning Reporting APIs
-  version: 3.6.0
+  version: 3.7.0
   license:
     name: Proprietary
     identifier: LicenseRef-Proprietary
@@ -19,6 +19,9 @@ paths:
         Explicit report requests use strict validation and pagination. A request that
         omits report is a legacy settlement_summary request, authorized as
         settlement_summary, with the unchanged successful {count,data} response shape.
+        On-road trucks on date D use driver_pay on_road_at=D: Out Date <= D
+        and Return Date > D; paginate and count distinct nonblank Truck_Number.
+        Null returns and return day are excluded. For now use America/New_York date.
         Returning-trucks questions require complete driver_pay and returns requests for
         the same Return Date range. Exclude DriverPay Termination=Driver Changed and
         Transfer=Transfer To Other Truck, calculate floor(tc / 2 + ts), then union
@@ -102,6 +105,10 @@ paths:
           in: query
           schema: {$ref: '#/components/schemas/IsoDate'}
           description: Inclusive upper bound on settlement From date.
+        - name: on_road_at
+          in: query
+          schema: {$ref: '#/components/schemas/IsoDate'}
+          description: DriverPay-only on-road as-of date D; an eligible anchor. Filters Out Date <= D and Return Date > D. Cannot combine with other date filters or return_null; count distinct nonblank Truck_Number across all pages.
         - name: out_from
           in: query
           schema: {$ref: '#/components/schemas/IsoDate'}

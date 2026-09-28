@@ -320,6 +320,10 @@ Deno.serve(async (req: Request) => {
       sort = ["From asc", "ID asc"];
     } else if (report === "driver_pay") {
       query = admin.from("DriverPay").select(tableSelect("driver_pay", includeSensitive), { count: "exact" });
+      if (params.get("on_road_at")) {
+        const date = params.get("on_road_at")!;
+        query = query.lte("Out Date", date).gt("Return Date", date).not("Truck_Number", "is", null).neq("Truck_Number", "");
+      }
       for (const [parameter, column] of [["truck_number", "Truck_Number"], ["driver_id", "DriversDB_ID"], ["transfer", "Transfer"], ["termination", "Termination"], ["owner", "owner"], ["dispatch", "Dispatch_Name_"], ["temporal_driver", "Temporal_Driver"]]) {
         if (params.get(parameter)) query = query.eq(column, params.get(parameter));
       }

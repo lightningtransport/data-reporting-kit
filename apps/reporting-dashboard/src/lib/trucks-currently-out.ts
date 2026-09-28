@@ -1,6 +1,5 @@
 /**
- * Distinct trucks currently out: DriverPay rows with Out Date set and Return Date null.
- * Not the exact Ninox in-yard/on-road formula — open assignment only.
+ * Distinct on-road trucks: DriverPay Out Date <= date AND Return Date > date.
  */
 
 const DEFAULT_ENDPOINT =
@@ -9,8 +8,7 @@ const DEFAULT_ENDPOINT =
 const MAX_PAGES = 40
 const PAGE_SIZE = 1000
 const FETCH_CONCURRENCY = 6
-/** How far back Out Date may be for an open assignment to count. */
-export const TRUCKS_OUT_LOOKBACK_MONTHS = 18
+
 
 export type TrucksCurrentlyOutPayload = {
   count: number
@@ -36,24 +34,19 @@ type PagePayload = {
   nextOffset: number | null
 }
 
-function addMonths(isoDate: string, months: number): string {
-  const date = new Date(`${isoDate}T00:00:00Z`)
-  date.setUTCMonth(date.getUTCMonth() + months)
-  return date.toISOString().slice(0, 10)
-}
 
 function normalizeTruck(value: unknown): string {
   if (value == null) return ""
   return String(value).trim()
 }
 
-function isOpenAssignment(row: Record<string, unknown>): boolean {
+export function isOnRoadAssignment(row: Record<string, unknown>, date: string): boolean {
   const outRaw = row["Out Date"]
   const outDate =
     outRaw == null || outRaw === "" ? "" : String(outRaw).slice(0, 10)
-  if (!outDate) return false
   const returnRaw = row["Return Date"]
-  return returnRaw == null || returnRaw === ""
+  const returnDate = returnRaw == null || returnRaw === "" ? "" : String(returnRaw).slice(0, 10)
+  return Boolean(outDate && returnDate && outDate <= date && returnDate > date)
 }
 
 async function fetchOffset(
@@ -167,8 +160,7 @@ function emptyPayload(error?: string): TrucksCurrentlyOutPayload {
       dataset: "driver_pay",
       filters: {
         report: "driver_pay",
-        return_null: true,
-        note: "Open assignment = Out Date present and Return Date null; distinct Truck_Number",
+        note: "On road = Out Date <= date and Return Date > date; distinct Truck_Number",
       },
       error,
     },
@@ -181,29 +173,18 @@ export async function getTrucksCurrentlyOut(): Promise<TrucksCurrentlyOutPayload
     return emptyPayload("AGENT_REPORTING_KEY is not configured")
   }
   const endpoint = process.env.AGENT_REPORTING_ENDPOINT || DEFAULT_ENDPOINT
-  const today = new Date().toISOString().slice(0, 10)
-  const outFrom = addMonths(today, -TRUCKS_OUT_LOOKBACK_MONTHS)
+  const today = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit",
+  }).format(new Date())
 
   try {
-    let result: Awaited<ReturnType<typeof fetchPages>>
-    try {
-      result = await fetchPages(endpoint, key, {
-        report: "driver_pay",
-        out_from: outFrom,
-        return_null: "true",
-      })
-    } catch (error) {
-      const message = error instanceof Error ? error.message : ""
-      // Pre-deploy fallback when live function lacks return_null yet.
-      if (!/HTTP 400/.test(message)) throw error
-      result = await fetchPages(endpoint, key, {
-        report: "driver_pay",
-        out_from: outFrom,
-      })
-    }
+    const result = await fetchPages(endpoint, key, {
+      report: "driver_pay", on_road_at: today,
+    })
+    if (!result.complete) throw new Error("Incomplete on-road DriverPay pagination")
     const trucks = new Set<string>()
     for (const row of result.rows) {
-      if (!isOpenAssignment(row)) continue
+      if (!isOnRoadAssignment(row, today)) continue
       const truck = normalizeTruck(row.Truck_Number)
       if (truck) trucks.add(truck)
     }
@@ -221,11 +202,10 @@ export async function getTrucksCurrentlyOut(): Promise<TrucksCurrentlyOutPayload
         dataset: "driver_pay",
         filters: {
           report: "driver_pay",
-          out_from: outFrom,
-          return_null: true,
-          lookback_months: TRUCKS_OUT_LOOKBACK_MONTHS,
+          on_road_at: today,
+          timezone: "America/New_York",
           grain: "distinct Truck_Number",
-          note: "Open assignment = Out Date present and Return Date null. Not exact Ninox in-yard/on-road.",
+          note: "Out Date <= date AND Return Date > date; excludes null returns and return day.",
         },
       },
     }

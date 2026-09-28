@@ -73,6 +73,15 @@ Deno.test("driver_pay return_null cannot combine with return_from", () => {
   }
 });
 
+Deno.test("on_road_at is a valid DriverPay date anchor and rejects competing date filters", () => {
+  const valid = new URLSearchParams("report=driver_pay&on_road_at=2026-09-28");
+  validateStrictParameters(valid, "driver_pay", false);
+  validateReportValues(valid, "driver_pay");
+  for (const suffix of ["on_road_at=2026-02-30", "on_road_at=2026-09-28&return_null=true", "on_road_at=2026-09-28&out_from=2026-01-01", "on_road_at=2026-09-28&return_to=2026-10-01"]) {
+    assertThrows(() => validateReportValues(new URLSearchParams(`report=driver_pay&${suffix}`), "driver_pay"), "on_road_at");
+  }
+});
+
 Deno.test("owner OR-filter values are quoted as PostgREST literals", () => {
   assert(postgrestExactText("Jorge") === '"Jorge"', "simple owner was not quoted");
   assert(postgrestExactText('A"B\\C') === '"A\\"B\\\\C"', "owner literal escaping drifted");

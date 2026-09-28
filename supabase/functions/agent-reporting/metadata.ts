@@ -1,5 +1,5 @@
-export const SCHEMA_VERSION = "3.6.0";
-export const SCHEMA_VERIFIED_AT = "2026-09-28T17:58:48Z";
+export const SCHEMA_VERSION = "3.7.0";
+export const SCHEMA_VERIFIED_AT = "2026-09-28T19:12:26Z";
 
 const field = (
   type: string,
@@ -22,9 +22,13 @@ export const GLOBAL_GUIDANCE = {
     "For the merged list, take distinct qualifying DriverPay Truck_Number values and distinct returns.Truck values, normalize only truck-key format, and deduplicate their union. Report both source counts, overlap, source-only counts, union count, tc, ts, and whether the DriverPay formula count agrees with its distinct qualifying truck count.",
     "Do not answer a returning-trucks question from public.returns or DriverPay alone. Use Return Date only, paginate both reports completely, and disclose source freshness limitations.",
   ],
+  on_road_trucks: [
+    'For an on-road count on date D (today in the requested business timezone for "now"), query driver_pay with on_road_at=D. Count distinct nonblank Truck_Number, not driver rows: "Out Date" <= date AND "Return Date" > date. The return date itself is off road; a null return date does not qualify.',
+    "Paginate every page before deduplicating. No lookback cutoff, returns-table union, transfer/termination exclusion, or current-trucks join is part of this owner-approved metric. Do not conflate it with the separate Ninox in-yard/insurance-choice calculation.",
+  ],
   unsupported_or_external_questions: [
     "Planned/scheduled departures require the live Ninox Schedule_Teams source; that table is not available through this function.",
-    "The exact Ninox in-yard/off-duty and on-road metrics require days_in_yard_ and numeric insurance-choice logic. Those fields are not present in public.trucks, so this function cannot reproduce those metrics accurately.",
+    "The separate Ninox in-yard/off-duty and insurance-choice calculation requires fields absent from public.trucks. The owner-approved DriverPay on-road metric IS available via on_road_at; do not conflate the two definitions.",
   ],
   outside_repairs: [
     "For repairs on the road, outside, or not performed in the company's shop, query public.\"Outside_Repairs\"; do not use settlements LTR Invoices (internal-shop expenses) as the outside-repair ledger.",
@@ -51,9 +55,10 @@ export const TABLES = {
     ninox_source: "DriverPay (WD)",
     row_grain: "One historical driver assignment/pay record. Team trucks normally produce two rows, one per driver; solo assignments normally produce one row with Solo_Driver_if_1 = 1.",
     primary_key: "ID (Supabase identity; not the Ninox DriverPay record ID)",
-    use_for: ["actual assignment history", "departures by Out Date", "returns by Return Date", "driver pay terms", "transfers", "terminations"],
+    use_for: ["actual assignment history", "on-road trucks as of a date via on_road_at", "departures by Out Date", "returns by Return Date", "driver pay terms", "transfers", "terminations"],
     do_not_use_for: ["planned teams", "weekly truck financial totals", "counting rows as trucks"],
     calculation_rules: [
+      'On-road trucks on date D = distinct nonblank Truck_Number where "Out Date" <= D and "Return Date" > D; null returns do not qualify. Use on_road_at=D, paginate fully, and count unique trucks rather than driver rows. The date is inclusive for Out Date and exclusive for Return Date.',
       "Departure questions filter Out Date only. Return questions filter Return Date only. Do not require both unless the user explicitly asks for assignment overlap.",
       "For any returning-trucks question, exclude Termination = Driver Changed and Transfer = Transfer To Other Truck. Set tc to remaining non-solo rows and ts to remaining solo rows; the DriverPay formula count is floor(tc / 2 + ts). Build the merge input from distinct Truck_Number values in those same qualifying rows.",
       "DriverPay is only one side of a returning-trucks result. Union its qualifying truck numbers with distinct public.returns Truck values from the same inclusive Return Date period.",
@@ -334,12 +339,13 @@ export const REPORTS = {
     filters: {
       truck_number: "exact Truck_Number",
       driver_id: "exact DriversDB_ID",
+      on_road_at: "YYYY-MM-DD date D: Out Date <= D and Return Date > D (both dates must be present); paginate and count distinct nonblank Truck_Number. Exclusive of other date/return_null filters.",
       out_from: "inclusive lower Out Date, YYYY-MM-DD",
       out_to: "inclusive upper Out Date, YYYY-MM-DD",
       return_from: "inclusive lower Return Date, YYYY-MM-DD",
       return_to: "inclusive upper Return Date, YYYY-MM-DD",
       return_null:
-        "true = Return Date IS NULL and Out Date IS NOT NULL (open assignment / currently out). Cannot combine with return_from or return_to.",
+        "true = Return Date IS NULL and Out Date IS NOT NULL (open assignment only, NOT the on-road metric). Cannot combine with return_from, return_to, or on_road_at.",
       transfer: "exact Transfer",
       termination: "exact Termination",
       solo: "true means Solo_Driver_if_1 = 1; false includes null and values other than 1",
@@ -347,7 +353,7 @@ export const REPORTS = {
       dispatch: "exact historical Dispatch_Name_",
       temporal_driver: "exact stored Yes/No value",
     },
-    required_anchor: "truck_number, driver_id, out_from, or return_from",
+    required_anchor: "truck_number, driver_id, out_from, return_from, or on_road_at",
     sort: ["Out Date asc nulls last", "ID asc"],
   },
   drivers: {

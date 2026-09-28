@@ -56,9 +56,10 @@ Only in `settlements` and settlement-derived reports, `Truck` 1=Carlos, 2=Jorge,
 | Returning trucks (all questions/reports) | For the same inclusive `Return Date` period, exclude DriverPay rows with `Termination = Driver Changed` or `Transfer = Transfer To Other Truck`. Let `tc` be remaining non-solo rows and `ts` remaining solo rows; DriverPay formula count = `floor(tc / 2 + ts)`. Union distinct qualifying `DriverPay.Truck_Number` with distinct `returns.Truck`, normalize only truck-key format, and count each truck once. Report source counts, overlap/source-only counts, union, `tc`, `ts`, and formula-vs-distinct reconciliation. | `DriverPay` + `returns` |
 | Returning trucks by return-row owner or dispatcher | Apply the same inclusive `return_from`/`return_to` dates and an exact `owner` (`Owner`) or `dispatcher` (`Dispatcher`) filter on Returns rows. Count distinct numeric `Truck`, never driver rows. This attribution is specific to Returns; it is not automatically a filtered union total. Preserve the separate two-source return reconciliation for total-trucks questions. | `returns` (plus `DriverPay` for reconciliation) |
 | Current fleet assignment | Current owner/dispatcher/mechanic metadata, not history. | `trucks` |
-| Trucks currently out (open assignment) | Distinct `Truck_Number` where `Out Date` is present and `Return Date` is null. Use `driver_pay` with `return_null=true` and a lookback `out_from`. Not the exact Ninox in-yard/on-road formula. | `DriverPay` |
+| Trucks on road on date D | Distinct nonblank `Truck_Number` where `Out Date <= D` and `Return Date > D`. Query `driver_pay` with `on_road_at=D`, paginate all rows; null returns and the return date do not qualify. For “now” use America/New_York today. No lookback or returns union. | `DriverPay` |
+| Open assignments (different metric) | `Out Date` present and `Return Date` null via `return_null=true`. Do not label this the on-road count. | `DriverPay` |
 | Planned departures | Not available in these Supabase tables; use approved live Ninox Schedule_Teams source. | external |
-| Exact in-yard/on-road count | Not available because Supabase lacks Ninox `days_in_yard_` and numeric insurance-choice fields. Prefer open-assignment count above when “currently out” is requested. | external |
+| Separate Ninox in-yard/insurance-choice calculation | Not available because Supabase lacks Ninox `days_in_yard_` and numeric insurance-choice fields; use the DriverPay on-road metric above for road counts. | external |
 
 ## Fuel metrics
 

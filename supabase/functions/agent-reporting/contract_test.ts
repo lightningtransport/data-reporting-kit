@@ -80,3 +80,13 @@ Deno.test("returns owner and dispatcher are exact row filters in runtime and API
   assert(returnsBranch.includes('query.gte("Return Date"') && returnsBranch.includes('query.lte("Return Date"') && returnsBranch.includes('.order("ID"'), "returns date bounds and stable pagination changed");
   assert(spec.includes("match the returns row Owner") && spec.includes("match the returns row Dispatcher"), "API spec missing returns-specific exact filters");
 });
+
+Deno.test("on-road filter applies both strict date bounds before paginating", async () => {
+  const handler = await Deno.readTextFile(new URL("./index.ts", import.meta.url));
+  const branch = handler.slice(handler.indexOf('} else if (report === "driver_pay")'), handler.indexOf('} else if (report === "drivers")'));
+  assert(branch.includes('query.lte("Out Date", date).gt("Return Date", date)'), "on-road comparison boundaries changed");
+  assert(branch.includes('.not("Truck_Number", "is", null)'), "null truck identities should not qualify");
+  assert(branch.includes('.order("ID"'), "stable pagination identity missing");
+  const spec = await Deno.readTextFile(new URL("../../../api/openapi.yaml", import.meta.url));
+  assert(spec.includes('- name: on_road_at') && spec.includes('Return Date > D'), "OpenAPI on-road contract missing");
+});

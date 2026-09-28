@@ -277,14 +277,14 @@ export function TrucksReturnDashboard({
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <KpiCard
-          label="Currently out"
+          label="On road today"
           value={
             currentlyOut.meta.error ? "—" : String(currentlyOut.count)
           }
           hint={
             currentlyOut.meta.error
               ? "DriverPay unavailable"
-              : "DriverPay · no Return Date"
+              : "DriverPay · active date interval"
           }
         />
         <KpiCard
@@ -434,18 +434,18 @@ export function TrucksReturnDashboard({
               <strong>{data.meta.source_freshness}</strong>.
             </p>
             <p>
-              Currently out (DriverPay): distinct trucks=
-              <strong>{currentlyOut.count}</strong> · out_from=
-              <strong>{String(currentlyOut.meta.filters.out_from ?? "")}</strong> ·
-              return_null=<strong>true</strong> · fetched=
+              On road today (DriverPay): distinct trucks=
+              <strong>{currentlyOut.count}</strong> · on_road_at=
+              <strong>{String(currentlyOut.meta.filters.on_road_at ?? "")}</strong> ·
+              fetched=
               <strong>{currentlyOut.meta.fetched_count}</strong> ·
               pagination_complete=
               <strong>{String(currentlyOut.meta.pagination_complete)}</strong>
               {currentlyOut.meta.error
                 ? ` · error=${currentlyOut.meta.error}`
                 : ""}
-              . Open assignment only (Out Date set, Return Date null) — not exact
-              Ninox in-yard/on-road.
+              . Out Date ≤ date and Return Date &gt; date; null returns excluded.
+              Distinct Truck_Number, not driver rows. Timezone: America/New_York.
             </p>
             <p>
               Caveats: returning-truck KPIs use the unique union of `returns.Truck` and

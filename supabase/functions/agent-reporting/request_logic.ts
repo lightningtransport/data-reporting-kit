@@ -26,6 +26,7 @@ export const reportFilters: Record<SupportedReport, Set<string>> = {
   driver_pay: new Set([
     "truck_number",
     "driver_id",
+    "on_road_at",
     "out_from",
     "out_to",
     "return_from",
@@ -245,13 +246,17 @@ export function validateReportValues(
   } else if (report === "driver_pay") {
     validateDateRange(params, "out_from", "out_to");
     validateDateRange(params, "return_from", "return_to");
+    validateDateRange(params, "on_road_at", "on_road_at");
+    if (params.has("on_road_at") && ["out_from", "out_to", "return_from", "return_to", "return_null"].some((name) => params.has(name))) {
+      invalid("on_road_at cannot be combined with other date or return_null filters");
+    }
     if (
-      !["truck_number", "driver_id", "out_from", "return_from"].some((name) =>
+      !["truck_number", "driver_id", "out_from", "return_from", "on_road_at"].some((name) =>
         params.get(name)
       )
     ) {
       invalid(
-        "driver_pay requires truck_number, driver_id, out_from, or return_from",
+        "driver_pay requires truck_number, driver_id, out_from, return_from, or on_road_at",
       );
     }
     parseBoolean(params.get("solo"), "solo");

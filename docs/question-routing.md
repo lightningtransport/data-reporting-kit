@@ -18,7 +18,8 @@ Read `AGENTS.md` first. Use the smallest `agent-reporting` report that answers t
 | HTML settlement/fleet dashboard or analytical history (trends, rankings) | `settlements` plus `fuel` (optional `settlement_summary` for headlines) | Use the Next.js app `apps/reporting-dashboard` and **link** https://lightning-settlement-dashboard.vercel.app. Dashboard fetches ≥12 months of `settlements` (paginate); other analytical HTML fetches ≥3 months. Fuel gallons for dashboard MPG use `store_from`/`store_to`; settlement fuel dollars use stored `Fuel Expenses`. Named date is UI focus only. Follow `docs/html-reporting.md`. |
 | Current driver profile / hire date | `drivers` | Prefer exact `driver_id`; use `hire_from` / `hire_to` for Date of Hire ranges. Any `AGENT_API_KEY` can request the documented sensitive fields with `include_sensitive=true` unless its explicit `AGENT_ALLOW_SENSITIVE_<n>` control is set to `false`. |
 | Planned teams/departures / Out Schedule UI | live Ninox `Schedule_Teams` (+ dashboard) | **Link** https://lightning-settlement-dashboard.vercel.app/out-schedule. Do not substitute DriverPay history for the planned list. |
-| Exact trucks in yard/off duty/on road | unsupported | Supabase lacks `days_in_yard_` and numeric insurance-choice fields required by the Ninox definition. |
+| How many trucks are on the road today or on a named date? | `driver_pay?on_road_at=YYYY-MM-DD` | For today use America/New_York business date. Paginate fully and count distinct nonblank `Truck_Number` where `Out Date <= date` and `Return Date > date`; exclude null returns and return day. Do not use `return_null` or a lookback. |
+| Separate Ninox in-yard/off-duty/insurance-choice calculation | unsupported | Supabase lacks `days_in_yard_` and numeric insurance-choice fields; do not conflate this with the approved DriverPay on-road metric. |
 
 ## Date rules
 
