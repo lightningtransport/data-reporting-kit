@@ -18,6 +18,7 @@ import {
   validateLegacyParameters,
   validateReportValues,
   validateStrictParameters,
+  workCategoryPattern,
 } from "./request_logic.ts";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL");
@@ -176,6 +177,7 @@ function catalogResponse(principal: { id: string; allowSensitive: boolean; allow
       "?report=settlements&period_from=2026-09-01&period_to=2026-09-01",
       "?report=returns&return_from=2026-09-14&return_to=2026-09-20",
       "?report=fuel&store_from=2026-09-01&store_to=2026-09-07",
+      "?report=outside_repairs&date_from=2026-09-01&date_to=2026-09-30&choice=Truck",
       "?report=settlements&metadata=true",
     ],
     guidance: GLOBAL_GUIDANCE,
@@ -364,6 +366,22 @@ Deno.serve(async (req: Request) => {
       if (params.get("return_to")) query = query.lte("Return Date", params.get("return_to"));
       query = query.order("Return Date", { ascending: true, nullsFirst: false }).order("ID", { ascending: true });
       sort = ["Return Date asc nulls last", "ID asc"];
+    } else if (report === "outside_repairs") {
+      const truck = parseNumber(params.get("truck"), "truck");
+      const ninoxId = parseNumber(params.get("ninox_id"), "ninox_id");
+      query = admin.from("Outside_Repairs").select(tableSelect("outside_repairs", includeSensitive), { count: "exact" });
+      if (truck !== null) query = query.eq("Truck", truck);
+      if (ninoxId !== null) query = query.eq("Ninox_ID", ninoxId);
+      for (const [parameter, column] of [["trailer", "Trailer"], ["company", "Repair Company"], ["choice", "Choice"], ["owner", "owner"], ["exceptions", "Exceptions"]]) {
+        if (params.get(parameter)) query = query.eq(column, params.get(parameter));
+      }
+      if (params.get("date_from")) query = query.gte("Date", params.get("date_from"));
+      if (params.get("date_to")) query = query.lte("Date", params.get("date_to"));
+      if (params.get("ahs") === "Yes") query = query.eq("AHS", "Yes");
+      if (params.get("ahs") === "No") query = query.or("AHS.eq.No,AHS.is.null,AHS.eq.\"\"");
+      if (params.get("type_of_work")) query = query.filter("Type of Work", "imatch", workCategoryPattern(params.get("type_of_work")!));
+      query = query.order("Date", { ascending: true, nullsFirst: false }).order("id", { ascending: true });
+      sort = ["Date asc nulls last", "id asc"];
     } else if (report === "fuel") {
       const truckNumber = parseNumber(params.get("truck_number"), "truck_number");
       const ninoxId = parseNumber(params.get("ninox_id"), "ninox_id");

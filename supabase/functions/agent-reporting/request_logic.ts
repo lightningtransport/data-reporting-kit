@@ -8,6 +8,7 @@ export const supportedReports = [
   "returns",
   "trucks",
   "fuel",
+  "outside_repairs",
 ] as const;
 export type SupportedReport = typeof supportedReports[number];
 
@@ -83,6 +84,10 @@ export const reportFilters: Record<SupportedReport, Set<string>> = {
     "state",
     "owner",
     "ninox_id",
+  ]),
+  outside_repairs: new Set([
+    "truck", "trailer", "date_from", "date_to", "company", "choice",
+    "type_of_work", "ahs", "owner", "ninox_id", "exceptions",
   ]),
 };
 
@@ -282,6 +287,25 @@ export function validateReportValues(
     if (!params.get("truck_number") && !params.get("store_from") && !params.get("ninox_id")) {
       invalid("fuel requires truck_number, store_from, or ninox_id");
     }
+  } else if (report === "outside_repairs") {
+    validateDateRange(params, "date_from", "date_to");
+    parseNumber(params.get("truck"), "truck");
+    parseNumber(params.get("ninox_id"), "ninox_id");
+    if (!["truck", "trailer", "date_from", "ninox_id"].some((name) => params.get(name))) {
+      invalid("outside_repairs requires truck, trailer, date_from, or ninox_id");
+    }
+    const choice = params.get("choice");
+    if (choice !== null && choice !== "Truck" && choice !== "Trailer") {
+      invalid("choice must be Truck or Trailer");
+    }
+    const ahs = params.get("ahs");
+    if (ahs !== null && ahs !== "Yes" && ahs !== "No") {
+      invalid("ahs must be Yes or No");
+    }
+    const work = params.get("type_of_work");
+    if (work !== null && (work.length > 100 || work.includes(","))) {
+      invalid("type_of_work must be a single work category of at most 100 characters");
+    }
   } else {
     parseNumber(params.get("truck_number"), "truck_number");
     parseNumber(params.get("ninox_id"), "ninox_id");
@@ -348,6 +372,12 @@ export function settlementSummarySelect(): string {
 /** Quotes URL-derived text for PostgREST's raw `or` filter grammar. */
 export function postgrestExactText(value: string): string {
   return `"${value.replaceAll("\\", "\\\\").replaceAll('"', '\\"')}"`;
+}
+
+/** Match one complete, comma-delimited work label, not a partial substring. */
+export function workCategoryPattern(value: string): string {
+  const literal = value.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return `(^|,)[[:space:]]*${literal}[[:space:]]*(,|$)`;
 }
 
 export function normalizedFilters(

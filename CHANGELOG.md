@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.6.0 — 2026-09-28
+
+- Add the live-verified 14-column `outside_repairs` report for all road/outside/not-company-shop repair questions, separate from internal-shop `settlements.LTR Invoices`. Use service date and full parts-plus-labor cost, Truck/Trailer `Choice` attribution, truckless overall inclusion and breakdown exclusion, overlapping comma-separated work categories, and blank AHS = No.
+- Expand the agent gateway catalog to eight reports with strict `outside_repairs` filters/anchors, update OpenAPI and packaged reporting skill to 0.9.9, and deploy `agent-reporting` version 114. The authenticated catalog remains authoritative for each key's permissions; production-key smoke tests were unavailable during this release.
+
 ## 3.8.25 - 2026-09-25
 
 - `agent-reporting` schema `3.5.0` exposes the verified nullable Returns `Dispatcher`/`Owner` columns in default and sensitive projections, adds strict exact `dispatcher`/`owner` filters on Returns rows, and corrects the physical type of `returns.Truck` to numeric with numeric truck-filter validation. Inclusive `return_from`/`return_to` and row `ID` pagination remain unchanged.

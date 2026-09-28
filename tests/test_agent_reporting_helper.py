@@ -13,9 +13,9 @@ agent_reporting = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(agent_reporting)
 
 
-def args(*, one_page: bool = False, max_pages: int = 100) -> argparse.Namespace:
+def args(*, one_page: bool = False, max_pages: int = 100, report: str = "trucks") -> argparse.Namespace:
     return argparse.Namespace(
-        report="trucks",
+        report=report,
         params='{"physical_only": true, "include_sensitive": false}',
         one_page=one_page,
         max_pages=max_pages,
@@ -32,8 +32,9 @@ def page(
     report: str = "trucks",
     filters: dict[str, str] | None = None,
     source: str = "public.trucks",
+    identity_field: str = "ID",
 ) -> dict:
-    rows = [{"ID": value} for value in ids]
+    rows = [{identity_field: value} for value in ids]
     return {
         "report": report,
         "source": source,
@@ -133,6 +134,50 @@ class AgentReportingHelperTests(unittest.TestCase):
             with self.subTest(response=response), mock.patch.object(agent_reporting, "request", return_value=response):
                 with self.assertRaises(SystemExit):
                     agent_reporting.collect_query(args())
+
+
+    def test_outside_repairs_lowercase_id_reconciles_pages(self) -> None:
+        pages = [
+            page([101], total=2, offset=0, has_more=True, next_offset=1,
+                 report="outside_repairs", source='public."Outside_Repairs"', identity_field="id"),
+            page([102], total=2, offset=1, has_more=False, next_offset=None,
+                 report="outside_repairs", source='public."Outside_Repairs"', identity_field="id"),
+        ]
+        with mock.patch.object(agent_reporting, "request", side_effect=pages):
+            result = agent_reporting.collect_query(args(report="outside_repairs"))
+        self.assertTrue(result["complete"])
+        self.assertEqual([row["id"] for row in result["data"]], [101, 102])
+
+    def test_outside_repairs_rejects_replayed_lowercase_id(self) -> None:
+        pages = [
+            page([101], total=2, offset=0, has_more=True, next_offset=1,
+                 report="outside_repairs", source='public."Outside_Repairs"', identity_field="id"),
+            page([101], total=2, offset=1, has_more=False, next_offset=None,
+                 report="outside_repairs", source='public."Outside_Repairs"', identity_field="id"),
+        ]
+        with mock.patch.object(agent_reporting, "request", side_effect=pages):
+            with self.assertRaisesRegex(SystemExit, "repeated a row identity"):
+                agent_reporting.collect_query(args(report="outside_repairs"))
+
+    def test_outside_repairs_missing_lowercase_id_is_rejected(self) -> None:
+        response = page([101], total=1, offset=0, has_more=False, next_offset=None,
+                        report="outside_repairs", source='public."Outside_Repairs"')
+        with mock.patch.object(agent_reporting, "request", return_value=response):
+            with self.assertRaisesRegex(SystemExit, "valid id"):
+                agent_reporting.collect_query(args(report="outside_repairs"))
+
+    def test_cli_accepts_outside_repairs_for_metadata_and_query(self) -> None:
+        for command in (["metadata", "--report", "outside_repairs"],
+                        ["query", "--report", "outside_repairs", "--params", '{"truck": 123}']):
+            with self.subTest(command=command), mock.patch("sys.argv", ["agent_reporting.py", *command]), \
+                 mock.patch.object(agent_reporting, "request", return_value={"report": "outside_repairs"}) as request, \
+                 mock.patch.object(agent_reporting, "collect_query", return_value={"report": "outside_repairs"}) as collect, \
+                 mock.patch("builtins.print"):
+                agent_reporting.main()
+                if command[0] == "metadata":
+                    request.assert_called_once_with({"report": "outside_repairs", "metadata": "true"})
+                else:
+                    self.assertEqual(collect.call_args.args[0].report, "outside_repairs")
 
 
 if __name__ == "__main__":

@@ -60,6 +60,18 @@ Deno.test("schema verification timestamp matches the OpenAPI date-time contract"
   assert(matches.length === 2, "catalog and metadata schema_verified_at must both be date-time");
 });
 
+Deno.test("outside repairs apply Choice exactly, AHS No includes null and blank, and category uses safe pattern", async () => {
+  const handler = await Deno.readTextFile(new URL("./index.ts", import.meta.url));
+  const start = handler.indexOf('report === "outside_repairs"');
+  assert(start >= 0, "outside_repairs query branch missing");
+  const end = handler.indexOf("} else", start + 1);
+  const branch = handler.slice(start, end < 0 ? undefined : end);
+  assert(branch.includes('["choice", "Choice"]') && branch.includes("query.eq(column, params.get(parameter))"), "Choice must be an exact physical filter");
+  assert(branch.includes('query.eq("AHS", "Yes")'), "after-hours Yes must be exact");
+  assert(branch.includes("AHS.eq.No") && branch.includes("AHS.is.null") && branch.includes('AHS.eq.\\"\\"'), "AHS No must match No, null and empty text");
+  assert(branch.includes('query.filter("Type of Work", "imatch", workCategoryPattern('), "category must use escaped whole-token pattern");
+});
+
 Deno.test("returns owner and dispatcher are exact row filters in runtime and API spec", async () => {
   const handler = await Deno.readTextFile(new URL("./index.ts", import.meta.url));
   const spec = await Deno.readTextFile(new URL("../../../api/openapi.yaml", import.meta.url));

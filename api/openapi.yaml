@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Lightning Reporting APIs
-  version: 3.5.0
+  version: 3.6.0
   license:
     name: Proprietary
     identifier: LicenseRef-Proprietary
@@ -22,7 +22,14 @@ paths:
         Returning-trucks questions require complete driver_pay and returns requests for
         the same Return Date range. Exclude DriverPay Termination=Driver Changed and
         Transfer=Transfer To Other Truck, calculate floor(tc / 2 + ts), then union
-        distinct qualifying Truck_Number with distinct returns.Truck.
+        distinct qualifying Truck_Number with distinct returns.Truck. Road/outside/
+        not-company-shop repairs use outside_repairs, not internal-shop LTR Invoices.
+        Outside repair costs are attributed wholly by Choice (Truck or Trailer);
+        truckless rows remain in overall totals, not truck/owner breakdowns.
+        Outside repairs require truck, trailer, date_from, or ninox_id as an
+        anchor; date_from/date_to filter inclusive service Date, not created_at.
+        The schema here specifies intended behavior; use authenticated catalog
+        and metadata to confirm availability in the deployed function.
       security:
         - agentKey: []
       parameters:
@@ -30,7 +37,7 @@ paths:
           in: query
           schema:
             type: string
-            enum: [catalog, settlement_summary, settlements, driver_pay, drivers, returns, trucks, fuel]
+            enum: [catalog, settlement_summary, settlements, driver_pay, drivers, returns, trucks, fuel, outside_repairs]
           description: Required for the strict contract. Use catalog for discovery.
         - name: metadata
           in: query
@@ -49,7 +56,19 @@ paths:
         - name: truck
           in: query
           schema: {type: string}
-          description: Exact text identifier in settlements; numeric identifier in returns. Only in settlements, 1/2/3 identify documented non-physical owner-expense allocation buckets.
+          description: Exact text identifier in settlements; numeric identifier in returns or outside_repairs. Only in settlements, 1/2/3 identify documented non-physical owner-expense allocation buckets. Outside repair truck filters refer to recorded Truck, but Choice determines cost attribution.
+        - name: trailer
+          in: query
+          schema: {type: string}
+          description: Exact outside_repairs Trailer identifier; an eligible query anchor.
+        - name: date_from
+          in: query
+          schema: {$ref: '#/components/schemas/IsoDate'}
+          description: Inclusive lower bound on outside_repairs service Date; an eligible query anchor.
+        - name: date_to
+          in: query
+          schema: {$ref: '#/components/schemas/IsoDate'}
+          description: Inclusive upper bound on outside_repairs service Date; date_to alone is not an anchor.
         - name: truck_number
           in: query
           schema: {type: string}
@@ -60,7 +79,7 @@ paths:
         - name: owner
           in: query
           schema: {type: string}
-          description: Exact owner filter. For returns, match the returns row Owner (no shared_owner/current-trucks fallback). For settlements, settlement_summary, and fuel, match either primary owner or shared_owner; preserve both values.
+          description: Exact owner filter. For outside_repairs match stored owner only and exclude truckless records from truck/owner breakdowns, not overall totals. For returns, match the returns row Owner (no shared_owner/current-trucks fallback). For settlements, settlement_summary, and fuel, match either primary owner or shared_owner; preserve both values.
         - name: dispatch
           in: query
           schema: {type: string}
@@ -128,6 +147,23 @@ paths:
         - name: company
           in: query
           schema: {type: string}
+          description: On outside_repairs, exact Repair Company text.
+        - name: choice
+          in: query
+          schema: {type: string, enum: [Truck, Trailer]}
+          description: Outside repairs only; full cost belongs to the chosen vehicle type, not both.
+        - name: type_of_work
+          in: query
+          schema: {type: string, maxLength: 100, pattern: '^[^,]+$'}
+          description: Outside repairs only; one complete category, case-insensitive membership in comma-separated Type of Work (trim surrounding spaces). Category totals may overlap.
+        - name: ahs
+          in: query
+          schema: {type: string, enum: [Yes, No]}
+          description: Outside repairs only; Yes is after-hours, No includes blank/null stored AHS.
+        - name: exceptions
+          in: query
+          schema: {type: string}
+          description: Exact stored outside-repair Exceptions text.
         - name: min_experience
           in: query
           schema: {type: number}
@@ -145,7 +181,7 @@ paths:
         - name: ninox_id
           in: query
           schema: {type: number}
-          description: Exact numeric source-record ID for returns, trucks, or fuel; it is not a driver ID.
+          description: Exact numeric source-record ID for returns, trucks, fuel, or outside_repairs; it is not a driver ID.
         - name: driver_name
           in: query
           schema: {type: string}
@@ -247,6 +283,28 @@ components:
       type: string
       format: date
       pattern: '^\d{4}-\d{2}-\d{2}$'
+    OutsideRepairsRecord:
+      type: object
+      description: >-
+        One public.Outside_Repairs row. All 14 physical fields are projected;
+        nullability was verified against the live table. Total Cost includes parts
+        and labor; Choice decides full Truck or Trailer cost attribution.
+      required: [id, created_at, Status, Truck, Trailer, Date, Repair Company, Choice, Type of Work, Total Cost, AHS, owner, Ninox_ID, Exceptions]
+      properties:
+        id: {type: integer, description: "Non-null bigint row identity."}
+        created_at: {type: string, format: date-time, description: "Non-null timestamptz row creation, not service Date."}
+        Status: {type: [string, 'null']}
+        Truck: {type: [number, 'null']}
+        Trailer: {type: [string, 'null']}
+        Date: {type: [string, 'null'], format: date, description: "Service date."}
+        'Repair Company': {type: [string, 'null']}
+        Choice: {type: [string, 'null'], description: "Truck attributes full cost to Truck; Trailer attributes full cost to Trailer."}
+        'Type of Work': {type: [string, 'null'], description: "Comma-separated categories; memberships and category totals may overlap."}
+        'Total Cost': {type: [number, 'null'], description: "Parts plus labor, already totaled."}
+        AHS: {type: [string, 'null'], description: "Blank/null interpreted as No."}
+        owner: {type: [string, 'null'], description: "Stored repair owner; no shared_owner expansion."}
+        Ninox_ID: {type: [number, 'null']}
+        Exceptions: {type: [string, 'null']}
     AgentDataResponse:
       type: object
       required: [schema_version, report, source, filters, offset, limit, count, page_count, total_count, has_more, next_offset, as_of, data, request_id]
@@ -298,7 +356,7 @@ components:
       properties:
         schema_version: {type: string}
         schema_verified_at: {type: string, format: date-time}
-        report: {type: string, enum: [settlement_summary, settlements, driver_pay, drivers, returns, trucks, fuel]}
+        report: {type: string, enum: [settlement_summary, settlements, driver_pay, drivers, returns, trucks, fuel, outside_repairs]}
         guidance: {type: object, additionalProperties: true}
         source: {type: string}
     Error:

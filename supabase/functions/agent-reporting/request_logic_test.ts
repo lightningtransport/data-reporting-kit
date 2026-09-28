@@ -10,6 +10,7 @@ import {
   tableSelect,
   validateReportValues,
   validateStrictParameters,
+  workCategoryPattern,
 } from "./request_logic.ts";
 
 function assert(condition: unknown, message: string): asserts condition {
@@ -215,6 +216,52 @@ Deno.test("returns exact attribution filters preserve case and reject malformed 
   const filters = normalizedFilters(params, "returns");
   assert(filters.owner === "Owner One" && filters.dispatcher === "group 1", "exact filter values must not be case-normalized");
   assertThrows(() => validateReportValues(new URLSearchParams("report=returns&owner=A&return_from=2026-09-10&return_to=2026-09-01"), "returns"), "return_from cannot be after return_to");
+});
+
+Deno.test("outside_repairs validates anchors, dates, enums and exact filters", () => {
+  const filters = ["truck", "trailer", "date_from", "date_to", "company", "choice", "type_of_work", "ahs", "owner", "ninox_id", "exceptions"];
+  assert(JSON.stringify([...reportFilters.outside_repairs]) === JSON.stringify(filters), "outside_repairs filter registry drifted");
+  for (const anchor of ["truck=0", "trailer=AT-1", "date_from=2026-09-01", "ninox_id=99"]) {
+    const params = new URLSearchParams(`report=outside_repairs&${anchor}`);
+    validateStrictParameters(params, "outside_repairs", false);
+    validateReportValues(params, "outside_repairs");
+  }
+  for (const unanchored of ["owner=A", "date_to=2026-09-30", "company=X&choice=Trailer"]) {
+    assertThrows(() => validateReportValues(new URLSearchParams(`report=outside_repairs&${unanchored}`), "outside_repairs"), "requires");
+  }
+  for (const [query, message] of [
+    ["truck=bad", "truck must be numeric"],
+    ["ninox_id=bad", "ninox_id must be numeric"],
+    ["date_from=2026-02-30", "date_from must be a real date"],
+    ["truck=1&date_to=2026-02-30", "date_to must be a real date"],
+    ["date_from=2026-09-10&date_to=2026-09-01", "date_from cannot be after date_to"],
+    ["truck=1&choice=Both", "choice must be"],
+    ["truck=1&ahs=Maybe", "ahs must be"],
+    ["truck=1&company=++", "company must not be empty"],
+  ]) {
+    assertThrows(() => validateReportValues(new URLSearchParams(`report=outside_repairs&${query}`), "outside_repairs"), message);
+  }
+  assertThrows(() => validateStrictParameters(new URLSearchParams("report=outside_repairs&truck=1&repair_company=A"), "outside_repairs", false), "Unsupported parameter");
+  assertThrows(() => validateStrictParameters(new URLSearchParams("report=outside_repairs&truck=1&truck=2"), "outside_repairs", false), "Duplicate parameter");
+  const params = new URLSearchParams("report=outside_repairs&truck=1&choice=Truck&ahs=No&company=Acme&limit=10");
+  validateStrictParameters(params, "outside_repairs", false);
+  validateReportValues(params, "outside_repairs");
+  assert(JSON.stringify(normalizedFilters(params, "outside_repairs")) === '{"truck":"1","company":"Acme","choice":"Truck","ahs":"No"}', "normalized filters drifted");
+  assert(tableSelect("outside_repairs", false).includes('"Total Cost"') && tableSelect("outside_repairs", false).includes("id"), "physical cost and lowercase id omitted");
+});
+
+Deno.test("outside repair work categories match only whole comma-separated tokens", () => {
+  const matches = (category: string, value: string) =>
+    new RegExp(workCategoryPattern(category).replaceAll("[[:space:]]", "\\s"), "i").test(value);
+  for (const value of ["Tires", "Engine, Tires", " Engine , Tires , Lights ", "tires, Engine"]) {
+    assert(matches("Tires", value), `category missed ${value}`);
+  }
+  for (const value of ["Retires", "Tiresome", "Engine, Tire", "Tires & Lights", "Engine, Tiresome"]) {
+    assert(!matches("Tires", value), `partial category matched ${value}`);
+  }
+  assert(matches("Tire (front)+", "Engine, Tire (front)+, Lights"), "regex special characters must be literal");
+  assert(!matches("Tire (front)+", "Engine, Tire front, Lights"), "regex special characters escaped incorrectly");
+  assert(!matches(".*", "Engine, Tires"), "regex wildcard must not match another category");
 });
 
 Deno.test("missing or invalid exact counts fail instead of using page count", () => {

@@ -10,7 +10,7 @@ Grok Bot and Cursor agents: the reporting dashboard lives in [`apps/reporting-da
 
 ## What this kit provides
 
-- Complete 109-column data dictionary for DriverPay, drivers, returns, settlements, trucks, and fuel, including shared-owner attribution for settlement and fuel reporting.
+- Data dictionary for DriverPay, drivers, returns, settlements, trucks, fuel, and `Outside_Repairs` (125 live-verified physical columns), including shared-owner attribution for settlement and fuel reporting.
 - Question routing, metric definitions, Ninox mappings, joins, date windows, allocation-bucket rules, and double-counting guardrails.
 - Source and OpenAPI contract for the custom-key `agent-reporting` Edge Function.
 - Source for the separate membership/JWT `reporting-query` Edge Function.
@@ -24,7 +24,7 @@ Grok Bot and Cursor agents: the reporting dashboard lives in [`apps/reporting-da
 
 - `GET https://aaqquwhdglueqlnbifvn.supabase.co/functions/v1/agent-reporting`
 - Custom `x-agent-key` authentication; never place the key in a URL, browser, prompt, log, or repository.
-- Single-organization access, optional per-key report allowlist/expiry, full read access to all seven reports and their documented sensitive fields by default, explicit column selection, strict filters, stable pagination, and request audit. Set `AGENT_ALLOW_SENSITIVE_<n>=false` only to restrict a particular key.
+- Single-organization access, optional per-key report allowlist/expiry, full read access to approved reports and their documented sensitive fields by default, explicit column selection, strict filters, stable pagination, and request audit. Set `AGENT_ALLOW_SENSITIVE_<n>=false` only to restrict a particular key. Road/outside/not-company-shop repairs route to `outside_repairs`, not internal-shop `LTR Invoices`; confirm the deployed catalog includes the report for your assigned key before querying.
 - Discover with `?report=catalog`; see `docs/agent-reporting.md` and `api/openapi.yaml`.
 
 ### `reporting-query` — individual Supabase Auth memberships

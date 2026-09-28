@@ -1,5 +1,5 @@
-export const SCHEMA_VERSION = "3.5.0";
-export const SCHEMA_VERIFIED_AT = "2026-09-25T19:58:01Z";
+export const SCHEMA_VERSION = "3.6.0";
+export const SCHEMA_VERIFIED_AT = "2026-09-28T17:58:48Z";
 
 const field = (
   type: string,
@@ -25,6 +25,14 @@ export const GLOBAL_GUIDANCE = {
   unsupported_or_external_questions: [
     "Planned/scheduled departures require the live Ninox Schedule_Teams source; that table is not available through this function.",
     "The exact Ninox in-yard/off-duty and on-road metrics require days_in_yard_ and numeric insurance-choice logic. Those fields are not present in public.trucks, so this function cannot reproduce those metrics accurately.",
+  ],
+  outside_repairs: [
+    "For repairs on the road, outside, or not performed in the company's shop, query public.\"Outside_Repairs\"; do not use settlements LTR Invoices (internal-shop expenses) as the outside-repair ledger.",
+    "Choice=Truck attributes Total Cost only to the Truck; Choice=Trailer attributes Total Cost only to the Trailer. A Truck shown on a trailer repair is context, not the expense target. Do not charge the same row to both.",
+    "For a truck-expense ranking, filter choice=Truck before grouping Truck. For trailer expenses, filter choice=Trailer and group Trailer. A combined fleet/owner report must distinguish the two types and avoid double counting.",
+    "Blank/null AHS means No. Missing truck or owner stays in all-repair totals but remains unattributed for truck/owner breakdowns; do not infer ownership from Trailer or Exceptions.",
+    "Type of Work can contain comma-separated categories. Filter by a complete trimmed category; a multi-category row matches each named category and its full cost appears in each category subtotal. Category subtotals overlap and cannot be added to obtain a grand total.",
+    "Date is the repair service date. Total Cost includes parts and labor; each repair is one transaction. as_of is not a source-sync timestamp. Include stored negative costs in a raw sum and flag them where material.",
   ],
   join_rules: [
     "DriverPay.DriversDB_ID is text while drivers.Ninox_ID is numeric. In SQL use DriverPay.DriversDB_ID = drivers.Ninox_ID::text; the API returns both as JSON values.",
@@ -260,6 +268,37 @@ export const TABLES = {
       shared_owner: field("text", true, "Underlying owner for a truck operated under SOLO INC. or FLATBED INC. For owner-filtered fuel questions, include the row when shared_owner exactly matches the requested owner as well as when owner matches. It supplements, not replaces, owner."),
     },
   },
+  outside_repairs: {
+    report: "outside_repairs",
+    source: 'public."Outside_Repairs"',
+    ninox_source: "Outside_Repairs Ninox records",
+    row_grain: "One outside/on-road repair transaction; one Total Cost per record. Not a weekly settlement or internal-shop invoice.",
+    primary_key: "id (Supabase row identity); Ninox_ID is the Ninox source-record identifier",
+    use_for: ["on-road repairs", "outside repairs", "repairs not made in the company shop", "truck and trailer repair spend by service date, company, owner, work category, after-hours"],
+    do_not_use_for: ["company-shop work", "settlement expense replacement", "counting a trailer repair as a truck expense", "inferring current ownership or source-sync freshness"],
+    calculation_rules: [
+      "Choice=Truck: attribute Total Cost to Truck. Choice=Trailer: attribute Total Cost to Trailer, never to the accompanying Truck. Unclassified Choice rows remain only in all-repair totals.",
+      "Use inclusive Date bounds on service date; sum each stored Total Cost once, including negative values. Do not add overlapping Type of Work category subtotals together.",
+      "AHS=Yes is after-hours; AHS=No or null/blank is not after-hours. Rows without Truck/owner remain in all-repair totals but are unattributed to trucks/owners.",
+      "owner is the truck owner stored with the repair. For owner expense questions, distinguish truck-only versus associated trailer costs if intent is unclear.",
+    ],
+    fields: {
+      id: field("bigint", false, "Supabase row identity, used for deterministic pagination."),
+      created_at: field("timestamptz", false, "Supabase insertion timestamp; not the service or source-sync date."),
+      Status: field("text", true, "Current repair status; observed value Done."),
+      Truck: field("numeric", true, "Truck number; expense target only when Choice is Truck."),
+      Trailer: field("text", true, "Trailer number; expense target only when Choice is Trailer."),
+      Date: field("date", true, "Date on which the outside repair service occurred."),
+      "Repair Company": field("text", true, "Company that performed the outside truck or trailer repair."),
+      Choice: field("text", true, "Repair target: Truck or Trailer; controls cost attribution."),
+      "Type of Work": field("text", true, "Work description, sometimes multiple comma-separated categories; category matches may overlap."),
+      "Total Cost": field("numeric", true, "Full parts-and-labor cost of the repair; attribute once according to Choice."),
+      AHS: field("text", true, "After-hours indicator. Yes means after-hours; No and null/blank mean No."),
+      owner: field("text", true, "Truck owner recorded with this repair; may be absent if Truck is absent."),
+      Ninox_ID: field("numeric", true, "Internal Ninox repair source-record ID, not a truck or trailer number."),
+      Exceptions: field("text", true, "Special circumstance when no Truck is present. Not all truck-less rows have a value."),
+    },
+  },
 } as const;
 
 export const REPORTS = {
@@ -375,5 +414,23 @@ export const REPORTS = {
     },
     required_anchor: "truck_number, store_from, or ninox_id",
     sort: ["Store Date asc nulls last", "id asc"],
+  },
+  outside_repairs: {
+    ...TABLES.outside_repairs,
+    filters: {
+      truck: "exact numeric Truck; for truck expenses combine with choice=Truck",
+      trailer: "exact Trailer; for trailer expenses combine with choice=Trailer",
+      date_from: "inclusive Date/service-date lower bound, YYYY-MM-DD",
+      date_to: "inclusive Date/service-date upper bound, YYYY-MM-DD",
+      company: "exact Repair Company",
+      choice: "Truck or Trailer; determines which equipment bears the cost",
+      type_of_work: "complete case-insensitive comma-separated work category (trim surrounding spaces); matching category subtotals overlap",
+      ahs: "Yes for after-hours; No includes No and null/blank AHS",
+      owner: "exact stored truck owner; missing owner remains unattributed",
+      ninox_id: "exact numeric Ninox source-record ID",
+      exceptions: "exact stored Exceptions value, not all truck-less rows",
+    },
+    required_anchor: "truck, trailer, date_from, or ninox_id",
+    sort: ["Date asc nulls last", "id asc"],
   },
 } as const;

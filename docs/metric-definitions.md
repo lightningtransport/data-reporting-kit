@@ -13,6 +13,7 @@ Read `AGENTS.md` and the report metadata before calculating.
 | Gross after percentage | `Gross × (%AppliedSaved / 100)` for eligible verified rows. Not Gross or Net. | `settlements.Gross_with_%_deduction_All` |
 | Driven miles | Period mileage. | `settlements.Driven_miles` |
 | Repairs (LTR) | Internal shop invoice expense. | `settlements.LTR Invoices` |
+| External / road / outside repairs | Separate external-repair source, not `LTR Invoices`. See external repair metrics below; do not combine with settlement expenses without an explicit reconciliation rule. | `Outside_Repairs.Total Cost` |
 | Tolls + PrePass | Sum of stored Tolls and PrePass only. Do not add BestPass into this pair. | `settlements.Tolls` + `settlements.PrePass` |
 | Ave. RPM (dashboard) | Physical-truck stored Gross ÷ physical Driven_miles when miles > 0. Derived, not stored. | `settlements` |
 | Ave. MPG (dashboard) | Physical Driven_miles ÷ `fuel.Gallons` for Store Dates in the focus settlement week(s). Hide when gallons are missing. Derived. | `settlements` + `fuel` |
@@ -67,6 +68,20 @@ Only in `settlements` and settlement-derived reports, `Truck` 1=Carlos, 2=Jorge,
 | Adjusted fuel spend | Sum populated `Adjusted SubTotal` values for the explicit filtered transactions. Do not silently substitute `SubTotal` for null adjustments. | `fuel.Adjusted SubTotal` |
 | Gallons | Sum `Gallons` for the explicit filtered transactions, reporting null/missing values where material. | `fuel.Gallons` |
 | Aggregate price per gallon | Applicable aggregated spend ÷ aggregated gallons; do not average `Price_Per_Gallon` transaction values. | `fuel` |
+
+## Outside repair metrics
+
+One `public."Outside_Repairs"` row represents one external repair. Use inclusive service `Date` for date filtering; `created_at` is row creation, not service date. `Total Cost` already includes parts and labor. Paginate fully before aggregating; count rows as repairs, not distinct trucks.
+
+| Metric | Definition | Source |
+|---|---|---|
+| Overall external repair cost | Sum populated `Total Cost` once per matching repair, including records with no truck. Report missing costs separately rather than treating unknown amounts as zero. | `Outside_Repairs.Total Cost` |
+| Truck-attributed repair cost | Sum full cost only where `Choice=Truck` and `Truck` exists; for truck/owner breakdowns omit truckless rows. Do not allocate trailer costs to an accompanying truck. | `Outside_Repairs.Choice`, `Truck`, `owner` |
+| Trailer-attributed repair cost | Sum full cost where `Choice=Trailer` and `Trailer` exists; do not attribute it to `Truck`. | `Outside_Repairs.Choice`, `Trailer` |
+| AHS classification | Blank/null `AHS` means No; use exact Yes/No filter values. | `Outside_Repairs.AHS` |
+| Work-category cost | Split comma-separated `Type of Work` categories and match each category independently. A repair may count in multiple categories; category totals overlap and cannot be summed to derive overall cost. | `Outside_Repairs.Type of Work`, `Total Cost` |
+
+The `outside_repairs` API accepts `truck`, `trailer`, `date_from`, `date_to`, `company`, `choice`, `type_of_work`, `ahs`, `owner`, `ninox_id`, and `exceptions`; at least `truck`, `trailer`, `date_from`, or `ninox_id` is required. An `owner` filter matches stored repair `owner` only, never settlement `shared_owner`.
 
 ## Driver pay
 

@@ -118,7 +118,7 @@ def collect_query(args: argparse.Namespace) -> dict[str, Any]:
             or count_alias != page_count
         ):
             raise SystemExit("agent-reporting page count does not match returned rows")
-        identity_field = "settlement_id" if args.report == "settlement_summary" else "id" if args.report == "fuel" else "ID"
+        identity_field = "settlement_id" if args.report == "settlement_summary" else "id" if args.report in ("fuel", "outside_repairs") else "ID"
         for row in rows:
             if not isinstance(row, dict):
                 raise SystemExit("agent-reporting row must be an object")
@@ -193,10 +193,10 @@ def main() -> None:
     command = sub.add_parser("catalog")
     command.set_defaults(func=run_catalog)
     command = sub.add_parser("metadata")
-    command.add_argument("--report", required=True, choices=["settlement_summary", "settlements", "driver_pay", "drivers", "returns", "trucks", "fuel"])
+    command.add_argument("--report", required=True, choices=["settlement_summary", "settlements", "driver_pay", "drivers", "returns", "trucks", "fuel", "outside_repairs"])
     command.set_defaults(func=run_metadata)
     command = sub.add_parser("query")
-    command.add_argument("--report", required=True, choices=["settlement_summary", "settlements", "driver_pay", "drivers", "returns", "trucks", "fuel"])
+    command.add_argument("--report", required=True, choices=["settlement_summary", "settlements", "driver_pay", "drivers", "returns", "trucks", "fuel", "outside_repairs"])
     command.add_argument("--params", default="{}")
     command.add_argument("--one-page", action="store_true")
     command.add_argument("--max-pages", type=int, default=100)

@@ -7,20 +7,21 @@ const expected: Record<keyof typeof TABLES, string[]> = {
   settlements: ["Truck", "truck_insurance", "Dispatch", "Owner", "Gross", "tonu", "Total Expenses", "Net", "From", "To", "truck_loans", "Otro", "LTR Invoices", "Tolls", "BestPass", "Insurance", "CabCards", "Trailer Rentals", "samsara", "PrePass", "Total Driver Pay", "Fuel Expenses", "To Report", "%AppliedSaved", "Gross_with_%_deduction_All", "Driven_miles", "ID", "shared_owner"],
   trucks: ["truck_number", "dispatcher", "insurance", "vin", "make", "odometer_miles", "owner", "last_known_address", "model_year", "license_plate", "yard_location", "samsara_last_connected_at", "samsara_vehicle_id", "mechanic_status", "ID", "Ninox_ID"],
   fuel: ["id", "created_at", "Unit", "Store Date", "Product", "SubTotal", "Adjusted SubTotal", "Gallons", "City", "State", "Price_Per_Gallon", "owner", "Ninox_ID", "shared_owner"],
+  outside_repairs: ["id", "created_at", "Status", "Truck", "Trailer", "Date", "Repair Company", "Choice", "Type of Work", "Total Cost", "AHS", "owner", "Ninox_ID", "Exceptions"],
 };
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
 }
 
-Deno.test("metadata covers all 111 live reporting columns exactly", () => {
+Deno.test("metadata covers all 125 live reporting columns exactly", () => {
   let count = 0;
   for (const [table, columns] of Object.entries(expected) as [keyof typeof TABLES, string[]][]) {
     const actual = Object.keys(TABLES[table].fields);
     assert(JSON.stringify(actual) === JSON.stringify(columns), `${table} columns differ`);
     count += actual.length;
   }
-  assert(count === 111, `expected 111 fields, got ${count}`);
+  assert(count === 125, `expected 125 fields, got ${count}`);
 });
 
 Deno.test("every field has a physical type, nullability, and meaning", () => {
@@ -65,6 +66,25 @@ Deno.test("Returns row attribution is exact, non-sensitive, and separate from se
   }
   assert(REPORTS.returns.filters.dispatcher.includes("exact") && REPORTS.returns.filters.owner.includes("exact"), "metadata does not advertise exact return row filters");
   assert(!("shared_owner" in returns), "settlement shared_owner leaked into returns");
+});
+
+Deno.test("Outside_Repairs physical field types and attribution guidance", () => {
+  const fields = TABLES.outside_repairs.fields;
+  assert(fields.id.type === "bigint" && !fields.id.nullable, "id is the non-null physical identity");
+  assert(fields.created_at.type === "timestamptz" && !fields.created_at.nullable, "created_at type changed");
+  assert(fields.Truck.type === "numeric" && fields.Truck.nullable, "Truck type changed");
+  assert(fields.Trailer.type === "text" && fields.Trailer.nullable, "Trailer type changed");
+  assert(fields.Date.type === "date" && fields.Date.nullable, "service Date type changed");
+  assert(fields["Total Cost"].type === "numeric" && fields["Total Cost"].nullable, "Total Cost type changed");
+  assert(fields.Ninox_ID.type === "numeric" && fields.Ninox_ID.nullable, "Ninox_ID type changed");
+  for (const name of ["Status", "Repair Company", "Choice", "Type of Work", "AHS", "owner", "Exceptions"] as const) {
+    assert(fields[name].type === "text" && fields[name].nullable, `${name} type/nullability changed`);
+  }
+  const text = JSON.stringify({ table: TABLES.outside_repairs, report: REPORTS.outside_repairs, guidance: GLOBAL_GUIDANCE });
+  assert(text.includes("Choice=Truck") && text.includes("Choice=Trailer") && text.includes("Total Cost"), "truck vs trailer expense attribution missing");
+  assert(text.includes("null/blank") && text.includes("AHS") && text.includes("No"), "null AHS must be treated as No");
+  assert(text.includes("comma-separated") && text.includes("overlap"), "multi-category costs overlap");
+  assert(REPORTS.outside_repairs.source === 'public."Outside_Repairs"', "physical report source changed");
 });
 
 Deno.test("data dictionary references every exact live column", async () => {

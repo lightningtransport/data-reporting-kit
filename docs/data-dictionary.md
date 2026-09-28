@@ -1,6 +1,6 @@
 # Data dictionary
 
-Schema verified against Supabase project `aaqquwhdglueqlnbifvn` on **2026-09-21**, with `returns` additions verified on **2026-09-25**. The six reporting sources contain **111 physical columns**: `DriverPay` 26, `drivers` 17, `returns` 10, `settlements` 28, `trucks` 16, and `fuel` 14. The reporting system is single-organization; these source tables have RLS enabled. PostgreSQL column comments are currently absent; business semantics below come from the local Ninox field catalog, verified live schema/data, and confirmed business rules.
+The six prior reporting sources were verified against Supabase project `aaqquwhdglueqlnbifvn` on **2026-09-21**, with `returns` additions verified on **2026-09-25**: **111 physical columns** (`DriverPay` 26, `drivers` 17, `returns` 10, `settlements` 28, `trucks` 16, `fuel` 14). The 14 `Outside_Repairs` columns, types, nullability, and RLS were verified in production on **2026-09-28**, giving **125 verified columns across seven sources**. The `agent-reporting` function was deployed as version 114. The reporting system is single-organization. The authenticated catalog remains authoritative for each key's access.
 
 The authenticated `agent-reporting` metadata routes are the runtime contract. Call `?report=catalog` for the complete catalog or `?report=<name>&metadata=true` for one report.
 
@@ -182,3 +182,26 @@ Use `Unit` as the numeric historic truck identifier. For a current-truck lookup,
 | `owner` | text | yes | Historical owner/entity stored on this transaction; not necessarily current truck ownership. |
 | `Ninox_ID` | numeric | yes | Fuel source-record identifier when populated; not a driver ID. |
 | `shared_owner` | text | yes | Supplemental underlying owner for a truck operating under `SOLO INC.` or `FLATBED INC.`. An owner-filtered fuel query includes a row when either `owner` or `shared_owner` exactly matches; retain both values. |
+
+## `Outside_Repairs` — external/road repair records
+
+**Grain:** one road/outside/not-company-shop repair record per row; not an internal Lightning shop invoice. `id` is the row identifier, `Ninox_ID` is a source-record identifier, and neither is a truck/driver ID. Use service `Date` for inclusive reporting periods, not `created_at`. Cost is parts plus labor already combined in `Total Cost`; do not add components again. Physical types and database nullability were verified against production on 2026-09-28; a nullable column can still have no nulls in current rows.
+
+| Column | Type | Null? | Meaning / safe use |
+|---|---|---:|---|
+| `id` | bigint | no | Row identity for stable pagination; not a business vehicle key. |
+| `created_at` | timestamptz | no | Record creation timestamp, not service date or a reliable source-sync timestamp. |
+| `Status` | text | yes | Stored status; observed current value Done. |
+| `Truck` | numeric | yes | Truck number recorded with repair; may be absent and may accompany a trailer repair without receiving the cost. |
+| `Trailer` | text | yes | Trailer identifier; full cost is attributed here when `Choice=Trailer`. |
+| `Date` | date | yes | Service date; use inclusive `date_from` / `date_to`. |
+| `Repair Company` | text | yes | External repair vendor; exact `company` filter. |
+| `Choice` | text | yes | `Truck` attributes full cost to Truck; `Trailer` attributes full cost to Trailer, not accompanying Truck. Other values are not defined. |
+| `Type of Work` | text | yes | Comma-separated work categories; a row can match multiple category queries. |
+| `Total Cost` | numeric | yes | Full repair cost including parts and labor; count once per repair in overall totals. |
+| `AHS` | text | yes | After-hours indicator: Yes means after-hours; No or blank/null means No. |
+| `owner` | text | yes | Stored repair owner; not settlement `shared_owner` or current truck master owner. Exclude truckless records from truck/owner breakdowns, but not overall totals. |
+| `Ninox_ID` | numeric | yes | Source-record identifier; exact `ninox_id` filter. |
+| `Exceptions` | text | yes | Stored special-circumstance text when no Truck is present; not every truckless record has one. Business vocabulary is not established; exact `exceptions` filter. |
+
+For all-repairs totals, include truckless rows. For truck or truck-owner breakdowns, exclude truckless rows, and never attach `Choice=Trailer` cost to an accompanying truck. Category totals may overlap, so do not add them to derive overall repair cost. The `type_of_work` API filter takes one complete category at most 100 characters, without a comma; matching is case-insensitive after trimming surrounding category spaces. API anchors: `truck`, `trailer`, `date_from`, or `ninox_id`; other supported filters are `date_to`, `company`, `choice`, `type_of_work`, `ahs`, `owner`, and `exceptions`. Never substitute `settlements.LTR Invoices` for this report.
