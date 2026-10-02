@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.9.0 - 2026-10-02
+
+- ChatGPT plugin MCP server deploys to **Vercel** (`chatgpt-plugin/mcp-server` as the project root, stateless `/mcp`). ChatGPT users sign in with **Google**, and only verified accounts in `ALLOWED_EMAIL_DOMAINS`/`ALLOWED_EMAILS` reach the tools; the server refuses to start without sign-in configured. OAuth state lives in encrypted Upstash Redis. `search`/`fetch` read the docs from GitHub `main` when they are not bundled. All tools are marked read-only.
+
 ## 3.8.22 - 2026-09-17
 
 - V2 Performance trend tooltip: one card per period (Gross, Net, Net margin %); stop duplicating the period and mis-formatting margin as money ($0 Gross).

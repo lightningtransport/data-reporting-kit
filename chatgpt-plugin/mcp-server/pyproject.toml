@@ -1,9 +1,15 @@
 [project]
 name = "lightning-reporting-mcp"
-version = "0.1.0"
+version = "0.2.0"
 description = "Read-only ChatGPT MCP connector for Lightning Transportation reporting"
 requires-python = ">=3.11"
-dependencies = ["fastmcp>=2.0,<3.0"]
+dependencies = [
+    "fastmcp==2.14.7",
+    "py-key-value-aio[redis]",
+]
 
 [tool.uv]
 package = false
+
+[tool.vercel]
+entrypoint = "app:app"

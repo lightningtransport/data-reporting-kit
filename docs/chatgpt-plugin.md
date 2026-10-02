@@ -10,7 +10,7 @@ The `chatgpt-plugin/` package makes this repository usable from standard ChatGPT
 
 ## Required hosting controls
 
-1. Host the MCP server behind HTTPS and an OAuth authorization server compatible with ChatGPT plugins. Associate each ChatGPT user with a workspace identity and revoke access centrally when employment/access changes.
+1. Host the MCP server on Vercel (`chatgpt-plugin/mcp-server` as the project root) with Google sign-in enabled. Access is limited to verified accounts in `ALLOWED_EMAIL_DOMAINS` (plus `ALLOWED_EMAILS`). Suspending a user in Google Workspace removes their access. Setup steps are in `chatgpt-plugin/README.md`.
 2. Store `AGENT_REPORTING_KEY` only in the host's secret manager. Create a dedicated, least-privilege `agent-reporting` principal for this connector. Never place the key in the plugin, MCP tool results, logs, GitHub, or a ChatGPT prompt.
 3. Restrict the plugin to approved users. Keep all exposed MCP tools read-only.
 4. Monitor `public.agent_query_audit`, including principal, report, normalized filters, sensitivity flag, outcome, and count. A report response must fail closed if the upstream audit write fails.
@@ -21,6 +21,7 @@ The `chatgpt-plugin/` package makes this repository usable from standard ChatGPT
 - `catalog` returns only the dedicated connector principal's allowed reports.
 - `metadata` is called before an unfamiliar report is queried.
 - `run_report` rejects an unsupported filter before it reaches Supabase.
+- A Google account outside the allowed Workspace domain is rejected after sign-in.
 - Authorized and denied report calls leave correct audit rows.
 - An explicit sensitive-data request is denied or minimized according to the connector principal's policy.
 - A multi-page result is not summarized as complete until `has_more` is false.

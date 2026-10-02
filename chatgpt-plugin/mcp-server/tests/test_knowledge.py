@@ -6,7 +6,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 
-from knowledge import KnowledgeBase
+import tempfile
+
+from knowledge import KnowledgeBase, load_documents
 
 
 class KnowledgeBaseTests(unittest.TestCase):
@@ -30,3 +32,22 @@ class KnowledgeBaseTests(unittest.TestCase):
         self.assertEqual(base.fetch("AGENTS.md")["text"], "Approved reporting instructions.")
         with self.assertRaisesRegex(ValueError, "Unknown knowledge document"):
             base.fetch(".env")
+
+    def test_load_documents_prefers_local_checkout_and_falls_back_to_repository(self):
+        requested: list[str] = []
+
+        def read_url(url: str) -> str:
+            requested.append(url)
+            return "remote rules"
+
+        with tempfile.TemporaryDirectory() as directory:
+            Path(directory, "AGENTS.md").write_text("local rules", encoding="utf-8")
+            documents = load_documents(
+                ["AGENTS.md", "docs/agent-rules.md"],
+                Path(directory),
+                "https://raw.example.test/repo/main/",
+                read_url,
+            )
+
+        self.assertEqual(documents, {"AGENTS.md": "local rules", "docs/agent-rules.md": "remote rules"})
+        self.assertEqual(requested, ["https://raw.example.test/repo/main/docs/agent-rules.md"])

@@ -2,11 +2,35 @@
 from __future__ import annotations
 
 import re
-from collections.abc import Mapping
+from collections.abc import Callable, Iterable, Mapping
+from pathlib import Path
 from typing import Any
 from urllib.parse import quote
+from urllib.request import urlopen
 
 _TOKEN = re.compile(r"[a-z0-9_]+")
+
+
+def _read_url(url: str) -> str:
+    with urlopen(url, timeout=10) as response:
+        return response.read().decode("utf-8")
+
+
+def load_documents(
+    paths: Iterable[str],
+    root: Path | None,
+    raw_base_url: str,
+    read_url: Callable[[str], str] = _read_url,
+) -> dict[str, str]:
+    """Read each document from a local checkout, or from the repository when not bundled."""
+    documents: dict[str, str] = {}
+    for path in paths:
+        local = root / path if root else None
+        if local and local.is_file():
+            documents[path] = local.read_text(encoding="utf-8")
+        else:
+            documents[path] = read_url(f"{raw_base_url.rstrip('/')}/{quote(path)}")
+    return documents
 
 
 class KnowledgeBase:

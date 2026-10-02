@@ -6,7 +6,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 COPY chatgpt-plugin/mcp-server/pyproject.toml /tmp/pyproject.toml
-RUN pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir 'fastmcp>=2.0,<3.0'
+RUN pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir 'fastmcp==2.14.7' 'py-key-value-aio[redis]'
 COPY . /app
 
 USER 65532:65532
