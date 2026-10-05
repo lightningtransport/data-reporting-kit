@@ -6,12 +6,13 @@ This repository is the canonical reporting contract for Lightning Transportation
 
 1. `AGENTS.md`
 2. `docs/agent-rules.md`
-3. `docs/question-routing.md`
-4. `docs/metric-definitions.md`
-5. `docs/data-dictionary.md`
-6. `api/openapi.yaml`
-7. Authenticated runtime catalog: `GET /functions/v1/agent-reporting?report=catalog`
-8. Reporting dashboard (Grok Bot / Cursor): `docs/html-reporting.md` and `apps/reporting-dashboard` (Settlements `/`, Out Schedule `/out-schedule`, Trucks Return `/trucks-return`, Diesel `/diesel`, Executive Overview `/v2`). HTML skills: `skills/agent-reporting-html/SKILL.md`, `skills/reporting-html-shadcn/SKILL.md`
+3. `docs/curated-response-policy.md`
+4. `docs/question-routing.md`
+5. `docs/metric-definitions.md`
+6. `docs/data-dictionary.md`
+7. `api/openapi.yaml`
+8. Authenticated runtime catalog: `GET /functions/v1/agent-reporting?report=catalog`
+9. Reporting dashboard (Grok Bot / Cursor): `docs/html-reporting.md` and `apps/reporting-dashboard` (Settlements `/`, Out Schedule `/out-schedule`, Trucks Return `/trucks-return`, Diesel `/diesel`, Executive Overview `/v2`). HTML skills: `skills/agent-reporting-html/SKILL.md`, `skills/reporting-html-shadcn/SKILL.md`
 
 The seven reporting-source schemas contain 125 physical columns. The 14 `Outside_Repairs` columns and their types were verified against production on **2026-09-28**; the two new `returns` columns and its numeric `Truck` type were verified on **2026-09-25** (other columns on **2026-09-21**). The deployed catalog is the runtime contract. If it conflicts with the repository, stop and report the contradiction instead of guessing.
 
