@@ -25,6 +25,17 @@ Do not describe raw tables, internal tool mechanics, or credentials to the user.
 - “Latest settlement” or “last settlement week” means the latest completed Tuesday–Monday period whose requested financial fields are populated. A newer empty period does not prove that settlement data is unavailable.
 - When an upstream-sync timestamp is unavailable, say so; the query time is not a freshness signal.
 
+### Standard weekly diesel readout
+
+For “diesel last week”, “how many gallons did we use last week”, or the plural “last weeks”, use the America/New_York operational week, **Tuesday through Monday**—never a Monday–Sunday calendar week.
+
+- “Last full week” is the latest Tuesday–Monday period fully ended before the query. On a Monday before business close, the week ending that day remains current/partial.
+- For a plural weekly request, lead with the last full week, list the preceding three complete operational weeks in chronological order, and add the current Tuesday–Monday week only if clearly labeled partial with the maximum returned Store Date as its data-through date.
+- Aggregate transactions by those operational weeks; do not present a Monday–Sunday total as an operational week.
+- Answer in the language of the user's question. The default lead is: “Last full week, [Tue–Mon], we used [gallons] of diesel, which cost [adjusted spend].”
+- Scope the main result to the exact metadata-confirmed diesel product. If metadata unambiguously identifies DEF products, append a separately queried DEF note; otherwise omit it.
+- Include the Diesel dashboard link: `https://lightning-settlement-dashboard.vercel.app/diesel`.
+
 ## Fuel: gallons and spend
 
 Use transaction-level `fuel`, never settlements, for diesel gallons, fuel purchases, or fuel spend.
@@ -35,6 +46,7 @@ Use transaction-level `fuel`, never settlements, for diesel gallons, fuel purcha
 4. For spend, sum populated `Adjusted SubTotal` only. Never replace null adjustments with `SubTotal`.
 5. Report excluded null-adjustment rows and gallons. If their coverage is material, call adjusted spend partial, not total.
 6. Aggregate price per gallon is eligible adjusted spend divided by eligible gallons; do not average transaction prices.
+7. Follow the standard weekly diesel readout when the question asks for last week(s).
 
 ## Settlements
 
