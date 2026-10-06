@@ -1,5 +1,7 @@
 # Question routing and analysis rules
 
+For supported plain company-wide count/total questions, the optional client `ask` fast path can replace model planning. It never changes the report or metric definitions below; ambiguous, scoped and complex questions fall back. See [Jev fast-path contract](jev-fast-reporting.md).
+
 Read `AGENTS.md` first. Use the smallest `agent-reporting` report that answers the question, use `?report=catalog&compact=true` for lightweight permission/routing discovery, then consult `?report=<name>&metadata=true` for the current runtime contract when its schema/rules are not already loaded.
 
 | User question | `agent-reporting` report | Required filters / analysis |

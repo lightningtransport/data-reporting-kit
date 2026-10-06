@@ -53,6 +53,45 @@ def page(
 
 
 class AgentReportingHelperTests(unittest.TestCase):
+    def test_cli_ask_is_opt_in_and_does_not_change_existing_query_commands(self):
+        import sys
+        with mock.patch.object(sys, 'path', [str(MODULE_PATH.parent), *sys.path]):
+            import jev_reporting
+            with mock.patch('sys.argv', ['agent_reporting.py','ask','--question','Diesel last week?']), \
+                 mock.patch.object(jev_reporting,'ask_question',return_value={'status':'fallback','answer':None}) as ask, \
+                 mock.patch('builtins.print') as output, mock.patch('sys.stderr',new_callable=io.StringIO):
+                try:
+                    agent_reporting.main()
+                except SystemExit as exc:
+                    self.fail(f'ask must be accepted (exit {exc.code})')
+                self.assertEqual(ask.call_args.args[0], 'Diesel last week?')
+                self.assertEqual(json.loads(output.call_args.args[0])['status'],'fallback')
+
+    def test_reporting_transport_rejects_redirects_before_forwarding_agent_key(self):
+        import http.server
+        import threading
+        hits=[]
+        class Handler(http.server.BaseHTTPRequestHandler):
+            def do_GET(self):
+                hits.append(self.path)
+                if self.path.startswith('/target'):
+                    self.send_response(200); self.end_headers(); self.wfile.write(b'{}')
+                else:
+                    self.send_response(302)
+                    self.send_header('Location','/target')
+                    self.end_headers()
+            def log_message(self,format,*args): pass
+        server=http.server.ThreadingHTTPServer(('127.0.0.1',0),Handler)
+        thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
+        try:
+            with mock.patch.object(agent_reporting,'ENDPOINT',f'http://127.0.0.1:{server.server_port}/'), \
+                 mock.patch.dict(agent_reporting.os.environ,{agent_reporting.KEY_ENV:'synthetic-test-only'}):
+                with self.assertRaises(SystemExit):
+                    agent_reporting.request({'report':'catalog'})
+            self.assertFalse(any(path.startswith('/target') for path in hits),'Redirect followed with agent credentials')
+        finally:
+            server.shutdown();server.server_close();thread.join()
+
     def test_departures_preserves_aggregate_and_source_failure(self) -> None:
         for complete in (True, False):
             payload = {
@@ -96,7 +135,7 @@ class AgentReportingHelperTests(unittest.TestCase):
         error = urllib.error.HTTPError("https://example.test", 503, "Unavailable", {},
                                        io.BytesIO(json.dumps(payload).encode()))
         with mock.patch.dict(agent_reporting.os.environ, {agent_reporting.KEY_ENV: "synthetic-test-only"}), \
-             mock.patch.object(agent_reporting.urllib.request, "urlopen", side_effect=error):
+             mock.patch.object(agent_reporting, "open_reporting", side_effect=error):
             self.assertEqual(agent_reporting.request({"report": "departures"}), payload)
         error.close()
 
@@ -187,7 +226,7 @@ class AgentReportingHelperTests(unittest.TestCase):
 
     def test_compact_catalog_encodes_true_in_request_url(self) -> None:
         with mock.patch.dict(agent_reporting.os.environ, {agent_reporting.KEY_ENV: "synthetic-test-only"}), \
-             mock.patch.object(agent_reporting.urllib.request, "urlopen", return_value=io.StringIO('{}')) as urlopen:
+             mock.patch.object(agent_reporting, "open_reporting", return_value=io.StringIO('{}')) as urlopen:
             agent_reporting.request({"report": "catalog", "compact": True})
         self.assertEqual(urlopen.call_args.args[0].full_url,
                          f"{agent_reporting.ENDPOINT}?report=catalog&compact=true")

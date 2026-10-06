@@ -16,6 +16,16 @@ ENDPOINT = "https://aaqquwhdglueqlnbifvn.supabase.co/functions/v1/agent-reportin
 KEY_ENV = "LIGHTNING_AGENT_REPORTING_KEY"
 
 
+class NoRedirect(urllib.request.HTTPRedirectHandler):
+    """Never forward a scoped reporting key to another URL or downgrade HTTPS."""
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+def open_reporting(req: urllib.request.Request, timeout: int = 30):
+    return urllib.request.build_opener(NoRedirect()).open(req, timeout=timeout)
+
+
 def encode_params(params: dict[str, Any]) -> str:
     normalized = {
         key: ("true" if value is True else "false" if value is False else value)
@@ -35,13 +45,15 @@ def request(params: dict[str, Any]) -> dict[str, Any]:
         method="GET",
     )
     try:
-        with urllib.request.urlopen(req, timeout=30) as response:
+        with open_reporting(req, timeout=30) as response:
             return json.load(response)
     except urllib.error.HTTPError as exc:
         try:
             payload = json.load(exc)
         except Exception:
             payload = {"error": f"HTTP {exc.code}"}
+        finally:
+            exc.close()
         if (exc.code == 503 and params.get("report") in ("out_schedule", "departures")
                 and payload.get("report") == params["report"]
                 and payload.get("complete") is False and payload.get("status") == "incomplete"
@@ -238,9 +250,29 @@ def run_query(args: argparse.Namespace) -> None:
     print(json.dumps(result, ensure_ascii=False, indent=2))
 
 
+def run_ask(args: argparse.Namespace) -> None:
+    # Optional routing is imported only for ask; existing query/metadata paths stay unchanged.
+    from jev_reporting import ask_question, fallback, load_runtime_env
+    from pathlib import Path
+    try:
+        if args.env_file:
+            load_runtime_env(Path(args.env_file))
+        def collect(report: str, params: dict[str, Any]) -> dict[str, Any]:
+            return collect_query(argparse.Namespace(report=report, params=json.dumps(params),
+                one_page=False, max_pages=100))
+        result = ask_question(args.question, request=request, collect=collect)
+    except (Exception, SystemExit):
+        result = fallback('runtime_configuration_unavailable')
+    print(json.dumps(result, ensure_ascii=False, separators=(',', ':')))
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(required=True)
+    command = sub.add_parser("ask", help="Optional Jev fast path for simple reporting questions; returns fallback for normal reasoning when unsure")
+    command.add_argument("--question", required=True)
+    command.add_argument("--env-file", help="Explicit local runtime credential file; loads only Jev and reporting agent-key variables")
+    command.set_defaults(func=run_ask)
     command = sub.add_parser("catalog")
     command.add_argument("--compact", action="store_true", help="Request the compact catalog")
     command.set_defaults(func=run_catalog)

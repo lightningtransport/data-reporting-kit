@@ -74,6 +74,10 @@ Other HTML reports still follow the ≥3-month window and confirmed sections. Do
 
 Every Settlements view must include **Summary**, weekly and monthly review modes, truck and owner rankings, fuel spend by owner, a KPI strip, a closed **Technical details** evidence accordion, and the shared light theme. Visible copy is English operational wording. Do not display Ninox Full Week or Other Deductions+Previous: those fields are not in `public.settlements`. Out Schedule, Trucks Return, and Diesel use the same shell, shadcn Table/Badge, filters, row counts, and **Technical details** accordion.
 
+## Optional client fast path
+
+For supported plain company-wide counts/totals, the packaged client `ask` command uses one TypeSafe Jev judgment followed by deterministic approved-report retrieval and answer assembly. Use it instead of, not in addition to, a full model planning loop. All calculation/date/permission rules above remain code-owned. Scoped, sensitive, explicit-date, complex, financial and uncertain questions keep the existing reasoning path. A fallback has no answer/total. Never send report rows, secrets or conversation history to Jev. See [client contract](docs/jev-fast-reporting.md).
+
 ## Required answer evidence
 
 State source report/table, normalized filters, exact period, result and row/distinct count, pagination completeness, `as_of`, source-sync freshness limitation, and material grain/null/bucket/join/sensitivity caveats. Never present a truncated page or incomplete financial period as a complete total. HTML reports put the same evidence in the **Technical details** accordion.

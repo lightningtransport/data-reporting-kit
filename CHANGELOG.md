@@ -1,5 +1,11 @@
 # Changelog
 
+## Client skill 0.11.0 — 2026-10-06
+
+- Add optional client-only Jev routing with one pinned-model batched decision, deterministic dates/calculations, English/Spanish answer templates and sanitized fallback to normal reasoning. Existing API/schema 3.8.1 and Supabase function remain unchanged.
+- Initial fast paths cover company-wide last-full-week diesel/outside-repair totals, current fleet, on-road today, two-source returning-truck counts, and governed departure counts. Explicit dates, scoped/complex/financial/sensitive requests remain on the existing path. No business rows or credentials are sent to Jev.
+- Keep live permissions/metadata, exact pagination, null coverage, historical rules and reconciliation; no fallback is interpreted as a zero total. Deterministic scope eligibility cannot be overridden by Jev confidence; fuel uses verified exact product identities rather than substring guessing. Jev and reporting-client redirects are rejected. See `docs/jev-fast-reporting.md` for scope, runtime setup and evaluation boundaries.
+
 ## Agent API schema 3.8.1 — 2026-10-06
 
 - Deployed function version 123 and verified all source files byte-for-byte. Live default responses match baseline except schema/request evidence; 97 targeted tests pass. Post-deploy helper benchmark: 26.9416 s/51 requests → 3.5674 s/6 requests with identical 5008 rows. Compact catalog: 45713 → 15057 bytes (67.06% smaller). See `docs/performance-review.md` for methodology and existing dashboard-test limitations.

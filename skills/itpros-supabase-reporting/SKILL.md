@@ -1,7 +1,7 @@
 ---
 name: itpros-supabase-reporting
 description: Answer Lightning reports through the approved reporting APIs.
-version: 0.10.1
+version: 0.11.0
 author: Ibrain Ortega, Hermes Agent
 license: Proprietary
 platforms: [linux, macos, windows]
@@ -28,6 +28,20 @@ python "${HERMES_HOME:-$HOME/.hermes}/skills/itpros-supabase-reporting/scripts/a
 For stable-ID physical reports, complete collection defaults to `limit=1000` to reduce round trips (an explicit limit is honored; `--one-page` retains the API default of 100). The query helper follows pagination by default, verifies that integer `total_count` stays stable, and marks a result complete only when the final fetched count equals it. It returns `fetched_count`, `total_count`, normalized filters, timestamps, and combined data. Use `--one-page` only when a partial page is explicitly sufficient; set `--max-pages` when the default safety limit of 100 pages is unsuitable.
 
 For `departures`, the helper returns the aggregate envelope unchanged, including structured HTTP 503 source-failure evidence; pagination never overrides source completeness. For `out_schedule`, rows intentionally have no persistent ID and duplicates are valid: use one bounded snapshot (default limit 1000), preserve the envelope and inspect `has_more` separately from source `complete`. The helper refuses automatic cross-snapshot collection beyond one page; `--one-page` explicitly permits a partial result. Never fabricate an ID from truck/date or position. See [contract and rollout](../../docs/departures.md).
+
+## Optional Jev fast answers
+
+For a plain, company-wide count/total in one of these routine cases, use the client `ask` fast path **before** doing a large-model planning/data-analysis loop: last-full-week diesel or outside-repair totals, current fleet count, on-road count today, returning-truck count this/last full operational week, or departure count this/last full calendar week. Skip it for explicit dates, scoped owner/dispatch/truck questions, lists, trends, comparisons, sensitive requests, settlements and complex analysis; those keep the existing workflow.
+
+```bash
+python "${HERMES_HOME:-$HOME/.hermes}/skills/itpros-supabase-reporting/scripts/agent_reporting.py" ask \
+  --env-file "${HERMES_HOME:-$HOME/.hermes}/.env" \
+  --question "How many gallons of diesel did we use last week?"
+```
+
+The explicit env-file option loads only profile-local Jev/reporting agent-key variables. Portable callers may instead inject `TYPESAFE_API_KEY` and `LIGHTNING_AGENT_REPORTING_KEY` directly. Existing local aliases are supported without printing or modifying credentials. Never pass keys as arguments or send report rows/history to Jev. The client uses one pinned-model batched semantic decision; code owns permissions, metadata, dates, arithmetic, complete pagination, null coverage and reconciliation.
+
+On `status=complete`, use the returned deterministic English/Spanish `answer` and preserve its evidence/caveats; do not repeat the same analysis in a large model. On `status=fallback`, continue the normal governed reporting procedure once; `answer=null` is not a zero business result. Never reword/retry the fast path to force acceptance. No API key or uncertain/error response may bypass the gateway. `ask` does not itself call a fallback reasoning model and does not accelerate existing MCP tool calls automatically. See [fast-path contract](../../docs/jev-fast-reporting.md).
 
 ## Personal membership mode
 
