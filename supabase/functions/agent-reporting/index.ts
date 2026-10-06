@@ -148,7 +148,7 @@ async function audit(
   }
 }
 
-function catalogResponse(principal: { id: string; allowSensitive: boolean; allowedReports: Set<string> | null }) {
+function catalogResponse(principal: { id: string; allowSensitive: boolean; allowedReports: Set<string> | null }, compact = false) {
   const allowed = supportedReports.filter((report) => isReportAuthorized(principal.allowedReports, report));
   return {
     schema_version: SCHEMA_VERSION,
@@ -184,7 +184,20 @@ function catalogResponse(principal: { id: string; allowSensitive: boolean; allow
       "?report=settlements&metadata=true",
     ],
     guidance: GLOBAL_GUIDANCE,
-    reports: Object.fromEntries(allowed.map((report) => [report, REPORTS[report]])),
+    // Keep all global guardrails; compact discovery omits only per-report detail.
+    // Full metadata remains mandatory before using unfamiliar fields/calculations.
+    ...(compact ? { metadata_required: true } : {}),
+    reports: Object.fromEntries(allowed.map((report) => {
+      const metadata = REPORTS[report];
+      if (!compact) return [report, metadata];
+      return [report, {
+        source: metadata.source,
+        row_grain: metadata.row_grain,
+        filters: metadata.filters,
+        ...("required_anchor" in metadata ? { required_anchor: metadata.required_anchor } : {}),
+        metadata_url: `?report=${report}&metadata=true`,
+      }];
+    })),
   };
 }
 
@@ -264,9 +277,13 @@ Deno.serve(async (req: Request) => {
     if (reportName === "catalog") {
       for (const key of new Set(params.keys())) {
         if (params.getAll(key).length !== 1) throw new RequestValidationError(`Duplicate parameter is not allowed: ${key}`);
-        if (key !== "report") throw new RequestValidationError(`Unsupported parameter for catalog: ${key}`);
+        if (key !== "report" && key !== "compact") throw new RequestValidationError(`Unsupported parameter for catalog: ${key}`);
       }
-      return json(catalogResponse(principal));
+      const compact = params.get("compact");
+      if (compact !== null && compact !== "true" && compact !== "false") {
+        throw new RequestValidationError("compact must be true or false");
+      }
+      return json(catalogResponse(principal, compact === "true"));
     }
 
     if (!supportedReports.includes(reportName as SupportedReport)) {

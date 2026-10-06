@@ -1,6 +1,6 @@
 # Question routing and analysis rules
 
-Read `AGENTS.md` first. Use the smallest `agent-reporting` report that answers the question, then consult `?report=<name>&metadata=true` for the current runtime contract.
+Read `AGENTS.md` first. Use the smallest `agent-reporting` report that answers the question, use `?report=catalog&compact=true` for lightweight permission/routing discovery, then consult `?report=<name>&metadata=true` for the current runtime contract when its schema/rules are not already loaded.
 
 | User question | `agent-reporting` report | Required filters / analysis |
 |---|---|---|

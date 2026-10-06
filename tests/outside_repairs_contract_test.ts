@@ -83,7 +83,7 @@ Deno.test("outside_repairs metadata enumerates exactly the physical fields and t
     assert(field.type === type && field.nullable === nullable, `${name} has incorrect physical type/nullability`);
     assert(typeof field.meaning === "string" && field.meaning.length > 10, `${name} needs a meaningful description`);
   }
-  const select = tableSelect(report as Exclude<SupportedReport, "settlement_summary">, false).split(",");
+  const select = tableSelect("outside_repairs", false).split(",");
   const expectedSelect = Object.keys(expectedFields).map((name) =>
     /^[a-z_][a-z0-9_]*$/.test(name) ? name : `"${name}"`
   );

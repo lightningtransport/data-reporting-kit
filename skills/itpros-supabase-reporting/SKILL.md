@@ -1,7 +1,7 @@
 ---
 name: itpros-supabase-reporting
 description: Answer Lightning reports through the approved reporting APIs.
-version: 0.10.0
+version: 0.10.1
 author: Ibrain Ortega, Hermes Agent
 license: Proprietary
 platforms: [linux, macos, windows]
@@ -20,12 +20,12 @@ Read repository `AGENTS.md` first. The canonical shared kit is `https://github.c
 The assigned key must be injected at runtime as `LIGHTNING_AGENT_REPORTING_KEY`. Never put it in a command argument, URL, prompt, log, repository, or output.
 
 ```bash
-python "${HERMES_HOME:-$HOME/.hermes}/skills/itpros-supabase-reporting/scripts/agent_reporting.py" catalog
+python "${HERMES_HOME:-$HOME/.hermes}/skills/itpros-supabase-reporting/scripts/agent_reporting.py" catalog --compact
 python "${HERMES_HOME:-$HOME/.hermes}/skills/itpros-supabase-reporting/scripts/agent_reporting.py" metadata --report settlements
 python "${HERMES_HOME:-$HOME/.hermes}/skills/itpros-supabase-reporting/scripts/agent_reporting.py" query --report settlements --params '{"period_from":"2026-09-01","period_to":"2026-09-01"}'
 ```
 
-For stable-ID physical reports, the query helper follows pagination by default, verifies that integer `total_count` stays stable, and marks a result complete only when the final fetched count equals it. It returns `fetched_count`, `total_count`, normalized filters, timestamps, and combined data. Use `--one-page` only when a partial page is explicitly sufficient; set `--max-pages` when the default safety limit of 100 pages is unsuitable.
+For stable-ID physical reports, complete collection defaults to `limit=1000` to reduce round trips (an explicit limit is honored; `--one-page` retains the API default of 100). The query helper follows pagination by default, verifies that integer `total_count` stays stable, and marks a result complete only when the final fetched count equals it. It returns `fetched_count`, `total_count`, normalized filters, timestamps, and combined data. Use `--one-page` only when a partial page is explicitly sufficient; set `--max-pages` when the default safety limit of 100 pages is unsuitable.
 
 For `departures`, the helper returns the aggregate envelope unchanged, including structured HTTP 503 source-failure evidence; pagination never overrides source completeness. For `out_schedule`, rows intentionally have no persistent ID and duplicates are valid: use one bounded snapshot (default limit 1000), preserve the envelope and inspect `has_more` separately from source `complete`. The helper refuses automatic cross-snapshot collection beyond one page; `--one-page` explicitly permits a partial result. Never fabricate an ID from truck/date or position. See [contract and rollout](../../docs/departures.md).
 
@@ -46,7 +46,7 @@ Use schedule `0 10,14 * * *`. The job updates instructions only and must report 
 ## Procedure
 
 1. Read `AGENTS.md`, `docs/agent-rules.md`, `docs/question-routing.md`, `docs/metric-definitions.md`, `docs/data-dictionary.md`, and `docs/html-reporting.md` when building HTML or analytical settlement/fleet history.
-2. Call `catalog`, then report metadata when the current schema/rules are not loaded.
+2. Use `catalog --compact` for current permissions/routing, then fetch only the selected report metadata when the current schema/rules are not loaded. Compact discovery keeps global guardrails but is not the field/calculation dictionary. Plain `catalog` still returns the full contract. Reuse already-loaded same-schema guidance within the current task; reload metadata after a schema change or unfamiliar field/filter. Do not cache business rows or skip live source fetches for speed.
 3. Choose the smallest report and exact filters. Settlement reports require an explicit period or truck; DriverPay requires truck, driver, `out_from`, `return_from`, or `on_road_at`; fuel requires `truck_number`, `store_from`, or `ninox_id`; `outside_repairs` requires `truck`, `trailer`, `date_from`, or `ninox_id`. HTML reports and analytical settlement/fleet-history answers must fetch at least three calendar months; the settlement dashboard fetches at least twelve months of `settlements`. The named date is UI focus only.
 4. Run the helper and reconcile `fetched_count` with `total_count` when a complete answer is required.
 5. For **trucks on the road on date D**, query `driver_pay?on_road_at=D` (today in America/New_York for “now”), paginate fully and count distinct nonblank `Truck_Number` with `Out Date <= D` and `Return Date > D`. Null returns and return day are excluded. Never substitute `return_null`, a lookback cutoff, or the two-source returning-trucks union. This differs from the Ninox insurance-choice/in-yard metric. Apply grain, date, join, allocation-bucket, stored-value, and sensitive-output rules. When a needed field is absent from the selected record, use approved-report relational fallback before finalizing: CDL is the unique driver key across `drivers` and `DriverPay`; truck number is the vehicle key across documented field variants. Never substitute names, Supabase IDs, or `returns.Ninox_ID`; `returns.CDL` is sensitive and may link a driver only after an exact match to a verified CDL in approved related data; otherwise report an unresolved driver link.

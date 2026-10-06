@@ -1,5 +1,13 @@
 # Changelog
 
+## Agent API schema 3.8.1 — 2026-10-06
+
+- Deployed function version 123 and verified all source files byte-for-byte. Live default responses match baseline except schema/request evidence; 97 targeted tests pass. Post-deploy helper benchmark: 26.9416 s/51 requests → 3.5674 s/6 requests with identical 5008 rows. Compact catalog: 45713 → 15057 bytes (67.06% smaller). See `docs/performance-review.md` for methodology and existing dashboard-test limitations.
+
+- Add opt-in compact catalog discovery preserving per-key permissions, global guardrails, exact filters and required anchors; full catalog/data/metadata defaults remain unchanged. Load selected full metadata before unfamiliar calculations.
+- Packaged reporting skill 0.10.1 defaults full stable-ID collection to 1000-row pages, honors explicit limits, and preserves 100-row one-page behavior and all completeness/identity/count-drift checks. No business rows are cached, no audit is deferred, and no exact count or RLS/permission checks are removed.
+- Live pre-change September fuel benchmark returned the identical ordered 5008 rows: 51 requests/28.3013 seconds at limit 100 versus 6 requests/3.4 seconds at limit 1000. Timings are observations, not a latency guarantee.
+
 ## Prepared schema 3.8.0 — not deployed or client-verified
 
 - Add `out_schedule` and `departures` specification/client support for optional paired Out Date bounds (at most 31 inclusive days), default New York Monday–Sunday.

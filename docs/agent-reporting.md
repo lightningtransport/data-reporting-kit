@@ -19,6 +19,7 @@ The key identifies an agent principal. The function is single-organization and a
 ## Discover before querying
 
 - `?report=catalog` returns all reports allowed for the key, global parameters, response semantics, business rules, and examples.
+- `?report=catalog&compact=true` is optional lightweight discovery: identical permissions, global guardrails and response semantics, but report entries contain only source, grain, exact filters, required anchor (when applicable), and a metadata URL. `metadata_required=true` means load the selected report metadata before unfamiliar field/calculation use. `compact=false` or omission returns the unchanged full catalog; compact is rejected on data/metadata requests.
 - `?report=<report>&metadata=true` returns exact physical fields, types, nullability, sensitive flags, Ninox mappings, filters, grain, joins, and calculations.
 
 Supported data reports in this specification: `settlement_summary`, `settlements`, `driver_pay`, `drivers`, `returns`, `trucks`, `fuel`, `outside_repairs`, `out_schedule`, and `departures`. The live authenticated catalog is authoritative for deployed availability.
@@ -77,6 +78,8 @@ Explicit data responses include:
 ```
 
 `count` is a compatibility alias for `page_count`, not the full total. Follow `next_offset` until `has_more=false` when all rows are required. A successful zero-row page has `total_count=0`; an offset beyond the available range returns HTTP `416`. If the upstream exact count is absent, the API returns `500` rather than substituting the page count.
+
+The packaged helper requests 1000 rows per page for full stable-ID collection unless an explicit `limit` is supplied. `--one-page` retains the API default of 100; direct API requests also retain their default of 100. Exact-count drift, duplicate identity, cursor, normalized-filter and complete-fetch reconciliation checks remain mandatory. Out Schedule remains one live bounded snapshot, and departure source completeness is not replaced by pagination completeness.
 
 ## Legacy compatibility
 

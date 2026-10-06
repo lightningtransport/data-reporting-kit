@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = "3.8.0";
+export const SCHEMA_VERSION = "3.8.1";
 export const SCHEMA_VERIFIED_AT = "2026-09-28T19:12:26Z";
 
 const field = (

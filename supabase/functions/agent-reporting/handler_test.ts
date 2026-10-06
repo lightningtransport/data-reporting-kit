@@ -16,6 +16,14 @@ Deno.test("live-report HTTP path enforces auth/audit/pagination and preserves ag
     AGENT_ALLOW_SENSITIVE_2: "false",
     AGENT_API_KEY_3: "test-no-pii",
     AGENT_ALLOW_SENSITIVE_3: "false",
+    AGENT_API_KEY_4: "test-empty",
+    AGENT_REPORTS_4: "",
+    AGENT_API_KEY_5: "test-expired",
+    AGENT_EXPIRES_AT_5: "2000-01-01T00:00:00Z",
+    AGENT_API_KEY_6: "test-missing-schedule",
+    AGENT_REPORTS_6: "departures,driver_pay",
+    AGENT_API_KEY_7: "test-missing-aggregate",
+    AGENT_REPORTS_7: "driver_pay,out_schedule",
   };
   let handler: ((r: Request) => Response | Promise<Response>) | undefined;
   let scheduleDown = false,
@@ -106,9 +114,46 @@ Deno.test("live-report HTTP path enforces auth/audit/pagination and preserves ag
     const window = "out_from=2026-10-05&out_to=2026-10-11";
     const catalog = await request("report=catalog");
     assert(
-      catalog.body.schema_version === "3.8.0" &&
+      catalog.body.schema_version === "3.8.1" &&
         catalog.body.reports.departures && catalog.body.reports.out_schedule,
     );
+    const compactCatalog = await request("report=catalog&compact=true");
+    assert(compactCatalog.status === 200, "compact catalog should be supported");
+    assert(compactCatalog.body.metadata_required === true);
+    assert(JSON.stringify(compactCatalog.body.principal) === JSON.stringify(catalog.body.principal));
+    assert(JSON.stringify(compactCatalog.body.guidance) === JSON.stringify(catalog.body.guidance));
+    assert(JSON.stringify(Object.keys(compactCatalog.body.reports)) === JSON.stringify(Object.keys(catalog.body.reports)));
+    for (const [name, full] of Object.entries(catalog.body.reports) as [string, any][]) {
+      const brief = compactCatalog.body.reports[name];
+      assert(brief.source === full.source && brief.row_grain === full.row_grain);
+      assert(JSON.stringify(brief.filters) === JSON.stringify(full.filters));
+      assert(brief.required_anchor === full.required_anchor);
+      assert(brief.metadata_url === `?report=${name}&metadata=true`);
+      assert(!("fields" in brief) && !("calculation_rules" in brief));
+    }
+    assert(JSON.stringify(compactCatalog.body).length < JSON.stringify(catalog.body).length / 2);
+    assert(JSON.stringify((await request("report=catalog&compact=false")).body) === JSON.stringify(catalog.body));
+    for (const suffix of ["compact=1", "compact=TRUE", "compact=", "compact=true&compact=false", "unknown=true"]) {
+      assert((await request(`report=catalog&${suffix}`)).status === 400);
+    }
+    assert((await request("report=catalog&compact=true", "wrong")).status === 401);
+    assert((await request("report=catalog&compact=true", "test-expired")).status === 401);
+    const emptyCatalog = await request("report=catalog&compact=true", "test-empty");
+    assert(emptyCatalog.status === 200 && Object.keys(emptyCatalog.body.reports).length === 0);
+    assert(emptyCatalog.body.principal.allowed_reports.length === 0);
+    for (const key of ["test-restricted", "test-missing-schedule", "test-missing-aggregate"]) {
+      const brief = await request("report=catalog&compact=true", key);
+      assert(!brief.body.reports.departures);
+      assert((await request("report=departures&metadata=true", key)).status === 403);
+      assert((await request("report=departures", key)).status === 403);
+    }
+    const compactRestricted = await request("report=catalog&compact=true", "test-restricted");
+    assert(!compactRestricted.body.reports.departures && compactRestricted.body.reports.out_schedule);
+    for (const report of Object.keys(catalog.body.reports)) {
+      assert((await request(`report=${report}&compact=true`)).status === 400);
+      assert((await request(`report=${report}&metadata=true&compact=true`)).status === 400);
+    }
+    assert(dpCalls === 0 && scheduleCalls === 0);
     const restrictedCatalog = await request(
       "report=catalog",
       "test-restricted",

@@ -66,16 +66,19 @@ class AgentReportingHelperTests(unittest.TestCase):
             with self.subTest(complete=complete), mock.patch.object(agent_reporting, "request", return_value=payload) as request:
                 result = agent_reporting.collect_query(args(report="departures"))
             self.assertEqual(result, payload)
-            self.assertNotIn("offset", request.call_args.args[0])
+            request.assert_called_once_with({"report": "departures", "physical_only": True,
+                                             "include_sensitive": False})
 
     def test_out_schedule_preserves_idless_duplicate_snapshot_rows(self) -> None:
         payload = {**page([], total=2, offset=0, has_more=False, next_offset=None,
                           report="out_schedule", source="live Ninox Schedule_Teams approved share"),
                    "data": [{"Truck": 101, "Out Date": "2026-10-05"}] * 2,
                    "count": 2, "page_count": 2, "complete": True, "status": "complete"}
-        with mock.patch.object(agent_reporting, "request", return_value=payload):
+        with mock.patch.object(agent_reporting, "request", return_value=payload) as request:
             result = agent_reporting.collect_query(args(report="out_schedule"))
         self.assertEqual(result, payload)
+        request.assert_called_once_with({"report": "out_schedule", "limit": 1000,
+                                         "physical_only": True, "include_sensitive": False})
 
     def test_out_schedule_does_not_invent_stable_row_identity_across_snapshots(self) -> None:
         payload = {**page([], total=2, offset=0, has_more=True, next_offset=1,
@@ -105,11 +108,89 @@ class AgentReportingHelperTests(unittest.TestCase):
                      mock.patch.object(agent_reporting, "collect_query", return_value={}), mock.patch("builtins.print"):
                     agent_reporting.main()
 
+    def test_cli_compact_catalog_sends_compact_true(self) -> None:
+        with mock.patch("sys.argv", ["agent_reporting.py", "catalog", "--compact"]), \
+             mock.patch.object(agent_reporting, "request", return_value={"report": "catalog"}) as request, \
+             mock.patch("builtins.print"), mock.patch("sys.stderr", new_callable=io.StringIO):
+            try:
+                agent_reporting.main()
+            except SystemExit as exc:
+                self.fail(f"catalog --compact must be accepted (exit {exc.code})")
+        request.assert_called_once_with({"report": "catalog", "compact": True})
+
     def test_json_booleans_are_lowercase_query_values(self) -> None:
         self.assertEqual(
             agent_reporting.encode_params({"enabled": True, "disabled": False, "limit": 10}),
             "enabled=true&disabled=false&limit=10",
         )
+
+    def test_full_collection_requests_1000_rows_on_every_stable_id_page(self) -> None:
+        for report, identity_field in (
+            ("settlement_summary", "settlement_id"), ("settlements", "ID"),
+            ("driver_pay", "ID"), ("drivers", "ID"), ("returns", "ID"),
+            ("trucks", "ID"), ("fuel", "id"), ("outside_repairs", "id"),
+        ):
+            pages = [
+                page([1], total=2, offset=0, has_more=True, next_offset=1,
+                     report=report, identity_field=identity_field),
+                page([2], total=2, offset=1, has_more=False, next_offset=None,
+                     report=report, identity_field=identity_field),
+            ]
+            with self.subTest(report=report), mock.patch.object(agent_reporting, "request", side_effect=pages) as request:
+                result = agent_reporting.collect_query(args(report=report))
+                self.assertEqual(request.call_args_list, [
+                    mock.call({"report": report, "physical_only": True,
+                               "include_sensitive": False, "limit": 1000, "offset": offset})
+                    for offset in (0, 1)
+                ])
+                self.assertTrue(result["complete"])
+                self.assertEqual(result["data"], pages[0]["data"] + pages[1]["data"])
+
+    def test_explicit_limit_is_preserved_on_every_page(self) -> None:
+        for limit in (1, 100, "250", 0):
+            query_args = args()
+            query_args.params = json.dumps({"limit": limit, "include_sensitive": False})
+            pages = [
+                page([1], total=2, offset=0, has_more=True, next_offset=1),
+                page([2], total=2, offset=1, has_more=False, next_offset=None),
+            ]
+            with self.subTest(limit=limit), mock.patch.object(agent_reporting, "request", side_effect=pages) as request:
+                agent_reporting.collect_query(query_args)
+                self.assertEqual(request.call_args_list, [
+                    mock.call({"report": "trucks", "limit": limit,
+                               "include_sensitive": False, "offset": offset})
+                    for offset in (0, 1)
+                ])
+
+    def test_one_page_leaves_default_limit_to_api(self) -> None:
+        response = page([1], total=2, offset=0, has_more=True, next_offset=1)
+        with mock.patch.object(agent_reporting, "request", return_value=response) as request:
+            result = agent_reporting.collect_query(args(one_page=True))
+        request.assert_called_once_with({"report": "trucks", "physical_only": True,
+                                         "include_sensitive": False, "offset": 0})
+        self.assertFalse(result["complete"])
+
+    def test_one_page_preserves_explicit_limit(self) -> None:
+        query_args = args(one_page=True)
+        query_args.params = '{"limit": 25}'
+        response = page([1], total=2, offset=0, has_more=True, next_offset=1)
+        with mock.patch.object(agent_reporting, "request", return_value=response) as request:
+            agent_reporting.collect_query(query_args)
+        request.assert_called_once_with({"report": "trucks", "limit": 25, "offset": 0})
+
+    def test_cli_catalog_is_full_by_default(self) -> None:
+        with mock.patch("sys.argv", ["agent_reporting.py", "catalog"]), \
+             mock.patch.object(agent_reporting, "request", return_value={}) as request, \
+             mock.patch("builtins.print"):
+            agent_reporting.main()
+        request.assert_called_once_with({"report": "catalog"})
+
+    def test_compact_catalog_encodes_true_in_request_url(self) -> None:
+        with mock.patch.dict(agent_reporting.os.environ, {agent_reporting.KEY_ENV: "synthetic-test-only"}), \
+             mock.patch.object(agent_reporting.urllib.request, "urlopen", return_value=io.StringIO('{}')) as urlopen:
+            agent_reporting.request({"report": "catalog", "compact": True})
+        self.assertEqual(urlopen.call_args.args[0].full_url,
+                         f"{agent_reporting.ENDPOINT}?report=catalog&compact=true")
 
     def test_complete_pagination_reconciles_stable_total(self) -> None:
         pages = [

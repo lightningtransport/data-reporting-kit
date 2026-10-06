@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Lightning Reporting APIs
-  version: 3.8.0
+  version: 3.8.1
   license:
     name: Proprietary
     identifier: LicenseRef-Proprietary
@@ -46,6 +46,10 @@ paths:
             type: string
             enum: [catalog, settlement_summary, settlements, driver_pay, drivers, returns, trucks, fuel, outside_repairs, out_schedule, departures]
           description: Required for the strict contract. Use catalog for discovery.
+        - name: compact
+          in: query
+          schema: {type: boolean, default: false}
+          description: Catalog only. true returns permitted report routing/filter summaries and full global guidance, omitting report field dictionaries/calculation detail. Load report metadata before unfamiliar analysis. false or omitted preserves the full catalog.
         - name: metadata
           in: query
           schema: {type: boolean}
@@ -376,7 +380,7 @@ components:
       type: object
       required: [schema_version, report, source, filters, offset, limit, count, page_count, total_count, has_more, next_offset, as_of, data, request_id, period, status, complete]
       properties:
-        schema_version: {type: string, const: 3.8.0}
+        schema_version: {type: string, const: 3.8.1}
         report: {type: string, enum: [out_schedule, departures]}
         source: {type: string}
         filters: {type: object, additionalProperties: {type: string}}
@@ -492,7 +496,24 @@ components:
         global_parameters: {type: object, additionalProperties: true}
         response_contract: {type: object, additionalProperties: true}
         guidance: {type: object, additionalProperties: true}
+        metadata_required: {type: boolean, const: true, description: "Present only in compact discovery. Load full selected-report metadata before unfamiliar field/calculation use."}
         reports: {type: object, additionalProperties: true}
+      if:
+        required: [metadata_required]
+      then:
+        properties:
+          reports:
+            type: object
+            additionalProperties:
+              type: object
+              additionalProperties: false
+              required: [source, row_grain, filters, metadata_url]
+              properties:
+                source: {type: string}
+                row_grain: {type: string}
+                filters: {type: object, additionalProperties: {type: string}}
+                required_anchor: {type: string}
+                metadata_url: {type: string}
     MetadataResponse:
       type: object
       additionalProperties: true

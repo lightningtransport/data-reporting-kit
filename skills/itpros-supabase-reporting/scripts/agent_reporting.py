@@ -67,8 +67,11 @@ def parse_params(raw: str) -> dict[str, Any]:
     return value
 
 
-def run_catalog(_: argparse.Namespace) -> None:
-    print(json.dumps(request({"report": "catalog"}), ensure_ascii=False, indent=2))
+def run_catalog(args: argparse.Namespace) -> None:
+    params: dict[str, Any] = {"report": "catalog"}
+    if args.compact:
+        params["compact"] = True
+    print(json.dumps(request(params), ensure_ascii=False, indent=2))
 
 
 def run_metadata(args: argparse.Namespace) -> None:
@@ -119,6 +122,8 @@ def collect_query(args: argparse.Namespace) -> dict[str, Any]:
         if not payload["complete"] and reconciliation.get("combined_distinct_total") is not None:
             raise SystemExit("agent-reporting incomplete aggregate cannot have a combined total")
         return payload
+    if not args.one_page:
+        filters.setdefault("limit", 1000)
     offset = 0
     pages: list[dict[str, Any]] = []
     combined: list[dict[str, Any]] = []
@@ -237,6 +242,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(required=True)
     command = sub.add_parser("catalog")
+    command.add_argument("--compact", action="store_true", help="Request the compact catalog")
     command.set_defaults(func=run_catalog)
     command = sub.add_parser("metadata")
     command.add_argument("--report", required=True, choices=["settlement_summary", "settlements", "driver_pay", "drivers", "returns", "trucks", "fuel", "outside_repairs", "out_schedule", "departures"])

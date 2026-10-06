@@ -86,7 +86,7 @@ Deno.test("departures requires permission for both inputs as well as the aggrega
   ) assert(!isReportAuthorized(new Set(allowed), "departures"));
 });
 Deno.test("schema 3.8.0 exposes sources, date defaults, sensitivity and incomplete-total guidance", () => {
-  assert(String(SCHEMA_VERSION) === "3.8.0");
+  assert(String(SCHEMA_VERSION) === "3.8.1");
   const reports = REPORTS as Record<string, unknown>;
   assert(reports.out_schedule && reports.departures);
   const text = JSON.stringify({
