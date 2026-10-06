@@ -43,7 +43,7 @@ The seven reporting-source schemas contain 125 physical columns. The 14 `Outside
 - For `settlement_summary`, `settlements`, and `fuel` owner questions, an `owner` filter matches either the primary owner or `shared_owner`. `shared_owner` identifies the underlying owner for a truck operating under `SOLO INC.` or `FLATBED INC.`; preserve both fields and do not apply this rule to `trucks`, DriverPay, or returns.
 - Settlement Truck 1, 2, and 3 are owner-allocation buckets for Carlos, Jorge, and CDT—not physical trucks. Include them in the matching owner's general settlement totals; exclude them from physical-truck counts/rankings.
 - Every returning-trucks question/report is a two-source union for the same inclusive `Return Date` period. From `DriverPay`, exclude `Termination = Driver Changed` and `Transfer = Transfer To Other Truck`; let `tc` be the remaining non-solo rows and `ts` the remaining solo rows, with DriverPay formula count `floor(tc / 2 + ts)`. Union distinct qualifying `DriverPay.Truck_Number` with distinct `returns.Truck`, normalize only truck-key format, and count each truck once. Report source counts, overlap, source-only counts, union count, `tc`, `ts`, and any mismatch between the formula and distinct DriverPay trucks. Never use either source alone.
-- Departures use only `DriverPay.Out Date`. Returning-truck periods use only `Return Date` on both required sources; do not add `Out Date` criteria unless the user explicitly asks for assignment overlap.
+- Departures use the same inclusive `Out Date` frame on DriverPay and live Schedule_Teams; DriverPay alone is not a leaving-trucks total. Returning-truck periods use only `Return Date` on both required sources; do not add `Out Date` criteria unless the user explicitly asks for assignment overlap.
 - For a current-week “how many trucks are leaving” report, combine distinct trucks from the `DriverPay.Out Date` departure set and the live Ninox `Schedule_Teams` departure set for the same Monday–Sunday window. Deduplicate the union, and report each source's count, overlap, source-only count, and final distinct-truck count. The live Schedule_Teams source is `https://lightningtransport.ninoxdb.com/share/p10ce94o8paa2q4a1z4nw0emznn2ubhriza6?locale=en&utcoffset=-240` and must be downloaded immediately before reporting.
 - Historical owner/dispatch comes from the historical row, not current `trucks`.
 - For return-period dispatcher or owner attribution, filter exact `returns.Dispatcher` / `returns.Owner` with inclusive `return_from` / `return_to`; count distinct numeric `returns.Truck` after complete pagination, not driver rows. These are the stored return-row truck dispatch/owner values, not current `trucks` values. Do not apply settlement `shared_owner` expansion. Preserve the separate two-source returning-trucks reconciliation when asking for total returns; a filtered returns attribution is not automatically an attributed DriverPay/union total.
@@ -52,7 +52,7 @@ The seven reporting-source schemas contain 125 physical columns. The 14 `Outside
 - `returns.CDL` is a sensitive exact driver key: use it to resolve a return only when it matches a verified CDL in related approved data. Never use a name, Supabase `ID`, or `returns.Ninox_ID` as a substitute.
 
 *Evidence: approved business rule confirmed 2026-09-11; `returns.CDL` and `drivers.Date of Hire` physical columns verified on 2026-09-11.*
-- Planned Schedule_Teams and the separate Ninox insurance-choice/in-yard formula are not available from these Supabase tables; the owner-approved DriverPay on-road count below IS available.
+- Schedule_Teams is external planned state; the prepared `out_schedule`/`departures` gateway path remains **not integrated** in installed clients until deployed and verified. The separate Ninox insurance-choice/in-yard formula is not available from these Supabase tables; the owner-approved DriverPay on-road count below IS available.
 
 ## HTML reports
 
@@ -87,3 +87,9 @@ On every user correction, send a sanitized `reporting_agent_correction` event us
 Installed agents must maintain one `data-reporting-kit-sync` job at 10:00 AM and 2:00 PM local time. A failed sync must be disclosed before relying on stale instructions.
 
 Verified answer-affecting knowledge must update the relevant docs, runtime metadata, OpenAPI, tests, packaged skill, and `CHANGELOG.md` in the same work cycle. Verify the live schema/function, push, and confirm the remote commit before declaring completion.
+
+## Governed departure totals (prepared schema 3.8.0)
+
+Departure totals use the same inclusive `Out Date` window on **both** DriverPay and live Ninox Schedule_Teams. Normalize only truck-key format, union distinct nonblank trucks, and report source, overlap, source-only, and combined counts. Never add source counts, count assignment/driver rows, apply return exclusions, or use the returning-trucks formula. Use `departures` only after the deployed authenticated catalog confirms it; `out_schedule` is the planned list, not a combined total. See [departure contract](docs/departures.md).
+
+Preserve `reconciliation`, `truck_sets`, `period`, `status`, and `complete`; source failure means `complete=false`, `status=incomplete`, and `combined_distinct_total=null`. Both optional date bounds must be supplied together (maximum 31 inclusive days); omitting both defaults to Monday–Sunday in America/New_York. Repository preparation does not remove the installed-client **not integrated** limitation.

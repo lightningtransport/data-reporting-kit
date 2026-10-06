@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Lightning Reporting APIs
-  version: 3.7.0
+  version: 3.8.0
   license:
     name: Proprietary
     identifier: LicenseRef-Proprietary
@@ -31,6 +31,10 @@ paths:
         truckless rows remain in overall totals, not truck/owner breakdowns.
         Outside repairs require truck, trailer, date_from, or ninox_id as an
         anchor; date_from/date_to filter inclusive service Date, not created_at.
+        Departure totals require departures (DriverPay plus live Schedule_Teams)
+        with the same Out Date window, deduplicated truck sets, never raw source
+        addition or assignment-row counts. out_schedule is the planned list only.
+        Source failure retains incomplete status and a null combined distinct total.
         The schema here specifies intended behavior; use authenticated catalog
         and metadata to confirm availability in the deployed function.
       security:
@@ -40,7 +44,7 @@ paths:
           in: query
           schema:
             type: string
-            enum: [catalog, settlement_summary, settlements, driver_pay, drivers, returns, trucks, fuel, outside_repairs]
+            enum: [catalog, settlement_summary, settlements, driver_pay, drivers, returns, trucks, fuel, outside_repairs, out_schedule, departures]
           description: Required for the strict contract. Use catalog for discovery.
         - name: metadata
           in: query
@@ -112,9 +116,11 @@ paths:
         - name: out_from
           in: query
           schema: {$ref: '#/components/schemas/IsoDate'}
+          description: Inclusive Out Date lower bound. For out_schedule/departures optional but paired with out_to; maximum 31 inclusive days. Omit both for current Monday–Sunday in America/New_York.
         - name: out_to
           in: query
           schema: {$ref: '#/components/schemas/IsoDate'}
+          description: Inclusive Out Date upper bound; paired with out_from for out_schedule/departures. Return-date filters and return exclusions/formula do not apply to these reports.
         - name: return_from
           in: query
           schema: {$ref: '#/components/schemas/IsoDate'}
@@ -233,6 +239,7 @@ paths:
             application/json:
               schema:
                 oneOf:
+                  - {$ref: '#/components/schemas/DepartureDataResponse'}
                   - {$ref: '#/components/schemas/AgentDataResponse'}
                   - {$ref: '#/components/schemas/LegacyResponse'}
                   - {$ref: '#/components/schemas/CatalogResponse'}
@@ -247,6 +254,11 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/Error'}
         '500': {description: "Sanitized audit, exact-count, or upstream reporting failure."}
+        '503':
+          description: "Structured incomplete out_schedule/departures evidence; never a complete or zero combined total."
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/DepartureDataResponse'}
   /reporting-query:
     post:
       operationId: runMemberReportingQuery
@@ -312,12 +324,137 @@ components:
         owner: {type: [string, 'null'], description: "Stored repair owner; no shared_owner expansion."}
         Ninox_ID: {type: [number, 'null']}
         Exceptions: {type: [string, 'null']}
+    DeparturePeriod:
+      type: object
+      additionalProperties: false
+      required: [out_from, out_to, time_zone]
+      properties:
+        out_from: {$ref: '#/components/schemas/IsoDate'}
+        out_to: {$ref: '#/components/schemas/IsoDate'}
+        time_zone: {type: string, const: America/New_York}
+    DepartureReconciliation:
+      type: object
+      additionalProperties: false
+      required: [driver_pay_count, schedule_teams_count, driver_pay_only_count, schedule_teams_only_count, overlap_count, combined_distinct_total]
+      properties:
+        driver_pay_count: {type: [integer, 'null'], minimum: 0}
+        schedule_teams_count: {type: [integer, 'null'], minimum: 0}
+        driver_pay_only_count: {type: [integer, 'null'], minimum: 0}
+        schedule_teams_only_count: {type: [integer, 'null'], minimum: 0}
+        overlap_count: {type: [integer, 'null'], minimum: 0}
+        combined_distinct_total: {type: [integer, 'null'], minimum: 0, description: "Distinct normalized truck union; null on either source failure, never source-count addition or assignment-row count."}
+    DepartureTruckSets:
+      type: object
+      additionalProperties: false
+      required: [driver_pay, schedule_teams, driver_pay_only, schedule_teams_only, overlap, combined]
+      properties:
+        driver_pay: {$ref: '#/components/schemas/NullableTruckSet'}
+        schedule_teams: {$ref: '#/components/schemas/NullableTruckSet'}
+        driver_pay_only: {$ref: '#/components/schemas/NullableTruckSet'}
+        schedule_teams_only: {$ref: '#/components/schemas/NullableTruckSet'}
+        overlap: {$ref: '#/components/schemas/NullableTruckSet'}
+        combined: {$ref: '#/components/schemas/NullableTruckSet'}
+    NullableTruckSet:
+      type: [array, 'null']
+      uniqueItems: true
+      items: {type: string, minLength: 1}
+    ScheduleRecord:
+      type: object
+      additionalProperties: false
+      description: "Allowlisted planned row; missing fields are omitted. Published team/driver labels require sensitive opt-in; internal driver IDs are never exposed. Duplicates can exist; rows are not truck totals."
+      properties:
+        Truck: {type: [number, string, 'null']}
+        'Out Date': {type: [string, 'null'], format: date}
+        Owner: {type: [string, 'null']}
+        Dispatch: {type: [string, 'null']}
+        Flatbed: {type: [string, boolean, 'null']}
+        solo: {type: [number, string, boolean, 'null']}
+        Team: {type: [string, 'null']}
+        'Driver 1': {type: [string, 'null']}
+        'Driver 2': {type: [string, 'null']}
+    DepartureDataResponse:
+      type: object
+      required: [schema_version, report, source, filters, offset, limit, count, page_count, total_count, has_more, next_offset, as_of, data, request_id, period, status, complete]
+      properties:
+        schema_version: {type: string, const: 3.8.0}
+        report: {type: string, enum: [out_schedule, departures]}
+        source: {type: string}
+        filters: {type: object, additionalProperties: {type: string}}
+        offset: {type: integer, minimum: 0}
+        limit: {type: integer, minimum: 1, maximum: 1000}
+        count: {type: integer, minimum: 0, description: "Alias for page_count; not the departure total."}
+        page_count: {type: integer, minimum: 0}
+        total_count: {type: [integer, 'null'], minimum: 0, description: "Envelope data rows, not distinct departing trucks; null for failed out_schedule fetch."}
+        has_more: {type: boolean}
+        next_offset: {type: [integer, 'null']}
+        as_of: {type: string, format: date-time}
+        request_id: {type: string, format: uuid}
+        period: {$ref: '#/components/schemas/DeparturePeriod'}
+        status: {type: string, enum: [complete, incomplete]}
+        complete: {type: boolean, description: "Whole-source calculation completeness, independent of pagination."}
+        reconciliation: {$ref: '#/components/schemas/DepartureReconciliation'}
+        truck_sets: {$ref: '#/components/schemas/DepartureTruckSets'}
+        source_status: {type: object, additionalProperties: true}
+        data: {type: array, items: {type: object}}
+      allOf:
+        - if:
+            properties: {report: {const: departures}}
+          then:
+            required: [reconciliation, truck_sets, source_status]
+            properties:
+              total_count: {type: integer, const: 1}
+              count: {type: integer, minimum: 0, maximum: 1}
+              page_count: {type: integer, minimum: 0, maximum: 1}
+              data: {type: array, maxItems: 1}
+        - if:
+            properties: {report: {const: out_schedule}}
+          then:
+            properties:
+              data: {type: array, items: {$ref: '#/components/schemas/ScheduleRecord'}}
+        - if:
+            properties: {complete: {const: false}}
+          then:
+            properties:
+              status: {const: incomplete}
+              reconciliation:
+                properties:
+                  combined_distinct_total: {type: 'null'}
+                  overlap_count: {type: 'null'}
+                  driver_pay_only_count: {type: 'null'}
+                  schedule_teams_only_count: {type: 'null'}
+              truck_sets:
+                properties:
+                  combined: {type: 'null'}
+                  overlap: {type: 'null'}
+                  driver_pay_only: {type: 'null'}
+                  schedule_teams_only: {type: 'null'}
+          else:
+            properties:
+              status: {const: complete}
+              reconciliation:
+                properties:
+                  driver_pay_count: {type: integer}
+                  schedule_teams_count: {type: integer}
+                  driver_pay_only_count: {type: integer}
+                  schedule_teams_only_count: {type: integer}
+                  overlap_count: {type: integer}
+                  combined_distinct_total: {type: integer}
+              truck_sets:
+                properties:
+                  driver_pay: {type: array}
+                  schedule_teams: {type: array}
+                  driver_pay_only: {type: array}
+                  schedule_teams_only: {type: array}
+                  overlap: {type: array}
+                  combined: {type: array}
     AgentDataResponse:
       type: object
       required: [schema_version, report, source, filters, offset, limit, count, page_count, total_count, has_more, next_offset, as_of, data, request_id]
       properties:
         schema_version: {type: string}
-        report: {type: string}
+        report:
+          type: string
+          not: {enum: [out_schedule, departures]}
         source: {type: string}
         filters: {type: object, additionalProperties: {type: string}}
         sort: {type: array, items: {type: string}}
@@ -363,7 +500,7 @@ components:
       properties:
         schema_version: {type: string}
         schema_verified_at: {type: string, format: date-time}
-        report: {type: string, enum: [settlement_summary, settlements, driver_pay, drivers, returns, trucks, fuel, outside_repairs]}
+        report: {type: string, enum: [settlement_summary, settlements, driver_pay, drivers, returns, trucks, fuel, outside_repairs, out_schedule, departures]}
         guidance: {type: object, additionalProperties: true}
         source: {type: string}
     Error:

@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.116.0";
 import { GLOBAL_GUIDANCE, REPORTS, SCHEMA_VERSION, SCHEMA_VERIFIED_AT } from "./metadata.ts";
+import { departurePeriod, fetchDriverPay, fetchSchedule, inPeriod, projectSchedule, reconcileDepartures, truckKey, type Row } from "./live_departures.ts";
 import {
   buildAuditFilters,
   isReportAuthorized,
@@ -148,7 +149,7 @@ async function audit(
 }
 
 function catalogResponse(principal: { id: string; allowSensitive: boolean; allowedReports: Set<string> | null }) {
-  const allowed = supportedReports.filter((report) => !principal.allowedReports || principal.allowedReports.has(report));
+  const allowed = supportedReports.filter((report) => isReportAuthorized(principal.allowedReports, report));
   return {
     schema_version: SCHEMA_VERSION,
     schema_verified_at: SCHEMA_VERIFIED_AT,
@@ -178,6 +179,8 @@ function catalogResponse(principal: { id: string; allowSensitive: boolean; allow
       "?report=returns&return_from=2026-09-14&return_to=2026-09-20",
       "?report=fuel&store_from=2026-09-01&store_to=2026-09-07",
       "?report=outside_repairs&date_from=2026-09-01&date_to=2026-09-30&choice=Truck",
+      "?report=departures",
+      "?report=out_schedule&out_from=2026-10-05&out_to=2026-10-11",
       "?report=settlements&metadata=true",
     ],
     guidance: GLOBAL_GUIDANCE,
@@ -290,6 +293,53 @@ Deno.serve(async (req: Request) => {
     if (includeSensitive && !principal.allowSensitive) {
       await audit(requestId, principal, report, filters, true, limit, offset, "denied", null);
       return json({ error: "This agent key is not authorized for sensitive fields", request_id: requestId }, 403);
+    }
+
+    if (report === "out_schedule" || report === "departures") {
+      const period = departurePeriod(params);
+      Object.assign(filters, {out_from: period.out_from, out_to: period.out_to});
+      const schedulePromise = fetchSchedule();
+      const driverPayPromise = report === "departures" ? fetchDriverPay((pageOffset, pageLimit, signal) =>
+        admin.from("DriverPay").select('ID,Truck_Number,"Out Date"', {count: "exact"})
+          .gte("Out Date", period.out_from).lte("Out Date", period.out_to)
+          .order("Out Date", {ascending: true}).order("ID", {ascending: true})
+          .range(pageOffset, pageOffset + pageLimit - 1).abortSignal(signal), period) : Promise.resolve(null);
+      const [scheduleResult, dpResult] = await Promise.allSettled([schedulePromise, driverPayPromise]);
+      // Never expose upstream error details or credentials in the response or audit.
+      const schedule = scheduleResult.status === "fulfilled" ? scheduleResult.value : null;
+      const driverPay = dpResult.status === "fulfilled" ? dpResult.value : null;
+      const sourceStatus = {
+        schedule_teams: {status: schedule === null ? "failed" : "complete", error: schedule === null ? "Live schedule unavailable or invalid" : null},
+        ...(report === "departures" ? {driver_pay: {status: driverPay === null ? "failed" : "complete", error: driverPay === null ? "DriverPay unavailable or incomplete" : null}} : {}),
+      };
+      const aggregate = report === "departures" ? {...reconcileDepartures(driverPay, schedule, period), source_status: sourceStatus} : null;
+      const complete = aggregate ? aggregate.complete : schedule !== null;
+      const allData: Row[] = aggregate ? [aggregate] : projectSchedule(
+        (schedule ?? []).filter(row => inPeriod(row, period)).map((row, position) => ({row, position}))
+          .sort((a,b) => String(a.row["Out Date"]).localeCompare(String(b.row["Out Date"])) ||
+            (truckKey(a.row.Truck) ?? "").localeCompare(truckKey(b.row.Truck) ?? "") || a.position - b.position)
+          .map(item => item.row), includeSensitive);
+      if (complete && offset > 0 && offset >= allData.length) {
+        const audited = await audit(requestId, principal, report, filters, includeSensitive, limit, offset, "invalid", null);
+        return json({error: audited ? "Requested offset is beyond the available result range" : "Unable to record reporting audit", request_id: requestId}, audited ? 416 : 500);
+      }
+      const data = allData.slice(offset, offset + limit);
+      const totalCount = aggregate ? 1 : complete ? allData.length : null;
+      const hasMore = complete && totalCount !== null && offset + data.length < totalCount;
+      const audited = await audit(requestId, principal, report, filters, includeSensitive, limit, offset, complete ? "success" : "invalid", complete ? data.length : null);
+      if (!audited) return json({error: "Unable to record reporting audit", request_id: requestId}, 500);
+      return json({
+        schema_version: SCHEMA_VERSION, report, source: REPORTS[report].source,
+        filters, sort: REPORTS[report].sort, offset, limit,
+        count: data.length, page_count: data.length, total_count: totalCount,
+        has_more: hasMore, next_offset: hasMore ? offset + data.length : null,
+        sensitive_fields_included: includeSensitive,
+        as_of: new Date().toISOString(),
+        source_freshness: "Schedule fetched live per request, volatile planned rows may disappear; DriverPay sync timestamp unknown",
+        caveats: [...GLOBAL_GUIDANCE.answer_evidence, ...REPORTS[report].calculation_rules],
+        status: complete ? "complete" : "incomplete", complete, period, source_status: sourceStatus,
+        ...(aggregate ?? {}), data, request_id: requestId,
+      }, complete ? 200 : 503);
     }
 
     let query: any;

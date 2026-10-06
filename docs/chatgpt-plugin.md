@@ -26,3 +26,9 @@ The `chatgpt-plugin/` package makes this repository usable from standard ChatGPT
 - A multi-page result is not summarized as complete until `has_more` is false.
 
 Follow the current OpenAI [plugin quickstart](https://platform.openai.com/plugins/quickstart), [MCP server guide](https://platform.openai.com/plugins/build/mcp-server), and [authentication guide](https://platform.openai.com/plugins/build/auth) while connecting the deployed endpoint. Keep screenshots, OAuth client secrets, and service credentials outside this repository.
+
+## Departure support and rollout
+
+Departure totals use the same inclusive `Out Date` window on **both** DriverPay and live Ninox Schedule_Teams. Normalize only truck-key format, union distinct nonblank trucks, and report source, overlap, source-only, and combined counts. Never add source counts, count assignment/driver rows, apply return exclusions, or use the returning-trucks formula. Use `departures` only after the deployed authenticated catalog confirms it; `out_schedule` is the planned list, not a combined total. See [departure contract](departures.md).
+
+The prepared MCP client accepts paired `out_from`/`out_to` (at most 31 inclusive days); omitted bounds use the New York Monday–Sunday default. Preserve aggregate `reconciliation`, `truck_sets`, `period`, `status`, and `complete`, including null combined total on source failure. The installed eight-report local MCP and cached helper remain **not integrated** until the documented deployment, sync, allowlist/filter update, reload and installed-client smoke checks are complete.

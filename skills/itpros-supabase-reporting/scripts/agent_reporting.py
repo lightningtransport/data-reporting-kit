@@ -42,6 +42,13 @@ def request(params: dict[str, Any]) -> dict[str, Any]:
             payload = json.load(exc)
         except Exception:
             payload = {"error": f"HTTP {exc.code}"}
+        if (exc.code == 503 and params.get("report") in ("out_schedule", "departures")
+                and payload.get("report") == params["report"]
+                and payload.get("complete") is False and payload.get("status") == "incomplete"
+                and (params["report"] != "departures"
+                     or isinstance(payload.get("reconciliation"), dict)
+                     and payload["reconciliation"].get("combined_distinct_total") is None)):
+            return payload
         raise SystemExit(json.dumps(payload, ensure_ascii=False)) from None
     except urllib.error.URLError as exc:
         raise SystemExit(f"agent-reporting request failed: {exc.reason}") from None
@@ -73,6 +80,45 @@ def collect_query(args: argparse.Namespace) -> dict[str, Any]:
     forbidden = {"report", "metadata", "offset"}.intersection(filters)
     if forbidden:
         raise SystemExit(f"--params must not contain: {', '.join(sorted(forbidden))}")
+    if args.report == "out_schedule":
+        # The volatile share intentionally has no exposed persistent row ID and
+        # permits identical rows. One bounded response is one consistent snapshot;
+        # do not invent IDs or silently merge different request snapshots.
+        payload = request({"report": args.report, "limit": 1000, **filters})
+        if payload.get("report") != args.report:
+            raise SystemExit("agent-reporting returned an unexpected schedule report")
+        if payload.get("complete") is False:
+            if payload.get("status") != "incomplete":
+                raise SystemExit("agent-reporting schedule status contradicts completeness")
+            return payload
+        rows = payload.get("data")
+        if (payload.get("complete") is not True or payload.get("status") != "complete"
+                or not isinstance(rows, list) or payload.get("page_count") != len(rows)
+                or payload.get("count") != len(rows)):
+            raise SystemExit("agent-reporting returned invalid schedule snapshot evidence")
+        if payload.get("has_more") is True:
+            if not args.one_page:
+                raise SystemExit("out_schedule snapshot exceeds one page; no stable row identity for safe cross-snapshot collection")
+        elif (payload.get("has_more") is not False or payload.get("next_offset") is not None
+              or payload.get("total_count") != len(rows)):
+            raise SystemExit("agent-reporting schedule snapshot count does not reconcile")
+        return payload
+    if args.report == "departures":
+        # Aggregate source completeness is independent of pagination. Preserve the
+        # gateway's reconciliation, sets, period and incomplete/null-total evidence.
+        payload = request({"report": args.report, **filters})
+        if payload.get("report") != args.report:
+            raise SystemExit("agent-reporting returned an unexpected aggregate report")
+        if not isinstance(payload.get("complete"), bool):
+            raise SystemExit("agent-reporting aggregate is missing source completeness")
+        if payload.get("status") != ("complete" if payload["complete"] else "incomplete"):
+            raise SystemExit("agent-reporting aggregate status contradicts completeness")
+        reconciliation = payload.get("reconciliation")
+        if not isinstance(reconciliation, dict):
+            raise SystemExit("agent-reporting aggregate is missing reconciliation")
+        if not payload["complete"] and reconciliation.get("combined_distinct_total") is not None:
+            raise SystemExit("agent-reporting incomplete aggregate cannot have a combined total")
+        return payload
     offset = 0
     pages: list[dict[str, Any]] = []
     combined: list[dict[str, Any]] = []
@@ -193,10 +239,10 @@ def main() -> None:
     command = sub.add_parser("catalog")
     command.set_defaults(func=run_catalog)
     command = sub.add_parser("metadata")
-    command.add_argument("--report", required=True, choices=["settlement_summary", "settlements", "driver_pay", "drivers", "returns", "trucks", "fuel", "outside_repairs"])
+    command.add_argument("--report", required=True, choices=["settlement_summary", "settlements", "driver_pay", "drivers", "returns", "trucks", "fuel", "outside_repairs", "out_schedule", "departures"])
     command.set_defaults(func=run_metadata)
     command = sub.add_parser("query")
-    command.add_argument("--report", required=True, choices=["settlement_summary", "settlements", "driver_pay", "drivers", "returns", "trucks", "fuel", "outside_repairs"])
+    command.add_argument("--report", required=True, choices=["settlement_summary", "settlements", "driver_pay", "drivers", "returns", "trucks", "fuel", "outside_repairs", "out_schedule", "departures"])
     command.add_argument("--params", default="{}")
     command.add_argument("--one-page", action="store_true")
     command.add_argument("--max-pages", type=int, default=100)

@@ -77,7 +77,12 @@ export function currentMonday(todayIso?: string): string {
   const today =
     todayIso && /^\d{4}-\d{2}-\d{2}$/.test(todayIso)
       ? todayIso
-      : new Date().toISOString().slice(0, 10)
+      : new Intl.DateTimeFormat("en-CA", {
+          timeZone: "America/New_York",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        }).format(new Date())
   return mondayOfWeek(today)
 }
 

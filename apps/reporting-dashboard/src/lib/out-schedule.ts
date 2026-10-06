@@ -1,4 +1,5 @@
 import { weekdayFromIso } from "@/lib/ops-table"
+import { fetchBoundedJson } from "@/lib/bounded-json"
 
 export const SCHEDULE_TEAMS_URL =
   "https://lightningtransport.ninoxdb.com/share/p10ce94o8paa2q4a1z4nw0emznn2ubhriza6?locale=en&utcoffset=-240"
@@ -143,14 +144,9 @@ export function emptyOutSchedulePayload(error?: string): OutSchedulePayload {
 
 export async function getOutSchedule(): Promise<OutSchedulePayload> {
   try {
-    const response = await fetch(SCHEDULE_TEAMS_URL, {
+    const payload = await fetchBoundedJson(SCHEDULE_TEAMS_URL, {
       headers: { Accept: "application/json" },
-      cache: "no-store",
     })
-    if (!response.ok) {
-      return emptyOutSchedulePayload(`Schedule_Teams HTTP ${response.status}`)
-    }
-    const payload = (await response.json()) as unknown
     if (!Array.isArray(payload) && flattenRows(payload).length === 0) {
       return emptyOutSchedulePayload("Schedule_Teams response was not a usable JSON array")
     }

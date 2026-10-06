@@ -5,7 +5,7 @@ Next.js App Router + shadcn/ui app for Grok Bot and Cursor agents. Views:
 | Path | View | Data |
 |---|---|---|
 | `/` | Settlements | `settlements` + `fuel` (≥12 months) |
-| `/out-schedule` | Out Schedule | live Ninox Schedule_Teams share |
+| `/out-schedule` | Out Schedule | `departures` union KPI + live Ninox Schedule_Teams-only planned table |
 | `/trucks-return` | Trucks Return | `returns` (no Phone/CDL) |
 | `/diesel` | Diesel | live `fuel` (focus month first; 12-month trend cached ~3 min) |
 
@@ -19,7 +19,13 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Requires server-only `AGENT_REPORTING_KEY` for Settlements, Trucks Return, and Diesel (live `agent-reporting` only; **no embedded snapshot**). Out Schedule always uses the public Schedule_Teams share live. Without the key, those three views show an explicit configuration error.
+Open [http://localhost:3000](http://localhost:3000). Requires server-only `AGENT_REPORTING_KEY` for governed reports (live `agent-reporting` only; **no embedded snapshot**). The Out Schedule key must be authorized for `departures`, `driver_pay`, and `out_schedule` in addition to its existing reports. Without a key or either departure source, union KPIs show **Unavailable**, never a schedule-only total.
+
+Out Schedule uses the same inclusive Monday–Sunday `Out Date` period in America/New_York for both sources. Selected and following weeks are distinct DriverPay + live Schedule_Teams truck unions with source counts, overlap, source-only counts and complete truck sets in Technical details. No return exclusions or team/solo formulas apply. Initial reports load server-side; calendar navigation uses the same-origin `/api/reporting/departures?out_from=YYYY-MM-DD&out_to=YYYY-MM-DD` route. That route validates an inclusive range of up to 31 days, rejects unknown/duplicate parameters, sends the key only in a server-side header, and never caches live results.
+
+The planned table, search/owner/dispatch filters, export and day strip remain **Schedule_Teams-only**. They do not filter the combined KPIs. The exact public share URL retains `?locale=en&utcoffset=-240`; share and gateway fetches reject redirects, omit ambient credentials, cap streamed JSON at 5 MiB, and have a 20-second deadline. Planned rows can disappear; DriverPay sync freshness is unknown.
+
+Verification: `npm test`, `npm run lint`, `npm run build`.
 
 ## Vercel deploy
 

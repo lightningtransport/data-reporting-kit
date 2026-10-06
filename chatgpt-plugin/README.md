@@ -32,3 +32,9 @@ Set `AGENT_REPORTING_KEY` through your shell or deployment-secret manager before
 5. Verify `search`/`fetch` citations, a catalog call, metadata retrieval, an authorized report, invalid-filter rejection, sensitive-data restriction, and audit records before workspace publication.
 
 The precise ChatGPT publishing UI is administered by OpenAI and may change; follow the current [OpenAI plugin quickstart](https://platform.openai.com/plugins/quickstart) and [MCP guide](https://platform.openai.com/docs/mcp) when connecting the deployed endpoint.
+
+## Departure support and rollout
+
+Departure totals use the same inclusive `Out Date` window on **both** DriverPay and live Ninox Schedule_Teams. Normalize only truck-key format, union distinct nonblank trucks, and report source, overlap, source-only, and combined counts. Never add source counts, count assignment/driver rows, apply return exclusions, or use the returning-trucks formula. Use `departures` only after the deployed authenticated catalog confirms it; `out_schedule` is the planned list, not a combined total. See [departure contract](../docs/departures.md).
+
+The prepared MCP client accepts paired `out_from`/`out_to` (at most 31 inclusive days); omitted bounds use the New York Monday–Sunday default. Preserve aggregate `reconciliation`, `truck_sets`, `period`, `status`, and `complete`, including null combined total on source failure. The installed eight-report local MCP and cached helper remain **not integrated** until the documented deployment, sync, allowlist/filter update, reload and installed-client smoke checks are complete.

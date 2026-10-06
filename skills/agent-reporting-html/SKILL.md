@@ -75,3 +75,9 @@ For Out Schedule / Trucks Return / Diesel UI questions, link the deep URLs above
 - Don't ship a one-off date slice without the 3-month backdrop for HTML or analytical settlement/fleet history.
 - Don't invent metrics or recompute stored Gross / Total Expenses / Net for headlines.
 - The DriverPay on-road metric IS available via `on_road_at` (distinct trucks, Out Date <= date < Return Date). The separate Ninox insurance-choice/in-yard metric remains unavailable; planned Schedule_Teams UI is `/out-schedule`.
+
+## Governed departure totals (prepared schema 3.8.0)
+
+Departure totals use the same inclusive `Out Date` window on **both** DriverPay and live Ninox Schedule_Teams. Normalize only truck-key format, union distinct nonblank trucks, and report source, overlap, source-only, and combined counts. Never add source counts, count assignment/driver rows, apply return exclusions, or use the returning-trucks formula. Use `departures` only after the deployed authenticated catalog confirms it; `out_schedule` is the planned list, not a combined total. See [departure contract](../../docs/departures.md).
+
+Preserve `reconciliation`, `truck_sets`, `period`, `status`, and `complete`; source failure means `complete=false`, `status=incomplete`, and `combined_distinct_total=null`. Both optional date bounds must be supplied together (maximum 31 inclusive days); omitting both defaults to Monday–Sunday in America/New_York. Repository preparation does not remove the installed-client **not integrated** limitation.

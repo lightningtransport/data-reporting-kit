@@ -45,14 +45,14 @@ The settlement-only Truck 1/2/3 owner-expense allocation rule does not apply to 
 
 **On-road metric (business owner, 2026-09-28; live `date`/`text` columns verified 2026-09-28):** On date D, count distinct nonblank `Truck_Number` with `Out Date <= D` and `Return Date > D`. Query `driver_pay?on_road_at=D`, paginate fully; use America/New_York today for “now”. Null returns and the return date are excluded. Do not apply an 18-month lookback, returning-truck union, or `return_null` shortcut. This does not redefine the separate Ninox insurance-choice/in-yard metric.
 
-Use `Out Date` alone for departures. For every returning-trucks question/report, apply the requested inclusive `Return Date` range to both DriverPay and `returns`. Exclude DriverPay rows where `Termination = Driver Changed` or `Transfer = Transfer To Other Truck`; let `tc` be remaining non-solo rows and `ts` remaining solo rows, with DriverPay formula count `floor(tc / 2 + ts)`. Build the DriverPay merge set from distinct `Truck_Number` values in those qualifying rows, union it with distinct `returns.Truck`, and deduplicate. For assignment overlap with a settlement week: `Out Date <= settlements.To` and (`Return Date` is null or `Return Date >= settlements.From`), then inspect transfers/terminations inside that period.
+Use the same inclusive `Out Date` frame on both DriverPay and Schedule_Teams for departure totals. For every returning-trucks question/report, apply the requested inclusive `Return Date` range to both DriverPay and `returns`. Exclude DriverPay rows where `Termination = Driver Changed` or `Transfer = Transfer To Other Truck`; let `tc` be remaining non-solo rows and `ts` remaining solo rows, with DriverPay formula count `floor(tc / 2 + ts)`. Build the DriverPay merge set from distinct `Truck_Number` values in those qualifying rows, union it with distinct `returns.Truck`, and deduplicate. For assignment overlap with a settlement week: `Out Date <= settlements.To` and (`Return Date` is null or `Return Date >= settlements.From`), then inspect transfers/terminations inside that period.
 
 For a current-week departure total, DriverPay is one required source, not a complete substitute for Schedule_Teams: union its distinct `Truck_Number` departures with distinct live Schedule_Teams `Truck` records for the same Monday–Sunday `Out Date` window. Deduplicate by truck number and preserve a reconciliation of both-source, DriverPay-only, and Schedule_Teams-only trucks.
 
 | Column | Type | Null? | Meaning / safe use |
 |---|---|---:|---|
 | `Truck_Number` | text | yes | Actual truck number from Ninox `WD.IA / TruckNumber_`. |
-| `Out Date` | date | yes | Actual work departure date; use alone for departure questions. Ninox `WD.O`. |
+| `Out Date` | date | yes | Actual work departure date; DriverPay is one of two required sources for departure totals. Ninox `WD.O`. |
 | `Return Date` | date | yes | Historical return/rest/yard date; use alone for return questions. Ninox `WD.R`. |
 | `Transfer` | text | yes | Transfer direction: To Other Truck or From Other Truck. Ninox `WD.I9`. |
 | `DriversDB_ID` | text | yes | DriversDB ID; join to `drivers.Ninox_ID::text`. |
@@ -207,3 +207,9 @@ Use `Unit` as the numeric historic truck identifier. For a current-truck lookup,
 | `Exceptions` | text | yes | Stored special-circumstance text when no Truck is present; not every truckless record has one. Business vocabulary is not established; exact `exceptions` filter. |
 
 For all-repairs totals, include truckless rows. For truck or truck-owner breakdowns, exclude truckless rows, and never attach `Choice=Trailer` cost to an accompanying truck. Category totals may overlap, so do not add them to derive overall repair cost. The `type_of_work` API filter takes one complete category at most 100 characters, without a comma; matching is case-insensitive after trimming surrounding category spaces. API anchors: `truck`, `trailer`, `date_from`, or `ninox_id`; other supported filters are `date_to`, `company`, `choice`, `type_of_work`, `ahs`, `owner`, and `exceptions`. Never substitute `settlements.LTR Invoices` for this report.
+
+## Governed departure totals (prepared schema 3.8.0)
+
+Departure totals use the same inclusive `Out Date` window on **both** DriverPay and live Ninox Schedule_Teams. Normalize only truck-key format, union distinct nonblank trucks, and report source, overlap, source-only, and combined counts. Never add source counts, count assignment/driver rows, apply return exclusions, or use the returning-trucks formula. Use `departures` only after the deployed authenticated catalog confirms it; `out_schedule` is the planned list, not a combined total. See [departure contract](departures.md).
+
+Preserve `reconciliation`, `truck_sets`, `period`, `status`, and `complete`; source failure means `complete=false`, `status=incomplete`, and `combined_distinct_total=null`. Both optional date bounds must be supplied together (maximum 31 inclusive days); omitting both defaults to Monday–Sunday in America/New_York. Repository preparation does not remove the installed-client **not integrated** limitation.

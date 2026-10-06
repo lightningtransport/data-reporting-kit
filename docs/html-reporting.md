@@ -51,7 +51,7 @@ Not established (do not display or approximate): Ninox “Full Week” / “No F
 
 ### Out Schedule (`/out-schedule`)
 
-1. Distinct-truck KPIs: **On road today** (distinct DriverPay Truck_Number: Out Date <= today and Return Date > today), plus leaving this week / next week from Schedule_Teams. Week nav is calendar Mon ±7 days (empty weeks allowed).
+1. Distinct-truck KPIs: **On road today** (distinct DriverPay Truck_Number: Out Date <= today and Return Date > today), plus leaving this week / next week from the same-window DriverPay + Schedule_Teams distinct union (use `departures` after deployed verification). Week nav is calendar Mon ±7 days (empty weeks allowed).
 2. Mon–Sun day strip with distinct-truck counts per weekday so incomplete live weeks are visible (Schedule_Teams drops past planned days).
 3. Table collapsed to one row per truck per Out Date: Truck, Out Date, Day (derived), Driver 1, Driver 2, Owner, Dispatch, Flatbed, Solo. Sticky column headers in the scroll area.
 4. Light filters (truck/driver search, owner, dispatch), Export CSV of collapsed rows, truck count, **Technical details**.
@@ -95,3 +95,9 @@ Not established (do not display or approximate): Ninox “Full Week” / “No F
 ## Local output convention
 
 Operational HTML candidates still belong in an agent's working workspace when a static file is explicitly requested. The reporting dashboard itself is `apps/reporting-dashboard` and is deployed from this kit. This public kit still must not store secrets.
+
+## Governed departure totals (prepared schema 3.8.0)
+
+Departure totals use the same inclusive `Out Date` window on **both** DriverPay and live Ninox Schedule_Teams. Normalize only truck-key format, union distinct nonblank trucks, and report source, overlap, source-only, and combined counts. Never add source counts, count assignment/driver rows, apply return exclusions, or use the returning-trucks formula. Use `departures` only after the deployed authenticated catalog confirms it; `out_schedule` is the planned list, not a combined total. See [departure contract](departures.md).
+
+Preserve `reconciliation`, `truck_sets`, `period`, `status`, and `complete`; source failure means `complete=false`, `status=incomplete`, and `combined_distinct_total=null`. Both optional date bounds must be supplied together (maximum 31 inclusive days); omitting both defaults to Monday–Sunday in America/New_York. Repository preparation does not remove the installed-client **not integrated** limitation.

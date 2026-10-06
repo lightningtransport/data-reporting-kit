@@ -23,6 +23,7 @@ DOCUMENT_PATHS = (
     "docs/metric-definitions.md",
     "docs/data-dictionary.md",
     "docs/agent-reporting.md",
+    "docs/departures.md",
     "api/openapi.yaml",
 )
 
@@ -47,7 +48,15 @@ def create_server() -> FastMCP:
             "discovering reports, metadata before unfamiliar reports, and run_report only for "
             "approved read-only reporting requests. Never request sensitive fields unless the "
             "user explicitly needs them. Cite fetched documentation and state report filters, "
-            "period, row count, freshness, pagination, and material caveats."
+            "period, row count, freshness, pagination, and material caveats. "
+            "For leaving/departure totals use departures: the same Out Date window on "
+            "DriverPay and live Schedule_Teams, distinct truck union, never source-count "
+            "addition or assignment-row counts. out_schedule is the planned list only. "
+            "Preserve reconciliation, truck_sets, period, status and complete; an "
+            "incomplete source has no combined total. Do not apply return exclusions "
+            "or the returning-trucks formula to departures. Confirm both reports in "
+            "the authenticated catalog before use; repository support is not proof "
+            "that an installed MCP client or deployed gateway is integrated."
         ),
     )
 

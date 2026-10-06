@@ -58,7 +58,7 @@ Use transaction-level `fuel`, never settlements, for diesel gallons, fuel purcha
 ## Fleet, returns, and status
 
 - Fleet count uses distinct current `trucks.truck_number`; never apply settlement-bucket rules.
-- Departures use `DriverPay.Out Date` only, with the requested inclusive range.
+- Departure totals use `departures`: the same inclusive `Out Date` range on fully retrieved DriverPay and live Schedule_Teams, unioned by distinct nonblank truck number. No return exclusions or formulas apply. `out_schedule` alone is planned-source evidence, not a complete combined total. Preserve incomplete/null-total evidence. Installed client-chat remains **not integrated** until its replacement tool and model instructions are deployed and verified; see [departures](departures.md).
 - Every returning-trucks question requires both `driver_pay` and `returns` using the same inclusive Return Date bounds. Exclude DriverPay `Termination = Driver Changed` and `Transfer = Transfer To Other Truck`.
 - Let `tc` be qualifying non-solo DriverPay rows and `ts` qualifying solo rows. Check `floor(tc / 2 + ts)` against distinct qualifying DriverPay trucks. Union those trucks with distinct `returns.Truck`; report source counts, `tc`, `ts`, formula result, overlap, source-only counts, final union, and any reconciliation mismatch.
 - Use CDL only when verified as the driver key. Normalize documented truck-key variants only; never substitute names, Supabase IDs, or `returns.Ninox_ID`.

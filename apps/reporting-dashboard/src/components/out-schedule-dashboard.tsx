@@ -1,10 +1,12 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { ChevronLeftIcon, ChevronRightIcon, DownloadIcon } from "lucide-react"
 
 import { DashboardShell, TechnicalDetails } from "@/components/dashboard-shell"
 import { KpiValue } from "@/components/kpi-value"
+import { DepartureKpis } from "@/components/departure-kpis"
+import { loadDepartureWeeks, type DepartureWeeks } from "@/lib/departures-client"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -39,8 +41,6 @@ import type { TrucksCurrentlyOutPayload } from "@/lib/trucks-currently-out"
 import {
   addDaysIso,
   collapseTruckRows,
-  currentMonday,
-  distinctTrucksInWeek,
   formatOpsDate,
   shiftCalendarMonday,
   weekRangeLabel,
@@ -97,9 +97,13 @@ function toCsv(rows: CollapsedTruckRow[]): string {
 export function OutScheduleDashboard({
   data,
   currentlyOut,
+  initialMonday,
+  initialDepartureWeeks,
 }: {
   data: OutSchedulePayload
   currentlyOut: TrucksCurrentlyOutPayload
+  initialMonday: string
+  initialDepartureWeeks: DepartureWeeks
 }) {
   const owners = useMemo(
     () =>
@@ -116,7 +120,22 @@ export function OutScheduleDashboard({
     [data.rows]
   )
 
-  const [focusMonday, setFocusMonday] = useState(() => currentMonday())
+  const [focusMonday, setFocusMonday] = useState(initialMonday)
+  const [departureWeeks, setDepartureWeeks] = useState({ monday: initialMonday, reports: initialDepartureWeeks })
+  const firstDepartureEffect = useRef(true)
+  useEffect(() => {
+    if (firstDepartureEffect.current) {
+      firstDepartureEffect.current = false
+      return
+    }
+    const controller = new AbortController()
+    void loadDepartureWeeks(focusMonday, controller.signal).then((reports) => {
+      if (!controller.signal.aborted) setDepartureWeeks({ monday: focusMonday, reports })
+    })
+    return () => controller.abort()
+  }, [focusMonday])
+  // A newly selected week must never display the previous week's total during fetch.
+  const focusedDepartures = departureWeeks.monday === focusMonday ? departureWeeks.reports : null
   const [truckQuery, setTruckQuery] = useState("")
   const [owner, setOwner] = useState("all")
   const [dispatch, setDispatch] = useState("all")
@@ -172,27 +191,11 @@ export function OutScheduleDashboard({
   )
 
   const nextMonday = addDaysIso(focusMonday, 7)
-  const leavingThisWeek = useMemo(
-    () => distinctTrucksInWeek(collapsedAll, focusMonday),
-    [collapsedAll, focusMonday]
-  )
-  const leavingNextWeek = useMemo(
-    () => distinctTrucksInWeek(collapsedAll, nextMonday),
-    [collapsedAll, nextMonday]
-  )
 
-  const tableRows = useMemo(
-    () =>
-      collapsedAll.filter(
-        (row) => row.eventDate && row.eventDate >= focusMonday && row.eventDate <= addDaysIso(focusMonday, 6)
-      ),
-    [collapsedAll, focusMonday]
+  const tableRows = collapsedAll.filter(
+    (row) => row.eventDate && row.eventDate >= focusMonday && row.eventDate <= addDaysIso(focusMonday, 6)
   )
-
-  const dayStrip = useMemo(
-    () => weekdayTruckStrip(collapsedAll, focusMonday),
-    [collapsedAll, focusMonday]
-  )
+  const dayStrip = weekdayTruckStrip(collapsedAll, focusMonday)
   const daysWithData = dayStrip.filter((day) => day.count > 0).length
 
   const extraDrivers = tableRows.some((row) => row.extraDrivers)
@@ -212,7 +215,7 @@ export function OutScheduleDashboard({
   return (
     <DashboardShell
       title="Out Schedule"
-      subtitle={`${tableRows.length} trucks · ${thisLabel}`}
+      subtitle={`${tableRows.length} Schedule_Teams-only table rows · ${thisLabel}`}
       live={Boolean(data.meta.live)}
       actions={
         <Button variant="outline" size="sm" onClick={exportCsv} disabled={tableRows.length === 0}>
@@ -225,14 +228,15 @@ export function OutScheduleDashboard({
         <Alert variant="destructive">
           <AlertTitle>Couldn&apos;t load Out Schedule</AlertTitle>
           <AlertDescription>
-            The live Schedule_Teams share did not respond. DriverPay is not used
-            as a fallback. {data.meta.error}
+            The live Schedule_Teams table did not respond. The table has no DriverPay
+            fallback; combined departure KPI availability is shown separately.
           </AlertDescription>
         </Alert>
       ) : null}
 
       <Card size="sm">
         <CardContent className="pt-(--card-spacing)">
+          <p className="text-muted-foreground mb-3 text-xs">Schedule_Teams-only filters: search, owner and dispatch do not filter the combined departure KPIs.</p>
           <FieldGroup className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
             <Field>
               <FieldLabel>Week</FieldLabel>
@@ -328,18 +332,10 @@ export function OutScheduleDashboard({
               : "DriverPay · active date interval"
           }
         />
-        <KpiCard
-          label="Leaving this week"
-          value={String(leavingThisWeek)}
-          hint={thisLabel}
-        />
-        <KpiCard
-          label="Leaving next week"
-          value={String(leavingNextWeek)}
-          hint={nextLabel}
-        />
+        <DepartureKpis thisWeek={focusedDepartures?.thisWeek ?? null} nextWeek={focusedDepartures?.nextWeek ?? null} />
       </div>
 
+      <p className="text-muted-foreground text-xs">Schedule_Teams-only day strip · filtered live planned trucks, not combined departures</p>
       <div className="grid grid-cols-7 gap-1.5">
         {dayStrip.map((day) => (
           <div
@@ -362,7 +358,7 @@ export function OutScheduleDashboard({
 
       <Card>
         <CardHeader>
-          <CardTitle>Planned departures</CardTitle>
+          <CardTitle>Schedule_Teams-only planned departures</CardTitle>
           <CardDescription>
             One row per truck per Out Date · week {thisLabel}
           </CardDescription>
@@ -431,8 +427,17 @@ export function OutScheduleDashboard({
       </Card>
 
       <footer className="text-muted-foreground flex flex-col gap-2 text-sm">
-        <p>Planned departures (Schedule_Teams). Not DriverPay history.</p>
+        <p>Table and day strip: live Schedule_Teams only. Departure KPIs: distinct DriverPay + live Schedule_Teams union by Out Date.</p>
         <TechnicalDetails>
+            {[focusedDepartures?.thisWeek, focusedDepartures?.nextWeek].map((report, index) => (
+              <div key={index} className="space-y-1">
+                <p>Departure union {index === 0 ? "selected" : "following"} week: {report ? `${report.period.out_from}–${report.period.out_to} · status=${report.status} · complete=${String(report.complete)} · as_of=${report.as_of ?? "unknown"} · freshness=${report.source_freshness ?? "DriverPay sync unknown; live Schedule_Teams fetched per request"}` : "loading"}.</p>
+                {report ? <>
+                  <p>Sources: {JSON.stringify(report.source_status ?? "unknown")} · Reconciliation: {JSON.stringify(report.reconciliation)}</p>
+                  <p className="break-words">Truck sets: {JSON.stringify(report.truck_sets)}</p>
+                </> : null}
+              </div>
+            ))}
             <p>
               Dataset: <strong>{data.meta.dataset}</strong> · total_count=
               <strong>{data.meta.total_count}</strong> · fetched=
@@ -443,12 +448,10 @@ export function OutScheduleDashboard({
             <p>
               Focus week Mon–Sun <strong>{focusMonday}</strong>–
               <strong>{addDaysIso(focusMonday, 6)}</strong> ({thisLabel}) · days with data=
-              <strong>{daysWithData}</strong>/7 · leaving this week=
-              <strong>{leavingThisWeek}</strong> · leaving next week=
-              <strong>{leavingNextWeek}</strong> ({nextLabel}).
+              <strong>{daysWithData}</strong>/7 in the Schedule_Teams-only day strip. Following week: {nextLabel}. Timezone: America/New_York.
             </p>
             <p>
-              UI filters: search=&quot;{truckQuery}&quot;, owner=
+              Schedule_Teams-only UI filters: search=&quot;{truckQuery}&quot;, owner=
               <strong>{owner}</strong>, dispatch=<strong>{dispatch}</strong> · table=
               <strong>{tableRows.length}</strong> trucks · source rows=
               <strong>{filteredSource.length}</strong>.
@@ -472,12 +475,15 @@ export function OutScheduleDashboard({
               Distinct Truck_Number, not driver rows. Timezone: America/New_York.
             </p>
             <p>
-              Caveats: KPIs and table use distinct trucks after collapsing driver-grain
-              rows on (Truck, Out Date) into Driver 1 / Driver 2. Week nav is calendar
+              Caveats: the table collapses Schedule_Teams driver-grain rows on
+              (Truck, Out Date) into Driver 1 / Driver 2. Week nav is calendar
               Mon–Sun (±7 days). Schedule_Teams is a live planned list — days or weeks with
               no rows are not retained in this screen. Insurance / Team Status / Truck
-              Status / Notes are not on this share. Do not substitute DriverPay. as_of is
-              request time.
+              Status / Notes are not on this share. DriverPay is not a table fallback.
+              Departure KPIs require both sources for the same inclusive Out Date window,
+              deduplicate truck keys, and apply no return exclusions or team/solo formulas.
+              A missing source leaves the combined total unavailable, never zero or schedule-only.
+              Share as_of is request time; DriverPay sync freshness is unknown.
               {extraDrivers
                 ? " One or more trucks had more than two driver names; extras are appended in Driver 2."
                 : ""}

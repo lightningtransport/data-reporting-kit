@@ -1,5 +1,12 @@
 # Changelog
 
+## Prepared schema 3.8.0 — not deployed or client-verified
+
+- Add `out_schedule` and `departures` specification/client support for optional paired Out Date bounds (at most 31 inclusive days), default New York Monday–Sunday.
+- Resolve the DriverPay-only departure contradiction: use the two-source distinct truck union, never source-count addition, assignment-row counts, return exclusions or return formula.
+- Document reconciliation counts/sets, period and source completeness; source failure has no combined distinct total. Preserve aggregate evidence in packaged helper/MCP clients.
+- Update packaged reporting skill to 0.10.0, OpenAPI, agent instructions, routing/metrics/dictionary, ChatGPT instructions and tests. Document the installed eight-report MCP/cached-helper rollout; the **not integrated** limitation remains until deployed and verified. No commit, push, deployment or installed-runtime change is performed by this preparation.
+
 ## 2026-09-28 — On-road trucks
 
 - Owner-approved on-road count now uses distinct DriverPay `Truck_Number` with `Out Date <= D` and `Return Date > D` (null returns excluded). Added `on_road_at` date filter, updated dashboard KPIs and documentation; dates can be chosen historically. Separate Ninox insurance-choice/in-yard logic remains unsupported.

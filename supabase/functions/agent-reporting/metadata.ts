@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = "3.7.0";
+export const SCHEMA_VERSION = "3.8.0";
 export const SCHEMA_VERIFIED_AT = "2026-09-28T19:12:26Z";
 
 const field = (
@@ -27,7 +27,7 @@ export const GLOBAL_GUIDANCE = {
     "Paginate every page before deduplicating. No lookback cutoff, returns-table union, transfer/termination exclusion, or current-trucks join is part of this owner-approved metric. Do not conflate it with the separate Ninox in-yard/insurance-choice calculation.",
   ],
   unsupported_or_external_questions: [
-    "Planned/scheduled departures require the live Ninox Schedule_Teams source; that table is not available through this function.",
+    "The paused personal reporting-query endpoint does not support out_schedule or departures; use the authenticated agent-reporting endpoint. Planned schedule history can disappear from the volatile live share.",
     "The separate Ninox in-yard/off-duty and insurance-choice calculation requires fields absent from public.trucks. The owner-approved DriverPay on-road metric IS available via on_road_at; do not conflate the two definitions.",
   ],
   outside_repairs: [
@@ -306,7 +306,48 @@ export const TABLES = {
   },
 } as const;
 
+const departureFilters = {
+  out_from: "Optional paired inclusive Out Date lower bound YYYY-MM-DD; defaults to current Monday in America/New_York.",
+  out_to: "Optional paired inclusive Out Date upper bound YYYY-MM-DD; defaults to current Sunday in America/New_York; at most 31 inclusive days.",
+};
+const departureRules = [
+  "Schedule_Teams is a volatile live plan, fetched fresh per request; a missing historical schedule row does not prove no departure occurred.",
+  "Use Out Date only, distinct nonblank normalized truck numbers, no transfer/termination exclusions and no team/solo formula. Fully paginate DriverPay before unioning both sources.",
+  "status and complete apply to the whole calculation, not this response page. If either source fails, combined_distinct_total and cross-source sets/counts are null; never present a partial union as a complete total.",
+  "count aliases page_count (data rows), not combined_distinct_total. total_count counts envelope data rows; the exact business count is reconciliation.combined_distinct_total.",
+];
 export const REPORTS = {
+  out_schedule: {
+    source: "live Ninox Schedule_Teams approved share",
+    source_url: "https://lightningtransport.ninoxdb.com/share/p10ce94o8paa2q4a1z4nw0emznn2ubhriza6?locale=en&utcoffset=-240",
+    row_grain: "One live schedule row; duplicates can exist and are not truck totals.",
+    filters: departureFilters,
+    fields: {
+      Truck: field("numeric or text", true, "Scheduled truck identity; normalized only for reconciliation."),
+      "Out Date": field("date", true, "Planned inclusive departure date, not Return Date."),
+      Owner: field("text", true, "Stored schedule owner; no current-master fallback."),
+      Dispatch: field("text", true, "Stored schedule dispatch; no inferred attribution."),
+      Flatbed: field("text or boolean", true, "Optional live schedule flatbed indicator; absent when not published."),
+      solo: field("text, numeric or boolean", true, "Optional published solo indicator (live values are text); never changes the distinct-truck calculation."),
+      Team: field("text", true, "Published team display names; sensitive explicit opt-in only.", {sensitive:true}),
+      "Driver 1": field("text", true, "Published first driver name; sensitive explicit opt-in only.", {sensitive:true}),
+      "Driver 2": field("text", true, "Published second driver name; sensitive explicit opt-in only.", {sensitive:true}),
+    },
+    omitted_fields: "All internal DriversDB/DriverPay IDs and every unlisted source field are always omitted.",
+    sort: ["Out Date asc", "normalized Truck asc", "source position asc"],
+    calculation_rules: departureRules,
+  },
+  departures: {
+    source: 'public."DriverPay" + live Ninox Schedule_Teams approved share',
+    row_grain: "Exactly one reconciliation aggregate row when complete, regardless of truck count.",
+    filters: departureFilters,
+    required_reports: ["departures", "driver_pay", "out_schedule"],
+    returned_fields: ["status", "complete", "period", "reconciliation", "truck_sets", "source_status"],
+    reconciliation_fields: ["driver_pay_count", "schedule_teams_count", "driver_pay_only_count", "schedule_teams_only_count", "overlap_count", "combined_distinct_total"],
+    truck_set_fields: ["driver_pay", "schedule_teams", "driver_pay_only", "schedule_teams_only", "overlap", "combined"],
+    sort: ["aggregate (one row)"],
+    calculation_rules: departureRules,
+  },
   settlement_summary: {
     source: "reporting.settlement_summary",
     row_grain: TABLES.settlements.row_grain,

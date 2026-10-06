@@ -21,7 +21,7 @@ The key identifies an agent principal. The function is single-organization and a
 - `?report=catalog` returns all reports allowed for the key, global parameters, response semantics, business rules, and examples.
 - `?report=<report>&metadata=true` returns exact physical fields, types, nullability, sensitive flags, Ninox mappings, filters, grain, joins, and calculations.
 
-Supported data reports in this specification: `settlement_summary`, `settlements`, `driver_pay`, `drivers`, `returns`, `trucks`, `fuel`, and `outside_repairs`. The live authenticated catalog is authoritative for deployed availability.
+Supported data reports in this specification: `settlement_summary`, `settlements`, `driver_pay`, `drivers`, `returns`, `trucks`, `fuel`, `outside_repairs`, `out_schedule`, and `departures`. The live authenticated catalog is authoritative for deployed availability.
 
 ## Strict request behavior
 
@@ -48,6 +48,12 @@ For `outside_repairs`, request `report=outside_repairs` with at least one anchor
 **On-road trucks:** `?report=driver_pay&on_road_at=YYYY-MM-DD` filters `Out Date <= date` and `Return Date > date`. Paginate until complete and count distinct nonblank `Truck_Number` (team rows duplicate trucks); for “now” use the America/New_York date. Null returns and the return day are excluded. Do not use `return_null`, an arbitrary lookback, or the returning-trucks union for this metric.
 
 Returning-trucks questions/reports require two complete requests with the same inclusive `return_from`/`return_to`: `driver_pay` and `returns`. Exclude DriverPay rows whose `Termination` is `Driver Changed` or whose `Transfer` is `Transfer To Other Truck`. Let `tc` be the remaining non-solo rows and `ts` the remaining solo rows; the DriverPay formula count is `floor(tc / 2 + ts)`. Union distinct qualifying `Truck_Number` values with distinct `returns.Truck` values, normalize only truck-key format, and deduplicate. The API returns source rows; the caller performs this governed reconciliation and reports source/overlap/source-only/union counts plus formula-vs-distinct agreement.
+
+## Prepared departure reports — schema 3.8.0
+
+`out_schedule` returns the live planned Schedule_Teams list; `departures` reconciles distinct DriverPay and Schedule_Teams trucks for the same inclusive `Out Date` frame. Never use one source alone, add counts, count assignment rows, or apply return exclusions/formula. Both `out_from` and `out_to` are optional but must be supplied together (valid ordered dates, maximum 31 inclusive days); omitting both selects Monday–Sunday in America/New_York. See [departure contract and client rollout](departures.md).
+
+The aggregate retains `reconciliation` (source counts, source-only counts, overlap, combined distinct total), `truck_sets`, `period`, `status`, and `complete`. Any source failure makes the combined total null and `complete=false`/`status=incomplete`; ending pagination does not repair source failure. Confirm the deployed catalog and installed client before use: repository support is prepared, **not integrated** in existing installed eight-report MCP/cached-helper clients until verified.
 
 ## Pagination and evidence
 

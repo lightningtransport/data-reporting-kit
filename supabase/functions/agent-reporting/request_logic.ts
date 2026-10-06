@@ -9,10 +9,14 @@ export const supportedReports = [
   "trucks",
   "fuel",
   "outside_repairs",
+  "out_schedule",
+  "departures",
 ] as const;
 export type SupportedReport = typeof supportedReports[number];
 
 export const reportFilters: Record<SupportedReport, Set<string>> = {
+  out_schedule: new Set(["out_from", "out_to"]),
+  departures: new Set(["out_from", "out_to"]),
   settlement_summary: new Set(["truck", "owner", "period_from", "period_to"]),
   settlements: new Set([
     "truck",
@@ -111,7 +115,7 @@ export function isReportAuthorized(
   allowedReports: Set<string> | null,
   report: string,
 ): boolean {
-  return !allowedReports || allowedReports.has(report);
+  return !allowedReports || (allowedReports.has(report) && (report !== "departures" || (allowedReports.has("driver_pay") && allowedReports.has("out_schedule"))));
 }
 
 function invalid(message: string): never {
@@ -238,7 +242,12 @@ export function validateReportValues(
   parseInteger(params.get("offset"), "offset", 0, 0, 100000);
   parseBoolean(params.get("include_sensitive"), "include_sensitive");
 
-  if (report === "settlement_summary" || report === "settlements") {
+  if (report === "out_schedule" || report === "departures") {
+    validateDateRange(params, "out_from", "out_to");
+    if (params.has("out_from") !== params.has("out_to")) invalid("out_from and out_to must be supplied together");
+    const from = params.get("out_from"); const to = params.get("out_to");
+    if (from && to && (Date.parse(to) - Date.parse(from)) / 86400000 + 1 > 31) invalid("Departure period cannot exceed 31 inclusive days");
+  } else if (report === "settlement_summary" || report === "settlements") {
     validateDateRange(params, "period_from", "period_to");
     if (!params.get("truck") && !params.get("period_from")) {
       invalid(`${report} requires truck or period_from`);
@@ -359,7 +368,7 @@ function quoteColumn(name: string): string {
 }
 
 export function tableSelect(
-  report: Exclude<SupportedReport, "settlement_summary">,
+  report: Exclude<SupportedReport, "settlement_summary" | "out_schedule" | "departures">,
   includeSensitive: boolean,
 ): string {
   const fields = TABLES[report === "driver_pay" ? "driver_pay" : report]

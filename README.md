@@ -36,6 +36,17 @@ Grok Bot and Cursor agents: the reporting dashboard lives in [`apps/reporting-da
 
 Raw public tables remain protected by RLS. This public knowledge repository contains no business rows, passwords, API keys, JWTs, refresh tokens, database credentials, or service-role/secret keys.
 
+## Local validation
+
+```bash
+uv run --with pyyaml --with jsonschema python -m unittest discover -s tests
+python3 -m unittest discover -s chatgpt-plugin/mcp-server/tests
+uv run --with openapi-spec-validator python -m openapi_spec_validator api/openapi.yaml
+git diff --check
+```
+
+`tests/test_departure_contract.py` validates synthetic schema envelopes, failure/null-total constraints, document links and the feedback-schema mirror. No tests pin live departure counts: the share is volatile. The installed-client checklist is separate from repository tests.
+
 ## Maintenance
 
 - Follow [`docs/knowledge-maintenance.md`](docs/knowledge-maintenance.md); user corrections use the versioned sanitized event contract and are not approved rules until verified.
@@ -45,3 +56,9 @@ Raw public tables remain protected by RLS. This public knowledge repository cont
 - Add a dated changelog entry for every answer-affecting change.
 - Run contract/security tests before deployment and verify the deployed source afterward.
 - Follow `docs/offboarding.md` to revoke access.
+
+## Prepared departures contract — schema 3.8.0
+
+Departure totals use the same inclusive `Out Date` window on **both** DriverPay and live Ninox Schedule_Teams. Normalize only truck-key format, union distinct nonblank trucks, and report source, overlap, source-only, and combined counts. Never add source counts, count assignment/driver rows, apply return exclusions, or use the returning-trucks formula. Use `departures` only after the deployed authenticated catalog confirms it; `out_schedule` is the planned list, not a combined total. See [departure contract](docs/departures.md).
+
+The packaged helper and ChatGPT MCP source are prepared; installed clients remain **not integrated** until deployed and verified. See [client rollout checklist](docs/departures.md#client-rollout--still-not-integrated-until-verified). No deployment, installed-runtime modification, credential or operational-row publication is implied.

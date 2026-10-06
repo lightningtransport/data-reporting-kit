@@ -58,7 +58,7 @@ Only in `settlements` and settlement-derived reports, `Truck` 1=Carlos, 2=Jorge,
 | Current fleet assignment | Current owner/dispatcher/mechanic metadata, not history. | `trucks` |
 | Trucks on road on date D | Distinct nonblank `Truck_Number` where `Out Date <= D` and `Return Date > D`. Query `driver_pay` with `on_road_at=D`, paginate all rows; null returns and the return date do not qualify. For “now” use America/New_York today. No lookback or returns union. | `DriverPay` |
 | Open assignments (different metric) | `Out Date` present and `Return Date` null via `return_null=true`. Do not label this the on-road count. | `DriverPay` |
-| Planned departures | Not available in these Supabase tables; use approved live Ninox Schedule_Teams source. | external |
+| Planned departures | External live Ninox Schedule_Teams; prepared `out_schedule` gateway path requires deployed catalog/client verification. Not a physical Supabase table. | external |
 | Separate Ninox in-yard/insurance-choice calculation | Not available because Supabase lacks Ninox `days_in_yard_` and numeric insurance-choice fields; use the DriverPay on-road metric above for road counts. | external |
 
 ## Fuel metrics
@@ -93,3 +93,9 @@ MoneyPerWeekSigned + CPM × max(Driven_miles − Pay CPM after Miles, 0)
 ```
 
 Calculate per driver assignment. Do not divide team pay unless the requester explicitly defines a split. Review transfer and termination dates that fall inside the period.
+
+## Governed departure totals (prepared schema 3.8.0)
+
+Departure totals use the same inclusive `Out Date` window on **both** DriverPay and live Ninox Schedule_Teams. Normalize only truck-key format, union distinct nonblank trucks, and report source, overlap, source-only, and combined counts. Never add source counts, count assignment/driver rows, apply return exclusions, or use the returning-trucks formula. Use `departures` only after the deployed authenticated catalog confirms it; `out_schedule` is the planned list, not a combined total. See [departure contract](departures.md).
+
+Preserve `reconciliation`, `truck_sets`, `period`, `status`, and `complete`; source failure means `complete=false`, `status=incomplete`, and `combined_distinct_total=null`. Both optional date bounds must be supplied together (maximum 31 inclusive days); omitting both defaults to Monday–Sunday in America/New_York. Repository preparation does not remove the installed-client **not integrated** limitation.

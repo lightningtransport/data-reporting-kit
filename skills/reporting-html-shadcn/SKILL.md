@@ -75,3 +75,9 @@ Map mentally to shadcn: Card, Badge, Button, Tabs, Input, Select, Table, Separat
 - Don't invent one-off colors, fonts, or card styles when shadcn/ui already covers the control.
 - Don't drop the shared toolbar / KPI / ranking / fuel sections “to save time.”
 - Don't put `AGENT_REPORTING_KEY` in the browser, `NEXT_PUBLIC_*`, or git.
+
+## Governed departure totals (prepared schema 3.8.0)
+
+Departure totals use the same inclusive `Out Date` window on **both** DriverPay and live Ninox Schedule_Teams. Normalize only truck-key format, union distinct nonblank trucks, and report source, overlap, source-only, and combined counts. Never add source counts, count assignment/driver rows, apply return exclusions, or use the returning-trucks formula. Use `departures` only after the deployed authenticated catalog confirms it; `out_schedule` is the planned list, not a combined total. See [departure contract](../../docs/departures.md).
+
+Preserve `reconciliation`, `truck_sets`, `period`, `status`, and `complete`; source failure means `complete=false`, `status=incomplete`, and `combined_distinct_total=null`. Both optional date bounds must be supplied together (maximum 31 inclusive days); omitting both defaults to Monday–Sunday in America/New_York. Repository preparation does not remove the installed-client **not integrated** limitation.
