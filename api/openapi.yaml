@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Lightning Reporting APIs
-  version: 3.8.1
+  version: 3.8.2
   license:
     name: Proprietary
     identifier: LicenseRef-Proprietary
@@ -22,6 +22,15 @@ paths:
         On-road trucks on date D use driver_pay on_road_at=D: Out Date <= D
         and Return Date > D; paginate and count distinct nonblank Truck_Number.
         Null returns and return day are excluded. For now use America/New_York date.
+        Current trucks in the yard, off duty, not working or not on the road use
+        the approved external source in catalog guidance.off_duty_trucks:
+        https://lightningtransport.ninoxdb.com/share/jx7z6tkjcnxalvsui4icdnqjuszia04etdhi?locale=en&utcoffset=-240
+        Download and validate the entire live JSON immediately before answering,
+        without forwarding gateway credentials. Every listed truck is off duty,
+        including Ready To Go and Outside/vendor locations. Count distinct truck_number;
+        generic yard wording does not restrict physical location. Failure is not zero,
+        and absence is not proof of on-road status. This is external-source routing,
+        not a new report enum or historical occupancy endpoint.
         Returning-trucks questions require complete driver_pay and returns requests for
         the same Return Date range. Exclude DriverPay Termination=Driver Changed and
         Transfer=Transfer To Other Truck, calculate floor(tc / 2 + ts), then union
@@ -380,7 +389,7 @@ components:
       type: object
       required: [schema_version, report, source, filters, offset, limit, count, page_count, total_count, has_more, next_offset, as_of, data, request_id, period, status, complete]
       properties:
-        schema_version: {type: string, const: 3.8.1}
+        schema_version: {type: string, const: 3.8.2}
         report: {type: string, enum: [out_schedule, departures]}
         source: {type: string}
         filters: {type: object, additionalProperties: {type: string}}

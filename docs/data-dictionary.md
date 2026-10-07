@@ -18,7 +18,7 @@ The authenticated `agent-reporting` metadata routes are the runtime contract. Ca
 
 **Grain:** one current master row per unique `truck_number`. `ID` is the primary key; `truck_number` has a unique constraint. Use this table for current facts only.
 
-The settlement-only Truck 1/2/3 owner-expense allocation rule does not apply to this table. `Out Of Services` is a dispatcher value, but it is not equivalent to the exact Ninox in-yard/off-duty formula because Supabase lacks `days_in_yard_` and numeric insurance-choice fields.
+The settlement-only Truck 1/2/3 owner-expense allocation rule does not apply to this table. `Out Of Services` is a dispatcher value, not a substitute for the approved [live off-duty source](off-duty-trucks.md). That external JSON source has nine fields (including millisecond `Days In Yard`) and is not a new Supabase table or physical-column addition. Fetch it fresh for current in-yard/off-duty/not-working questions; use its exact owner/dispatcher and distinct `truck_number`. All rows qualify regardless of Ready To Go or Outside/vendor location. The legacy insurance-choice formula remains unsupported because Supabase lacks `days_in_yard_` and numeric insurance-choice fields; this caveat does not block the current feed.
 
 | Column | Type | Null? | Meaning / safe use |
 |---|---|---:|---|
@@ -43,7 +43,7 @@ The settlement-only Truck 1/2/3 owner-expense allocation rule does not apply to 
 
 **Grain:** one driver assignment/pay record. Team trucks normally produce two rows, one per driver; a solo normally produces one row with `Solo_Driver_if_1 = 1`.
 
-**On-road metric (business owner, 2026-09-28; live `date`/`text` columns verified 2026-09-28):** On date D, count distinct nonblank `Truck_Number` with `Out Date <= D` and `Return Date > D`. Query `driver_pay?on_road_at=D`, paginate fully; use America/New_York today for “now”. Null returns and the return date are excluded. Do not apply an 18-month lookback, returning-truck union, or `return_null` shortcut. This does not redefine the separate Ninox insurance-choice/in-yard metric.
+**On-road metric (business owner, 2026-09-28; live `date`/`text` columns verified 2026-09-28):** On date D, count distinct nonblank `Truck_Number` with `Out Date <= D` and `Return Date > D`. Query `driver_pay?on_road_at=D`, paginate fully; use America/New_York today for “now”. Null returns and the return date are excluded. Do not apply an 18-month lookback, returning-truck union, or `return_null` shortcut. This does not redefine the separate Ninox legacy insurance-choice metric.
 
 Use the same inclusive `Out Date` frame on both DriverPay and Schedule_Teams for departure totals. For every returning-trucks question/report, apply the requested inclusive `Return Date` range to both DriverPay and `returns`. Exclude DriverPay rows where `Termination = Driver Changed` or `Transfer = Transfer To Other Truck`; let `tc` be remaining non-solo rows and `ts` remaining solo rows, with DriverPay formula count `floor(tc / 2 + ts)`. Build the DriverPay merge set from distinct `Truck_Number` values in those qualifying rows, union it with distinct `returns.Truck`, and deduplicate. For assignment overlap with a settlement week: `Out Date <= settlements.To` and (`Return Date` is null or `Return Date >= settlements.From`), then inspect transfers/terminations inside that period.
 

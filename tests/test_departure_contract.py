@@ -22,7 +22,7 @@ class DepartureContractTests(unittest.TestCase):
         names = ("driver_pay_count", "schedule_teams_count", "driver_pay_only_count", "schedule_teams_only_count", "overlap_count", "combined_distinct_total")
         sets = ("driver_pay", "schedule_teams", "driver_pay_only", "schedule_teams_only", "overlap", "combined")
         return {
-            "schema_version": "3.8.1", "report": "departures", "source": "synthetic two-source fixture",
+            "schema_version": "3.8.2", "report": "departures", "source": "synthetic two-source fixture",
             "filters": {"out_from": "2026-10-05", "out_to": "2026-10-11"},
             "offset": 0, "limit": 100, "count": 1,
             "page_count": 1, "total_count": 1,
@@ -36,7 +36,7 @@ class DepartureContractTests(unittest.TestCase):
         }
 
     def test_openapi_new_reports_and_version(self):
-        self.assertEqual(self.spec["info"]["version"], "3.8.1")
+        self.assertEqual(self.spec["info"]["version"], "3.8.2")
         parameters = self.spec["paths"]["/agent-reporting"]["get"]["parameters"]
         reports = next(p["schema"]["enum"] for p in parameters if p["name"] == "report")
         self.assertTrue({"out_schedule", "departures"}.issubset(reports))

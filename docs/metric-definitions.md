@@ -59,7 +59,9 @@ Only in `settlements` and settlement-derived reports, `Truck` 1=Carlos, 2=Jorge,
 | Trucks on road on date D | Distinct nonblank `Truck_Number` where `Out Date <= D` and `Return Date > D`. Query `driver_pay` with `on_road_at=D`, paginate all rows; null returns and the return date do not qualify. For “now” use America/New_York today. No lookback or returns union. | `DriverPay` |
 | Open assignments (different metric) | `Out Date` present and `Return Date` null via `return_null=true`. Do not label this the on-road count. | `DriverPay` |
 | Planned departures | External live Ninox Schedule_Teams; prepared `out_schedule` gateway path requires deployed catalog/client verification. Not a physical Supabase table. | external |
-| Separate Ninox in-yard/insurance-choice calculation | Not available because Supabase lacks Ninox `days_in_yard_` and numeric insurance-choice fields; use the DriverPay on-road metric above for road counts. | external |
+| Current in-yard / off-duty / not-working trucks | Distinct valid nonblank `truck_number` in an immediately fetched, fully validated bounded [live Ninox JSON array](off-duty-trucks.md). Every row qualifies, including Ready To Go and Outside/vendor locations. General yard synonyms use the full feed; physical location only when explicitly asked. Exact source owner/dispatcher; current snapshot only, no history/complement/absence proof; failure means unknown, not zero. | approved external source |
+| Off-duty days in yard | `Days In Yard / 86400000` using a calculation tool; source duration is milliseconds, not epoch time or days. Preserve fractional days and unknown/null values. | live off-duty source |
+| Legacy Ninox insurance-choice formula | Unsupported because Supabase lacks Ninox `days_in_yard_` and numeric insurance-choice fields. This does not block the approved current off-duty feed or redefine the DriverPay on-road metric. | external formula |
 
 ## Fuel metrics
 

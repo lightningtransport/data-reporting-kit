@@ -4,7 +4,7 @@
 
 The portable reporting client has an optional `ask` command. One batched TypeSafe Jev call chooses the workflow, time-window meaning, answer language, and whether the request is a plain unfiltered aggregate. Deterministic code resolves dates, checks current API permissions and metadata, retrieves complete data, computes exact metrics, and renders a template. No report rows, history, keys, or business totals are sent to Jev.
 
-The existing Supabase `agent-reporting` function remains unchanged (schema 3.8.1). Existing `catalog`, `metadata`, `query`, and remote MCP tool contracts remain unchanged. This is not an automatic hook on every Hermes turn and not a new natural-language endpoint. The installed reporting skill selects `ask` only for appropriate routine questions; other clients must invoke the command themselves or integrate it separately.
+The original Jev rollout did not change the Supabase `agent-reporting` function (then schema 3.8.1). The current client schema pin is 3.8.2 after the separate off-duty-source metadata update; that source is not a Jev fast path. Existing `catalog`, `metadata`, `query`, and remote MCP tool contracts remain unchanged apart from the documented schema version and new global routing guidance. This is not an automatic hook on every Hermes turn and not a new natural-language endpoint. The installed reporting skill selects `ask` only for appropriate routine questions; other clients must invoke the command themselves or integrate it separately.
 
 ## Supported initial fast paths
 

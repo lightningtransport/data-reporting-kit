@@ -62,7 +62,8 @@ Use transaction-level `fuel`, never settlements, for diesel gallons, fuel purcha
 - Every returning-trucks question requires both `driver_pay` and `returns` using the same inclusive Return Date bounds. Exclude DriverPay `Termination = Driver Changed` and `Transfer = Transfer To Other Truck`.
 - Let `tc` be qualifying non-solo DriverPay rows and `ts` qualifying solo rows. Check `floor(tc / 2 + ts)` against distinct qualifying DriverPay trucks. Union those trucks with distinct `returns.Truck`; report source counts, `tc`, `ts`, formula result, overlap, source-only counts, final union, and any reconciliation mismatch.
 - Use CDL only when verified as the driver key. Normalize documented truck-key variants only; never substitute names, Supabase IDs, or `returns.Ninox_ID`.
-- For on-road count on date D, query `driver_pay?on_road_at=D` and count distinct nonblank trucks where `Out Date <= D` and `Return Date > D`. Null returns and the return date do not qualify. This is distinct from unavailable in-yard/off-duty calculations.
+- For on-road count on date D, query `driver_pay?on_road_at=D` and count distinct nonblank trucks where `Out Date <= D` and `Return Date > D`. Null returns and the return date do not qualify. This is distinct from the approved current [live off-duty feed](off-duty-trucks.md), not its complement. Only the legacy insurance-choice formula remains unsupported.
+- For current in-yard/off-duty/not-working questions, fetch the approved feed immediately and validate the entire bounded JSON array. All rows are off duty/not on road, including `Ready To Go` and Outside/vendor locations; general yard synonyms use the full feed. Filter physical location only if explicitly asked, count distinct `truck_number`, and use exact source owner/dispatcher. Include retrieval timestamps; the current snapshot is not history or absence proof, and failures are unknown, not zero.
 
 ## Outside repairs
 
@@ -83,6 +84,6 @@ Verify applicable items before reporting a number: correct source/grain; current
 - complete pagination and pagination-safety failure;
 - fuel gallons, adjusted-spend null coverage, weighted price, and exact product value;
 - two-source return union, exclusions, `tc`/`ts`, and reconciliation;
-- on-road filter and refusal of unavailable in-yard/off-duty metric;
+- on-road filter plus approved live off-duty routing, complete validation, full-feed yard synonyms, status/vendor inclusion, distinct-truck counts, exact attribution, duration units, timestamp evidence and failure-not-zero behavior (legacy insurance-choice formula remains unsupported);
 - settlement allocation buckets; and
 - outside-repair date, choice, truckless, and overlapping-category behavior.

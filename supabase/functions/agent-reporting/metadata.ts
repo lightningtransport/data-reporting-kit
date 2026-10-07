@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = "3.8.1";
+export const SCHEMA_VERSION = "3.8.2";
 export const SCHEMA_VERIFIED_AT = "2026-09-28T19:12:26Z";
 
 const field = (
@@ -26,9 +26,22 @@ export const GLOBAL_GUIDANCE = {
     'For an on-road count on date D (today in the requested business timezone for "now"), query driver_pay with on_road_at=D. Count distinct nonblank Truck_Number, not driver rows: "Out Date" <= date AND "Return Date" > date. The return date itself is off road; a null return date does not qualify.',
     "Paginate every page before deduplicating. No lookback cutoff, returns-table union, transfer/termination exclusion, or current-trucks join is part of this owner-approved metric. Do not conflate it with the separate Ninox in-yard/insurance-choice calculation.",
   ],
+  off_duty_trucks: {
+    source_url: "https://lightningtransport.ninoxdb.com/share/jx7z6tkjcnxalvsui4icdnqjuszia04etdhi?locale=en&utcoffset=-240",
+    evidence: "Owner-approved business rule and live JSON fields verified 2026-10-07. This is an approved external source, not an agent-reporting report name or public.trucks filter.",
+    use_for: ["trucks in the yard", "trucks off duty", "trucks not working", "trucks not on the road"],
+    rules: [
+      "Download this exact live source immediately before each answer using a separate credential-free request; never forward agent keys, Supabase credentials, authorization headers or cookies. Reject redirects and bound response bytes and total elapsed time, including the response body.",
+      "Validate the complete response as a JSON array of objects with truck_number, dispatcher, insurance, owner, yard_location, Samsara_Truck_ID, mechanic_status, Days In Yard and Ninox_ID. Reject schema drift, invalid truck keys and malformed durations; failure or partial retrieval is unavailable evidence, not zero trucks. A validated empty array is a successful empty snapshot.",
+      "Every truck listed is off duty, not working and not on the road, regardless of mechanic_status, including Ready To Go. Outside and service-vendor locations remain off duty; generic in-the-yard wording routes to the entire feed, not just yard_location=301 Yard. Filter yard_location only when a physical location is explicitly requested.",
+      "Count distinct nonblank truck_number after safe key-format normalization; retain source row count and duplicate caveats. Use exact source owner and dispatcher for attribution; do not use settlement shared_owner or infer status from current trucks, zero mileage, Return Date, or Out Of Services.",
+      "Days In Yard is a duration in milliseconds: divide by 86400000 to display days; preserve the raw value. Null duration means unknown, not zero. Preserve Samsara_Truck_ID and Ninox_ID as source identifiers, never substitute them for truck_number.",
+      "This is a current snapshot, not historical yard occupancy. State source URL, fetch timestamp/as_of, applied filters, row count, distinct-truck count and full-response validation. Fetch time is not a source-updated timestamp. Absence does not prove on-road status; never compute road count as fleet minus this feed. The separately defined DriverPay on_road_at metric and legacy insurance-choice formula remain distinct.",
+    ],
+  },
   unsupported_or_external_questions: [
     "The paused personal reporting-query endpoint does not support out_schedule or departures; use the authenticated agent-reporting endpoint. Planned schedule history can disappear from the volatile live share.",
-    "The separate Ninox in-yard/off-duty and insurance-choice calculation requires fields absent from public.trucks. The owner-approved DriverPay on-road metric IS available via on_road_at; do not conflate the two definitions.",
+    "Current in-yard/off-duty/not-working questions use the approved live source in off_duty_trucks. Only the separate legacy insurance-choice calculation requires unavailable public.trucks fields. DriverPay on_road_at remains a distinct date-based metric.",
   ],
   outside_repairs: [
     "For repairs on the road, outside, or not performed in the company's shop, query public.\"Outside_Repairs\"; do not use settlements LTR Invoices (internal-shop expenses) as the outside-repair ledger.",
@@ -220,7 +233,7 @@ export const TABLES = {
     rules: [
       "The settlement-only 1/2/3 owner-expense allocation-bucket rule does not classify or filter current trucks rows.",
       "dispatcher and owner are current values. Use DriverPay or settlements fields for historical attribution.",
-      "Out Of Services is a current dispatcher value, but it is not equivalent to the exact Ninox in-yard/off-duty formula, which uses unavailable days_in_yard_ and insurance-choice fields.",
+      "Out Of Services is a current dispatcher value, not the authoritative current off-duty list. Route current yard/off-duty/not-working questions to GLOBAL_GUIDANCE.off_duty_trucks and fetch its live Ninox share. The separate legacy insurance-choice formula still uses unavailable fields.",
       "Use literal stored mechanic_status values. Current values include Work in Progress, Heavy Work No ETA, Ready for Q.C., and Ready To Go; blank/null means no status is stored.",
     ],
     fields: {

@@ -21,6 +21,7 @@ The seven reporting-source schemas contain 125 physical columns. The 14 `Outside
 - Approved AI service accounts use the read-only `agent-reporting` Edge Function with their assigned `x-agent-key`.
 - The separate JWT-based `reporting-query` endpoint is for approved personal Supabase memberships; onboarding remains paused until company Auth email/SMTP is ready.
 - Never bypass either gateway with a database password, service-role/secret key, arbitrary SQL, shared employee session, or direct raw-table access.
+- Approved credential-free external shares are explicit source routes, not gateway bypasses. For current “trucks in yard”, “off duty”, or “not working”, fetch `https://lightningtransport.ninoxdb.com/share/jx7z6tkjcnxalvsui4icdnqjuszia04etdhi?locale=en&utcoffset=-240` immediately before answering and follow [off-duty source contract](docs/off-duty-trucks.md). All rows are off duty/not on road, including `Ready To Go` and Outside/vendor locations. General yard synonyms use the full feed; physical-location filtering requires an explicit request. Validate the complete bounded JSON array, count distinct `truck_number`, and use exact source owner/dispatcher. Retrieval failures are unknown, not zero; this is current state, not history or a fleet complement. No dedicated MCP/report implementation is claimed.
 - Never put an agent key in a URL, browser client, prompt, log, screenshot, repository, or answer.
 
 ## Mandatory query behavior
@@ -34,7 +35,7 @@ The seven reporting-source schemas contain 125 physical columns. The 14 `Outside
 
 **Non-negotiable analysis rules**
 
-- **On-road trucks for date D** (today in America/New_York for “now”): query `driver_pay?on_road_at=D` and paginate completely. Count distinct nonblank `Truck_Number` where `Out Date <= D` and `Return Date > D`. Null return dates and the return day do **not** qualify. No 18-month lookback, `returns` union, or `return_null` shortcut. This is distinct from the Ninox insurance-choice/in-yard formula.
+- **On-road trucks for date D** (today in America/New_York for “now”): query `driver_pay?on_road_at=D` and paginate completely. Count distinct nonblank `Truck_Number` where `Out Date <= D` and `Return Date > D`. Null return dates and the return day do **not** qualify. No 18-month lookback, `returns` union, or `return_null` shortcut. This is distinct from the Ninox legacy insurance-choice formula.
 
 - Settlements run Tuesday through Monday. Use an explicit period; never infer the current cycle from `To Report` alone.
 - For HTML reports and analytical settlement/fleet-history answers (trends, rankings), always fetch **at least three calendar months** ending today or at the user-named end date. The **settlement dashboard** loads **at least twelve calendar months**. The named week or day is UI focus only, not the sole data window. Paginate until complete. See `docs/html-reporting.md`.
@@ -52,7 +53,7 @@ The seven reporting-source schemas contain 125 physical columns. The 14 `Outside
 - `returns.CDL` is a sensitive exact driver key: use it to resolve a return only when it matches a verified CDL in related approved data. Never use a name, Supabase `ID`, or `returns.Ninox_ID` as a substitute.
 
 *Evidence: approved business rule confirmed 2026-09-11; `returns.CDL` and `drivers.Date of Hire` physical columns verified on 2026-09-11.*
-- Schedule_Teams is external planned state; the prepared `out_schedule`/`departures` gateway path remains **not integrated** in installed clients until deployed and verified. The separate Ninox insurance-choice/in-yard formula is not available from these Supabase tables; the owner-approved DriverPay on-road count below IS available.
+- Schedule_Teams is external planned state; the prepared `out_schedule`/`departures` gateway path remains **not integrated** in installed clients until deployed and verified. The legacy Ninox insurance-choice formula is not available from these Supabase tables; this does not block the approved live off-duty source. The owner-approved DriverPay on-road count IS available and is not the complement of that feed.
 
 ## HTML reports
 

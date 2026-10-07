@@ -114,9 +114,12 @@ Deno.test("live-report HTTP path enforces auth/audit/pagination and preserves ag
     const window = "out_from=2026-10-05&out_to=2026-10-11";
     const catalog = await request("report=catalog");
     assert(
-      catalog.body.schema_version === "3.8.1" &&
+      catalog.body.schema_version === "3.8.2" &&
         catalog.body.reports.departures && catalog.body.reports.out_schedule,
     );
+    assert(catalog.body.guidance.off_duty_trucks.source_url === "https://lightningtransport.ninoxdb.com/share/jx7z6tkjcnxalvsui4icdnqjuszia04etdhi?locale=en&utcoffset=-240", "authenticated catalog omits approved off-duty feed");
+    const truckMetadata = await request("report=trucks&metadata=true");
+    assert(truckMetadata.status === 200 && truckMetadata.body.guidance.off_duty_trucks, "report metadata omits off-duty routing");
     const compactCatalog = await request("report=catalog&compact=true");
     assert(compactCatalog.status === 200, "compact catalog should be supported");
     assert(compactCatalog.body.metadata_required === true);

@@ -55,7 +55,7 @@ Not established (do not display or approximate): Ninox “Full Week” / “No F
 2. Mon–Sun day strip with distinct-truck counts per weekday so incomplete live weeks are visible (Schedule_Teams drops past planned days).
 3. Table collapsed to one row per truck per Out Date: Truck, Out Date, Day (derived), Driver 1, Driver 2, Owner, Dispatch, Flatbed, Solo. Sticky column headers in the scroll area.
 4. Light filters (truck/driver search, owner, dispatch), Export CSV of collapsed rows, truck count, **Technical details**.
-5. Do not substitute DriverPay history when the Ninox share fails; show an explicit error state. Insurance / Team Status / Truck Status / Notes are not in this share. Past planned days not still in the live share cannot be reconstructed here. On road today is DriverPay-only via on_road_at (America/New_York date); it is distinct from the Ninox insurance-choice/in-yard formula.
+5. Do not substitute DriverPay history when the Ninox share fails; show an explicit error state. Insurance / Team Status / Truck Status / Notes are not in this share. Past planned days not still in the live share cannot be reconstructed here. On road today is DriverPay-only via on_road_at (America/New_York date); it is distinct from the Ninox legacy insurance-choice formula.
 
 ### Trucks Return (`/trucks-return`)
 
@@ -63,7 +63,7 @@ Not established (do not display or approximate): Ninox “Full Week” / “No F
 2. Before merging DriverPay, exclude `Termination = Driver Changed` and `Transfer = Transfer To Other Truck`; calculate `tc`, `ts`, and `floor(tc / 2 + ts)`. Union distinct qualifying `Truck_Number` with distinct `returns.Truck` and deduplicate. If both sources contain the same truck/date, prefer current `returns` details in the table.
 3. Table collapsed to one row per truck per Return Date: Truck, Return Date, Day (derived), Driver 1, Driver 2, Insurance (never Phone/CDL). Sticky headers.
 4. Light filters, truck count, **Technical details**. Show source row/truck counts, overlap, source-only counts, union, `tc`, `ts`, formula count, formula-vs-distinct mismatch, date coverage, and pagination completeness.
-5. Live `returns` is volatile and may omit old history; DriverPay is not a substitute but the second required source. On road today is DriverPay-only via on_road_at (America/New_York date); it is distinct from the Ninox insurance-choice/in-yard formula.
+5. Live `returns` is volatile and may omit old history; DriverPay is not a substitute but the second required source. On road today is DriverPay-only via on_road_at (America/New_York date); it is distinct from the Ninox legacy insurance-choice formula.
 
 ### Diesel (`/diesel`)
 
@@ -89,7 +89,7 @@ Not established (do not display or approximate): Ninox “Full Week” / “No F
 - The $11,000 Gross count is a C-level physical-truck threshold on stored Gross.
 - Settlement trucks 1, 2, and 3 are non-physical owner-allocation buckets. Include them in matching owner totals; exclude them from physical-truck counts and rankings; badge them as non-physical.
 - Historical owner/dispatch and `fuel.owner` come from the historical row, not current `trucks`. In settlement and fuel owner-filtered reports, include exact `shared_owner` matches too; it is supplemental attribution for trucks operated under `SOLO INC.` or `FLATBED INC.`, not a replacement for the primary owner.
-- Planned Schedule_Teams UI is the dashboard `/out-schedule` view (live Ninox share). The separate Ninox in-yard/insurance-choice formula remains unavailable; the DriverPay on-road metric is available.
+- Planned Schedule_Teams UI is the dashboard `/out-schedule` view (live Ninox share). The legacy Ninox insurance-choice formula remains unavailable; the approved [live off-duty source](off-duty-trucks.md) answers current in-yard/off-duty/not-working questions (full feed including Ready To Go and Outside/vendor locations), while the DriverPay on-road metric remains available and is not its complement.
 - `as_of` is request time. Source tables do not expose a Ninox sync timestamp; “up to date” means the latest imported rows, not proof that Ninox has closed the week.
 
 ## Local output convention

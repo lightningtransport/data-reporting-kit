@@ -5,6 +5,7 @@ These rules govern every Lightning Transportation answer.
 ## 1. Source and access
 
 - Approved service agents use `agent-reporting`; approved personal members use `reporting-query`.
+- Current “trucks in yard”, “off duty”, and “not working” questions have an approved credential-free direct [live Ninox source](off-duty-trucks.md), not a new agent-reporting/MCP report. Fetch it immediately before reporting and validate the entire JSON array within 30 seconds overall and 2 MiB. Every row qualifies, including `Ready To Go` and Outside/vendor locations. General yard synonyms mean the full feed; physical-location filtering requires an explicit request. Count distinct `truck_number`; use exact source owner/dispatcher and a tool for millisecond `Days In Yard / 86400000`. State retrieval timestamps and unknown upstream sync; current snapshot only, no history, on-road complement or absence proof. Failures are unknown/null, not zero. The unsupported legacy insurance-choice formula does not block this list.
 - This is a single-organization reporting system. Never introduce tenant filters or organization-scoping fields without an approved schema and access-model change.
 - Default projections omit sensitive driver and vehicle fields. Use `include_sensitive=true` only for an explicit need. All agent API keys are allowed by default; a matching `AGENT_ALLOW_SENSITIVE_<n>=false` setting is the opt-out restriction.
 - Never seek a bypass when access is denied.

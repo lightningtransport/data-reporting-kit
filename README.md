@@ -32,6 +32,10 @@ Grok Bot and Cursor agents: the reporting dashboard lives in [`apps/reporting-da
 - JWT-verified, membership/role-scoped reporting.
 - Individual onboarding remains paused until approved company Auth email/SMTP delivery is ready. Do not use shared credentials as a workaround.
 
+### Live off-duty trucks — approved external source
+
+Current “trucks in yard”, “off duty”, and “not working” questions use the [owner-approved live Ninox JSON source](docs/off-duty-trucks.md), fetched fresh immediately before reporting without credentials. Every included truck is off duty/not on road, even `Ready To Go` or Outside/vendor trucks; general yard questions include the full feed. Count distinct `truck_number` after complete bounded validation. This is current state only, not an on-road complement or historical list; failures are unknown, not zero. The legacy insurance-choice formula remains unsupported. No new agent-reporting report, dedicated MCP tool, or fast-path implementation is introduced.
+
 ## Data safety
 
 Raw public tables remain protected by RLS. This public knowledge repository contains no business rows, passwords, API keys, JWTs, refresh tokens, database credentials, or service-role/secret keys.

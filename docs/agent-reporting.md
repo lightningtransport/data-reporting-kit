@@ -56,6 +56,10 @@ Returning-trucks questions/reports require two complete requests with the same i
 
 The aggregate retains `reconciliation` (source counts, source-only counts, overlap, combined distinct total), `truck_sets`, `period`, `status`, and `complete`. Any source failure makes the combined total null and `complete=false`/`status=incomplete`; ending pagination does not repair source failure. Confirm the deployed catalog and installed client before use: repository support is prepared, **not integrated** in existing installed eight-report MCP/cached-helper clients until verified.
 
+## Approved direct off-duty source (not a report name)
+
+Current in-yard/off-duty/not-working questions use the credential-free [live Ninox source contract](off-duty-trucks.md), downloaded immediately before reporting with complete bounded JSON validation. Every row is off duty/not on road regardless of Ready To Go or Outside/vendor location; general yard synonyms use the full feed, physical location only if explicitly requested. Count distinct `truck_number` with exact source owner/dispatcher and retrieval timestamp evidence. This is a current snapshot, not history or a fleet complement; failure is unknown, not zero. Do not send this share an agent key, invent a report name, or claim a dedicated MCP/fast-path implementation. The legacy insurance-choice formula remains unsupported and separate.
+
 ## Pagination and evidence
 
 Explicit data responses include:

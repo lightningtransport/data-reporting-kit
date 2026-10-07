@@ -1,5 +1,11 @@
 # Changelog
 
+## Schema 3.8.2 / client skill 0.11.1 — 2026-10-07
+
+- Adopt the owner-approved live, credential-free Ninox off-duty source for current in-yard/off-duty/not-working questions; all feed trucks are not working/not on road, including Ready To Go and Outside/vendor locations. Document the exact URL, nine-field schema, immediate bounded fresh fetch, complete validation, distinct truck counts, exact owner/dispatcher, millisecond duration conversion and timestamp evidence.
+- Replace current-list refusal wording in canonical guidance while retaining the unsupported legacy insurance-choice formula. General yard synonyms mean the full feed; explicit physical-location questions may filter it. Current snapshots do not establish history, an on-road complement, or absence proof; fetch/validation failures never become zero.
+- Publish the exact off-duty source and rules in authenticated full/compact catalog and truck metadata via schema 3.8.2; preserve custom-key authentication and existing report/data contracts. Update OpenAPI, handler/metadata regression tests and the deterministic client schema pin. Package the source reference with reporting skill 0.11.1. This is direct approved external-source routing, not a new report name, SQL/table change, dedicated MCP report or Jev fast path.
+
 ## Client skill 0.11.0 — 2026-10-06
 
 - Add optional client-only Jev routing with one pinned-model batched decision, deterministic dates/calculations, English/Spanish answer templates and sanitized fallback to normal reasoning. Existing API/schema 3.8.1 and Supabase function remain unchanged.
