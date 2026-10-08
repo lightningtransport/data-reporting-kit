@@ -170,6 +170,8 @@ Use stored `Gross`, `Total Expenses`, and `Net`. Do not add `tonu` to Gross or e
 
 Use `Unit` as the numeric historic truck identifier. For a current-truck lookup, normalize only numeric representation and left-join to `trucks.truck_number`; historical fuel can exist without a current-master truck. `created_at` is a Supabase row timestamp, not proof of Ninox source freshness.
 
+`Gallons` and `Adjusted SubTotal` must be present in the requested numeric projection as JSON numbers or permitted nulls. Null is unknown, not zero; an absent projected key is schema drift. Report populated/null counts and numeric coverage independently of fully reconciled pagination. `[owner, shared_owner]` groups are disjoint pairs, not a financial allocation. See the versioned [fuel numeric clarification](metric-definitions.md#fuel-numeric-contract--clarification-10) for native-client and importer validation rules. The canonical importer is `scripts/importers/ninox_to_supabase_fuel.py`; it stops on omitted numeric source keys until sparse omission semantics are documented, rejects ambiguous formatting and precision/range loss, and does not change the source mapping or financial values.
+
 | Column | Type | Null? | Meaning / safe use |
 |---|---|---:|---|
 | `id` | bigint | no | Supabase identity primary key for this transaction. |

@@ -1,7 +1,7 @@
 ---
 name: itpros-supabase-reporting
 description: Answer Lightning reports through the approved reporting APIs.
-version: 0.11.4
+version: 0.11.5
 author: Ibrain Ortega, Hermes Agent
 license: Proprietary
 platforms: [linux, macos, windows]
@@ -204,6 +204,22 @@ Agent-key reports specified by this kit are `settlement_summary`, `settlements`,
 - `returns.Ninox_ID` is not a driver ID.
 - `returns.Truck` is numeric; `returns.Dispatcher` and `returns.Owner` are nullable, non-sensitive truck-dispatch/owner fields on the return row. Use exact `dispatcher` / `owner` filters within `return_from` / `return_to` and distinct `Truck` for return-row attribution. Do not pull current `trucks` for these values.
 - Schedule_Teams gateway support is prepared but installed clients are **not integrated** until deployed/verified; the legacy Ninox insurance-choice formula remains unsupported, but current in-yard/off-duty/not-working lists use the approved fresh external feed above; current on-road/working status uses the independent live on-road feed; DriverPay `on_road_at` is historical/explicit-date assignment overlap only.
+
+## Fuel numeric coverage and native-client contract
+
+Keep the exact nullable keys `Gallons` and `Adjusted SubTotal`; accept JSON numbers
+or null from the gateway. Aggregate valid populated cells only, expose populated
+and null counts and per-metric completeness for totals and affected groups, and
+return null for a nonempty all-null metric. An absent projected key, malformed
+nonnull value, boolean or nonfinite value fails closed. `complete=true` certifies
+row retrieval, not numeric coverage; never substitute `SubTotal` or invent zero.
+`count(id)` counts transactions; `count(Adjusted SubTotal)` counts populated
+adjustments. Disjoint `[owner, shared_owner]` groups are attribution pairs, not a
+split/allocation to both companies; overlapping owner-filter totals are not additive.
+Preserve explicit date/product constraints and nonsensitive projection when the
+native client's `sensitive_user_need` is empty. Analysis/grouping/client-need options
+are not gateway GET parameters. A clean current replay or synthetic null test does
+not establish the cause of a historical failure. See `docs/metric-definitions.md`.
 
 ## Verification
 

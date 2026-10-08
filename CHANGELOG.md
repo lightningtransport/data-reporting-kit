@@ -1,5 +1,12 @@
 # Changelog
 
+## Fuel validation / client skill 0.11.5 — 2026-10-08
+
+- Version the existing ME fuel importer and add isolated numeric regression coverage. Reject ambiguous locale/currency formatting, nonfinite/range/underflow values and precision-changing transport conversions; keep explicit null/blank unknowns distinct from zero. Fail closed on an omitted mapped numeric source key until sparse omission semantics are documented. Preserve mapping, cursor/sinceId, financial values and append-only behavior.
+- Clarify existing fuel null coverage, exact JSON field names, populated counts versus transaction counts, row completeness versus metric completeness, and disjoint owner/shared-owner attribution without inventing an allocation. No HTTP/API schema or function-source change; the runtime remains schema 3.8.3 / function revision 125.
+- Current 2026-10-01..08 gateway rows reconcile independently to database groups and live ME identities/values. This does not prove historical causation; the historical native-client numeric error remains inconclusive. No financial corrections, database migration, key/RLS/grant changes, log/chat edits, or WebUI changes.
+- Local runtime validation and read-only dry runs verified. Publish the reporting-only release and synchronize skill version 0.11.5; no dashboard source/settings changes or manual WebUI deployment. Coworker native-client replay remains a separate verification step.
+
 ## Schema 3.8.3 / client skill 0.11.4 — 2026-10-08
 
 - Adopt the owner-approved credential-free live Ninox on-road/working share as the primary most-current source for current/now/today status; fetch immediately, validate the complete seven-key array and exact On The Road Working status under 30 seconds / 2 MiB, count distinct truck_number, use exact source attribution, preserve timestamp/duplicate/conflict evidence and fail unknown/null rather than zero.

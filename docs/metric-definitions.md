@@ -73,6 +73,56 @@ Only in `settlements` and settlement-derived reports, `Truck` 1=Carlos, 2=Jorge,
 | Gallons | Sum `Gallons` for the explicit filtered transactions, reporting null/missing values where material. | `fuel.Gallons` |
 | Aggregate price per gallon | Applicable aggregated spend ÷ aggregated gallons; do not average `Price_Per_Gallon` transaction values. | `fuel` |
 
+### Fuel numeric contract — clarification 1.0
+
+`Gallons` and `Adjusted SubTotal` are nullable PostgreSQL `numeric` columns.
+The current gateway returns their exact named keys as JSON numbers or JSON null;
+there is no server-side `analysis`, `group_by`, or `sensitive_user_need` parameter.
+These are native-client operations/options, not HTTP filter names. Preserve the
+nonsensitive projection when the native client's `sensitive_user_need` is empty.
+
+- For each sum, retain populated count and explicit null count for the total and
+  each affected group. Sum only valid populated cells; return null when a nonempty
+  group has no populated cells. A validated empty selection has zero transactions
+  and a zero sum. Do not coerce blanks, placeholders, booleans, nonfinite values,
+  or an absent required projected key to zero. Null is permitted; an absent key
+  is schema/projection drift and fails the calculation.
+- `count(id)` counts transactions; `count(Adjusted SubTotal)` counts populated
+  adjusted-spend cells. It is not the number of financially complete transactions
+  unless every required financial field is also populated.
+- `complete=true` from the paginating helper means all reported rows were
+  retrieved and reconciled. It does not certify numeric coverage. Keep separate
+  per-metric completeness flags; a permitted null must not become a generic
+  numeric-parser failure or be hidden behind row completeness.
+- Use decimal arithmetic for reconciliation and preserve legitimate stored zeros
+  and negatives. Never substitute `SubTotal` for a null `Adjusted SubTotal`.
+  Aggregate price uses matching populated spend/gallon pairs, not independent
+  sums with different eligible populations.
+- Grouping by `[owner, shared_owner]` produces disjoint attribution pairs, not a
+  financial allocation to both companies. Primary-owner groups count each row
+  once. Exact owner filters match either field and can overlap; do not add their
+  totals or invent a shared-owner split/reassignment rule.
+- Preserve explicit inclusive `store_from` / `store_to` dates. A request for
+  current-month-to-date resolves in America/New_York from the first calendar day
+  through the stated as-of day; the gateway has no implicit fuel-month default.
+  Explicit dates override relative defaults; do not expand a numeric request to
+  the dashboard's history window or silently filter its product.
+
+Importer validation is independent of reporting null semantics. Treat a source
+numeric null/blank as unknown, never zero; reject undocumented currency/locale
+formatting instead of stripping commas or currency signs. Require finite,
+representable JSON numbers and reject precision-changing conversion. Distinguish
+source field omission from explicit null; unless omission-as-null is documented
+for that field/source, stop ingestion and retain a private correction record.
+Never rewrite historical financial records solely because a synthetic fixture
+fails. Preserve private record-level evidence and reversible backups for any
+proven authorized correction.
+
+*Evidence: schema and deployed schema 3.8.3 / function revision 125 checked
+2026-10-08. Current success and synthetic validation do not establish the cause
+of historical native-client numeric failures. Native-client rollout must be
+verified separately; the gateway does not execute the client's analysis JSON.*
+
 ## Outside repair metrics
 
 One `public."Outside_Repairs"` row represents one external repair. Use inclusive service `Date` for date filtering; `created_at` is row creation, not service date. `Total Cost` already includes parts and labor. Paginate fully before aggregating; count rows as repairs, not distinct trucks.
