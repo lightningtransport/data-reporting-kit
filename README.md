@@ -25,7 +25,7 @@ Grok Bot and Cursor agents: the reporting dashboard lives in [`apps/reporting-da
 - `GET https://aaqquwhdglueqlnbifvn.supabase.co/functions/v1/agent-reporting`
 - Custom `x-agent-key` authentication; never place the key in a URL, browser, prompt, log, or repository.
 - Single-organization access, optional per-key report allowlist/expiry, full read access to approved reports and their documented sensitive fields by default, explicit column selection, strict filters, stable pagination, and request audit. Set `AGENT_ALLOW_SENSITIVE_<n>=false` only to restrict a particular key. Road/outside/not-company-shop repairs route to `outside_repairs`, not internal-shop `LTR Invoices`; confirm the deployed catalog includes the report for your assigned key before querying.
-- Discover with `?report=catalog`; see `docs/agent-reporting.md` and `api/openapi.yaml`.
+- Discover with `?report=catalog&compact=true`, then load selected report metadata. Canonical MCP `catalog({})` is compact-first; explicit `compact=false` retains full discovery. Hermes wrappers must apply compact at the HTTP layer before their output-size guard and reload their installed code; skill synchronization alone does not patch a wrapper. See `docs/agent-reporting.md` and `api/openapi.yaml`.
 
 ### `reporting-query` — individual Supabase Auth memberships
 

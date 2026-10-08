@@ -1,5 +1,12 @@
 # Changelog
 
+## Client skill 0.11.2 — 2026-10-08
+
+- Make canonical ChatGPT MCP catalog discovery compact-first at the HTTP layer; Python `ReportingService.catalog()` and MCP `catalog({})` default to `compact=true`, with explicit `compact=false` full opt-in. Preserve returned permissions/global rules without local truncation.
+- Keep the HTTP API and portable helper catalog default full; recommend helper `catalog --compact` followed by selected report metadata for unfamiliar fields, filters or calculations.
+- Document Hermes wrapper requests before the reporting-output size guard; do not disable/raise output limits or strip guardrails. Installed wrappers require their own update/reload and verification. Add service and real MCP dispatch regressions. No Supabase function/schema change or deployment.
+- Verify the updated MCP `catalog({})` and selected settlements metadata against the live gateway. Full/compact HTTP catalogs measured 48,241/17,483 bytes (63.76% smaller), with identical principal permissions, ten authorized reports, global guidance and response semantics. All 94 targeted MCP/helper/contract/workflow/Jev tests pass. Production function version 124 remains byte-identical to canonical source; another user's installed Hermes wrapper is not remotely verified.
+
 ## Schema 3.8.2 / client skill 0.11.1 — 2026-10-07
 
 - Adopt the owner-approved live, credential-free Ninox off-duty source for current in-yard/off-duty/not-working questions; all feed trucks are not working/not on road, including Ready To Go and Outside/vendor locations. Document the exact URL, nine-field schema, immediate bounded fresh fetch, complete validation, distinct truck counts, exact owner/dispatcher, millisecond duration conversion and timestamp evidence.

@@ -48,8 +48,9 @@ class ReportingService:
         self.agent_key = agent_key
         self.opener = opener
 
-    def catalog(self) -> dict[str, Any]:
-        return self._get({"report": "catalog"})
+    def catalog(self, compact: bool = True) -> dict[str, Any]:
+        """Discover permitted reports compactly; explicitly opt into full with False."""
+        return self._get({"report": "catalog", "compact": compact})
 
     def metadata(self, report: str) -> dict[str, Any]:
         return self._get({"report": report, "metadata": "true"})

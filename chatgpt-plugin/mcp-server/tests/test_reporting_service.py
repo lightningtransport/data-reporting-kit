@@ -40,10 +40,60 @@ class ReportingServiceTests(unittest.TestCase):
 
     self.assertEqual(service.catalog(), {"reports": {"trucks": {}}})
     self.assertEqual(captured, {
-        "url": "https://example.supabase.co/functions/v1/agent-reporting?report=catalog",
+        "url": "https://example.supabase.co/functions/v1/agent-reporting?report=catalog&compact=true",
         "key": "secret-key",
         "timeout": 20,
     })
+
+
+ def test_catalog_explicit_false_requests_full_contract_without_truncation(self):
+    captured = []
+    payload = {"reports": {"trucks": {"fields": {"truck_number": "number"}}},
+               "guidance": {"rule": "synthetic global rule"}, "padding": "x" * 60000}
+
+    def open_request(request, timeout):
+        captured.append(parse_qs(urlparse(request.full_url).query))
+        return FakeResponse(200, payload)
+
+    service = ReportingService("https://example.test/reporting", "test-only", open_request)
+    self.assertEqual(service.catalog(compact=False), payload)
+    self.assertEqual(captured, [{"report": ["catalog"], "compact": ["false"]}])
+
+
+ def test_catalog_explicit_true_preserves_permissions_and_global_rules(self):
+    captured = []
+    payload = {"principal": {"allowed_reports": ["trucks"]},
+               "reports": {"trucks": {"metadata_url": "?report=trucks&metadata=true"}},
+               "guidance": {"rule": "synthetic global rule"}, "metadata_required": True}
+
+    def open_request(request, timeout):
+        captured.append(parse_qs(urlparse(request.full_url).query))
+        return FakeResponse(200, payload)
+
+    service = ReportingService("https://example.test/reporting", "test-only", open_request)
+    self.assertEqual(service.catalog(compact=True), payload)
+    self.assertEqual(captured, [{"report": ["catalog"], "compact": ["true"]}])
+
+
+ def test_selected_metadata_does_not_send_catalog_only_compact_parameter(self):
+    captured = []
+    payload = {"report": "trucks", "fields": {"truck_number": {"type": "number"}}}
+
+    def open_request(request, timeout):
+        captured.append(parse_qs(urlparse(request.full_url).query))
+        return FakeResponse(200, payload)
+
+    service = ReportingService("https://example.test/reporting", "test-only", open_request)
+    self.assertEqual(service.metadata("trucks"), payload)
+    self.assertEqual(captured, [{"report": ["trucks"], "metadata": ["true"]}])
+
+
+ def test_data_filters_reject_catalog_only_compact_before_network(self):
+    calls = []
+    service = ReportingService("https://example.test/reporting", "test-only", lambda *a, **k: calls.append(a))
+    with self.assertRaisesRegex(ValueError, "Unsupported reporting filter: compact"):
+        service.run_report("trucks", {"compact": True})
+    self.assertEqual(calls, [])
 
 
  def test_run_report_serializes_only_allowed_values_and_returns_evidence(self):

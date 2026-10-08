@@ -1,7 +1,7 @@
 ---
 name: itpros-supabase-reporting
 description: Answer Lightning reports through the approved reporting APIs.
-version: 0.11.1
+version: 0.11.2
 author: Ibrain Ortega, Hermes Agent
 license: Proprietary
 platforms: [linux, macos, windows]
@@ -30,6 +30,25 @@ python "${HERMES_HOME:-$HOME/.hermes}/skills/itpros-supabase-reporting/scripts/a
 python "${HERMES_HOME:-$HOME/.hermes}/skills/itpros-supabase-reporting/scripts/agent_reporting.py" metadata --report settlements
 python "${HERMES_HOME:-$HOME/.hermes}/skills/itpros-supabase-reporting/scripts/agent_reporting.py" query --report settlements --params '{"period_from":"2026-09-01","period_to":"2026-09-01"}'
 ```
+
+### Compact discovery and Hermes output guards
+
+Use `catalog --compact` for discovery; plain helper `catalog` deliberately remains
+full for compatibility. The packaged ChatGPT MCP `catalog({})` and Python
+`ReportingService.catalog()` default to compact; `compact=false` explicitly opts
+into full. The HTTP API itself still defaults to full.
+
+Hermes wrappers such as `get_reporting_catalog({})` must send
+`?report=catalog&compact=true` at the HTTP layer **before** their reporting-output
+size guard runs. Summarizing a full response after the guard cannot fix “Reporting
+output exceeds model safety limit; narrow the request”. Do not disable or raise
+output limits, remove global guardrails, or bypass report permissions. A full
+opt-in can still exceed the host guard. Updating this skill does not update an
+installed wrapper: reload that integration and verify its actual HTTP request.
+
+Fetch selected report metadata before unfamiliar fields, filters or calculations;
+compact discovery preserves permissions/global rules but is not a replacement
+for the field/calculation dictionary.
 
 For stable-ID physical reports, complete collection defaults to `limit=1000` to reduce round trips (an explicit limit is honored; `--one-page` retains the API default of 100). The query helper follows pagination by default, verifies that integer `total_count` stays stable, and marks a result complete only when the final fetched count equals it. It returns `fetched_count`, `total_count`, normalized filters, timestamps, and combined data. Use `--one-page` only when a partial page is explicitly sufficient; set `--max-pages` when the default safety limit of 100 pages is unsuitable.
 

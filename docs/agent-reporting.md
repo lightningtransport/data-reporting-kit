@@ -5,7 +5,7 @@
 ## Authentication
 
 ```http
-GET /functions/v1/agent-reporting?report=catalog
+GET /functions/v1/agent-reporting?report=catalog&compact=true
 x-agent-key: <assigned secret>
 ```
 
@@ -21,6 +21,22 @@ The key identifies an agent principal. The function is single-organization and a
 - `?report=catalog` returns all reports allowed for the key, global parameters, response semantics, business rules, and examples.
 - `?report=catalog&compact=true` is optional lightweight discovery: identical permissions, global guardrails and response semantics, but report entries contain only source, grain, exact filters, required anchor (when applicable), and a metadata URL. `metadata_required=true` means load the selected report metadata before unfamiliar field/calculation use. `compact=false` or omission returns the unchanged full catalog; compact is rejected on data/metadata requests.
 - `?report=<report>&metadata=true` returns exact physical fields, types, nullability, sensitive flags, Ninox mappings, filters, grain, joins, and calculations.
+
+### Client defaults and output safety
+
+The canonical ChatGPT MCP `catalog({})` and `ReportingService.catalog()` default
+to `compact=true`; explicit `compact=false` requests the full catalog. The HTTP
+API and plain portable-helper `catalog` retain their full defaults; prefer helper
+`catalog --compact`, then selected `metadata`, for discovery.
+
+Hermes wrappers exposing `get_reporting_catalog({})` must request compact at the
+HTTP layer **before** the reporting-output size guard. A full response cannot be
+summarized after a guard that has already rejected it. Do not disable or raise
+output limits, truncate global rules, or bypass permissions. Full opt-in may still
+exceed the host guard. This client-only change does not alter the Supabase
+function/schema or automatically upgrade an installed wrapper; reload and verify
+that wrapper separately. Selected metadata remains required before unfamiliar
+fields, filters or calculations.
 
 Supported data reports in this specification: `settlement_summary`, `settlements`, `driver_pay`, `drivers`, `returns`, `trucks`, `fuel`, `outside_repairs`, `out_schedule`, and `departures`. The live authenticated catalog is authoritative for deployed availability.
 

@@ -17,11 +17,33 @@ The server is deliberately a narrow gateway:
 ## Local verification
 
 ```bash
-python3 -m unittest discover -s mcp-server/tests -v
-cd mcp-server && uv run --with 'fastmcp>=2,<3' python src/server.py
+cd mcp-server
+uv run --frozen python -m unittest discover -s tests -v
+uv run --frozen python src/server.py
 ```
 
 Set `AGENT_REPORTING_KEY` through your shell or deployment-secret manager before starting the server. The service exposes streamable HTTP on `PORT` (default `8000`).
+
+## Compact-first catalog discovery
+
+`ReportingService.catalog()` and the MCP `catalog({})` tool request
+`?report=catalog&compact=true` by default. `catalog({"compact": false})` (Python:
+`service.catalog(compact=False)`) explicitly requests the full catalog. The HTTP
+API and portable helper retain their full defaults; use helper `catalog --compact`
+for discovery. Both modes preserve the server-authorized report list and global
+rules; clients return the envelope unchanged, not a locally truncated dictionary.
+
+Fetch selected report `metadata` before unfamiliar fields, filters or calculations;
+compact routing summaries are not the field/calculation contract.
+
+Hermes wrappers exposing `get_reporting_catalog({})` must request `compact=true`
+at the HTTP layer **before** their reporting-output size guard runs. Reducing or
+summarizing a full response after that guard cannot fix “Reporting output exceeds
+model safety limit; narrow the request”. Keep the output limit enabled; do not
+raise or disable it, strip global rules, or bypass permissions. Full mode is an
+explicit opt-in and can still exceed a host's guard. Update/reload and smoke-test
+the actual wrapper separately; this repository change does not update installed
+Hermes integrations automatically.
 
 ## Deployment and ChatGPT connection
 

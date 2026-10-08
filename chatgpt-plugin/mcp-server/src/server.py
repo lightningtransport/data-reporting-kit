@@ -71,9 +71,12 @@ def create_server() -> FastMCP:
         return knowledge.fetch(id)
 
     @mcp.tool()
-    def catalog() -> dict[str, Any]:
-        """List reports and global request rules authorized for this service principal."""
-        return service.catalog()
+    def catalog(compact: bool = True) -> dict[str, Any]:
+        """Discover authorized reports/global rules compactly; false opts into full catalog.
+
+        Load selected report metadata before unfamiliar field/calculation use.
+        """
+        return service.catalog(compact=compact)
 
     @mcp.tool()
     def metadata(report: str) -> dict[str, Any]:
