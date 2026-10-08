@@ -5,7 +5,7 @@ description: >-
   reports — auto-configure from this kit, fetch ≥12 months for the
   settlement dashboard and ≥3 months for other HTML/analytical settlement
   history, and ship the confirmed report sections.
-version: 0.2.5
+version: 0.2.6
 license: Proprietary
 platforms: [linux, macos, windows]
 metadata:
@@ -23,7 +23,7 @@ A Grok Bot or Cursor agent is building or updating HTML reports from the `agent-
 ## Auto-configure first
 
 1. Read this kit in order: `AGENTS.md`, `docs/agent-rules.md`, `docs/question-routing.md`, `docs/metric-definitions.md`, `docs/data-dictionary.md`, `docs/agent-reporting.md`, `docs/html-reporting.md`, `api/openapi.yaml`.
-2. Use the assigned runtime secret only (`LIGHTNING_AGENT_REPORTING_KEY` for the packaged helper). Never put the key in chat, a URL, HTML, a prompt, a log, or this repository. If it is missing, stop and ask the operator to inject it through the host secret mechanism.
+2. Use the assigned runtime secret only (`LIGHTNING_AGENT_REPORTING_KEY` for the packaged helper). Never put the key in chat, a URL, HTML, a prompt, a log, or this repository. If gateway data is needed and it is missing, stop and ask the operator to inject it through the host secret mechanism. Approved direct shares (including current on-road and off-duty) are credential-free and do not require that key.
 3. Default endpoint: `https://aaqquwhdglueqlnbifvn.supabase.co/functions/v1/agent-reporting`. Override only with the operator-configured endpoint for this agent.
 4. Validate with `GET ?report=catalog` and header `x-agent-key`. If the live catalog conflicts with this kit, stop and report the contradiction.
 
@@ -74,7 +74,7 @@ For Out Schedule / Trucks Return / Diesel UI questions, link the deep URLs above
 
 - Don't ship a one-off date slice without the 3-month backdrop for HTML or analytical settlement/fleet history.
 - Don't invent metrics or recompute stored Gross / Total Expenses / Net for headlines.
-- The DriverPay on-road metric IS available via `on_road_at` (distinct trucks, Out Date <= date < Return Date). The separate Ninox insurance-choice/in-yard metric remains unavailable; planned Schedule_Teams UI is `/out-schedule`.
+- Current On road today / working KPIs use the primary most-current [live on-road source](../../docs/on-road-trucks.md), fetched immediately without credentials; validate every row under 30 seconds / 2 MiB, count distinct truck_number with exact Status=On The Road Working, preserve timestamps and unknown/null failures. No cached/DriverPay fallback, GPS movement or off-duty complement. Historical/explicit-date DriverPay assignment overlap remains via `on_road_at`; the legacy insurance-choice formula remains unsupported. Current yard/off-duty uses its independent [approved share](../../docs/off-duty-trucks.md). Planned Schedule_Teams UI is `/out-schedule`.
 
 ## Governed departure totals (prepared schema 3.8.0)
 

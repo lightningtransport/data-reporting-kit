@@ -324,12 +324,12 @@ export function OutScheduleDashboard({
         <KpiCard
           label="On road today"
           value={
-            currentlyOut.meta.error ? "—" : String(currentlyOut.count)
+            currentlyOut.count === null || currentlyOut.meta.error ? "—" : String(currentlyOut.count)
           }
           hint={
             currentlyOut.meta.error
-              ? "DriverPay unavailable"
-              : "DriverPay · active date interval"
+              ? "Live on-road source unavailable"
+              : "Live Ninox · working membership"
           }
         />
         <DepartureKpis thisWeek={focusedDepartures?.thisWeek ?? null} nextWeek={focusedDepartures?.nextWeek ?? null} />
@@ -461,18 +461,21 @@ export function OutScheduleDashboard({
               <strong>{data.meta.source_freshness}</strong>.
             </p>
             <p>
-              On road today (DriverPay): distinct trucks=
-              <strong>{currentlyOut.count}</strong> · on_road_at=
-              <strong>{String(currentlyOut.meta.filters.on_road_at ?? "")}</strong> ·
-              fetched=
-              <strong>{currentlyOut.meta.fetched_count}</strong> ·
-              pagination_complete=
-              <strong>{String(currentlyOut.meta.pagination_complete)}</strong>
-              {currentlyOut.meta.error
-                ? ` · error=${currentlyOut.meta.error}`
-                : ""}
-              . Out Date ≤ date and Return Date &gt; date; null returns excluded.
-              Distinct Truck_Number, not driver rows. Timezone: America/New_York.
+              On road today (live Ninox working membership): distinct trucks=
+              <strong>{currentlyOut.count ?? "unknown"}</strong> · source=
+              <strong>{String(currentlyOut.meta.filters.source_url ?? "")}</strong> ·
+              rows=<strong>{currentlyOut.meta.fetched_count ?? "unknown"}</strong> ·
+              full_array_validated=<strong>{String(currentlyOut.meta.pagination_complete)}</strong> ·
+              fetch_started_at=<strong>{currentlyOut.meta.fetch_started_at ?? "unknown"}</strong> ·
+              fetch_completed_at=<strong>{currentlyOut.meta.as_of}</strong> ·
+              duplicate_truck_rows=<strong>{currentlyOut.meta.duplicate_truck_rows ?? "unknown"}</strong> ·
+              conflicting_trucks=<strong>{currentlyOut.meta.conflicting_trucks ?? "unknown"}</strong> ·
+              source_freshness=<strong>{currentlyOut.meta.source_freshness}</strong>
+              {currentlyOut.meta.error ? ` · error=${currentlyOut.meta.error}` : ""}.
+              Credential-free immediate fetch, 30-second total deadline / 2 MiB bound.
+              Status exactly On The Road Working; distinct truck_number, not source rows.
+              Not GPS movement or dated DriverPay assignment overlap. No cache/fallback or fleet complement.
+              This KPI is company-wide and is not filtered by the schedule/return table controls.
             </p>
             <p>
               Caveats: the table collapses Schedule_Teams driver-grain rows on

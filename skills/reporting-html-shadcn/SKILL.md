@@ -3,7 +3,7 @@ name: reporting-html-shadcn
 description: >-
   Use when a Grok Bot or Cursor agent builds Lightning reporting HTML dashboards
   so every screen reuses the same shadcn-like components and styles.
-version: 0.3.5
+version: 0.3.6
 license: Proprietary
 platforms: [linux, macos, windows]
 metadata:
@@ -13,6 +13,8 @@ metadata:
 ---
 
 # Reporting HTML (shadcn-style)
+
+Current On road today / working KPIs on Out Schedule and Trucks Return use the independent [live on-road contract](../../docs/on-road-trucks.md): immediate credential-free fetch, all-row validation, 30-second total / 2 MiB bound, distinct truck_number, exact Status=On The Road Working. Render unavailable/null, never zero on source failure; retain fetch-start/completion, row/distinct/duplicate evidence in Technical details. No cached/DriverPay fallback, GPS movement inference or fleet/off-duty complement. Historical/explicit-date assignment overlap remains DriverPay on_road_at; do not change settlement-derived historical operating metrics.
 
 ## When
 

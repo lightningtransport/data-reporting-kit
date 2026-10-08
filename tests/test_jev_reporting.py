@@ -103,6 +103,17 @@ class FastRouterTests(unittest.TestCase):
                     self.assertIsNone(result['answer'])
                     self.assertNotIn('metrics', result)
 
+    def test_current_onroad_maximum_confidence_cannot_reach_driverpay(self):
+        module = self.load()
+        request = Mock(); collect = Mock()
+        result = module.ask_question('How many trucks are on the road today?',
+            evaluate=lambda body: self.answers(module, 'on_road_count', 'today'),
+            request=request, collect=collect)
+        self.assertEqual(result['status'], 'fallback')
+        self.assertIsNone(result['answer'])
+        self.assertNotIn('metrics', result)
+        request.assert_not_called(); collect.assert_not_called()
+
     def test_missing_time_and_unsupported_workflow_fall_back(self):
         module = self.load()
         for workflow, period in [('diesel_totals','unspecified'), ('settlements','last_full_week'), ('on_road_count','last_full_week')]:
@@ -208,6 +219,11 @@ class FastRouterTests(unittest.TestCase):
             with self.subTest(question=question):
                 evaluate = Mock(return_value=self.answers(module, workflow, period, language))
                 route = module.route_question(question, evaluate=evaluate)
+                if workflow == 'on_road_count':
+                    self.assertEqual(route['status'], 'fallback')
+                    self.assertIsNone(route['answer'])
+                    self.assertNotIn('metrics', route)
+                    continue
                 self.assertEqual(route['status'], 'routed')
                 self.assertEqual((route['workflow'], route['time_window'], route['language']),
                                  (workflow, period, language))

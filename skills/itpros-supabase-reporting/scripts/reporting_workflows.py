@@ -11,7 +11,7 @@ from typing import Callable
 from zoneinfo import ZoneInfo
 
 NY = ZoneInfo('America/New_York')
-SCHEMA_VERSION = '3.8.2'
+SCHEMA_VERSION = '3.8.3'
 
 
 class WorkflowFallback(Exception):
@@ -24,7 +24,7 @@ class WorkflowFallback(Exception):
 
 
 def build_plan(workflow: str, time_window: str, now: datetime | None = None) -> dict:
-    windows = {'fleet_count': ('today', 'unspecified'), 'on_road_count': ('today',),
+    windows = {'fleet_count': ('today', 'unspecified'),
                'diesel_totals': ('last_full_week',), 'outside_repair_totals': ('last_full_week',),
                'returning_trucks': ('current_week', 'last_full_week'),
                'departing_trucks': ('current_week', 'last_full_week')}
@@ -37,7 +37,7 @@ def build_plan(workflow: str, time_window: str, now: datetime | None = None) -> 
         raise WorkflowFallback('naive_datetime')
     day = now.astimezone(NY).date()
     partial = time_window == 'current_week'
-    if workflow in ('fleet_count', 'on_road_count'):
+    if workflow == 'fleet_count':
         start = end = day
     else:
         weekday = 0 if workflow == 'departing_trucks' else 1
@@ -50,8 +50,6 @@ def build_plan(workflow: str, time_window: str, now: datetime | None = None) -> 
               'window': time_window}
     if workflow == 'fleet_count':
         queries = [{'report': 'trucks', 'params': {}}]
-    elif workflow == 'on_road_count':
-        queries = [{'report': 'driver_pay', 'params': {'on_road_at': period['from']}}]
     elif workflow == 'outside_repair_totals':
         queries = [{'report': 'outside_repairs', 'params': {'date_from': period['from'], 'date_to': period['to']}}]
     elif workflow == 'departing_trucks':
@@ -301,7 +299,6 @@ def _departures(payload, query, metadata):
 
 def _required(workflow, report):
     return {'fleet_count': {'trucks': ('truck_number',)},
-            'on_road_count': {'driver_pay': ('Truck_Number', 'Out Date', 'Return Date')},
             'diesel_totals': {'fuel': ('Product', 'Store Date', 'Gallons', 'Adjusted SubTotal')},
             'outside_repair_totals': {'outside_repairs': ('Date', 'Total Cost')},
             'returning_trucks': {'driver_pay': ('Truck_Number', 'Return Date', 'Termination', 'Transfer', 'Solo_Driver_if_1'),
@@ -423,7 +420,7 @@ def _execute_plan(plan: dict, request: Callable, collect: Callable) -> dict:
         metrics = data['departures']
         caveats.append('Schedule_Teams fetched live by the gateway; planned rows are volatile, DriverPay sync time unknown.')
     else:
-        metrics = _onroad(data['driver_pay'], plan['period'])
+        raise WorkflowFallback('unsupported_workflow')
     return {'workflow': plan['workflow'], 'period': plan['period'], 'metrics': metrics,
             'evidence': evidence, 'caveats': caveats}
 

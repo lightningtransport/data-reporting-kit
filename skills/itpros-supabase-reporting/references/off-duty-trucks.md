@@ -42,7 +42,7 @@ All nine exact keys must be present. The live verification observed populated va
 
 This source answers current state at retrieval time, **not historical off-duty state**. A named past date cannot be reconstructed from today's feed. Do not manufacture a dated historical count, infer transitions from duration, or present yesterday's saved list as live.
 
-Every included truck is not on the road under the owner-approved rule. The converse is **not** established: absence does not prove a truck is on the road, working, missing, or outside the fleet. Never compute on-road trucks as fleet minus this feed, or use this feed's complement as absence proof. The separate approved dated on-road metric remains `driver_pay?on_road_at=YYYY-MM-DD` (distinct trucks with `Out Date <= D` and `Return Date > D`, excluding null returns and return day). Disclose conflicting source evidence rather than silently combining the definitions.
+Every included truck is not on the road under the owner-approved rule. The converse is **not** established: absence does not prove a truck is on the road, working, missing, or outside the fleet. Never compute on-road trucks as fleet minus this feed, or use this feed's complement as absence proof. Current working/on-road membership uses the independent [live on-road feed](on-road-trucks.md), never this feed's complement. The separate **historical or explicit-date assignment-overlap** metric remains `driver_pay?on_road_at=YYYY-MM-DD` (distinct trucks with `Out Date <= D` and `Return Date > D`, excluding null returns and return day). Disclose conflicting source evidence rather than silently combining the definitions.
 
 ## Answer evidence and failures
 

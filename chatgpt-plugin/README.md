@@ -1,5 +1,7 @@
 # Lightning Reporting ChatGPT Plugin
 
+Current operational on-road/working and yard/off-duty questions use the explicitly approved credential-free [on-road](../docs/on-road-trucks.md) and [off-duty](../docs/off-duty-trucks.md) direct source contracts. Both documents are registered for MCP search/fetch. The MCP server publishes guidance, not a dedicated live-share data tool: the host must immediately fetch the exact share with complete bounded validation, or disclose unavailable evidence. DriverPay on_road_at is historical/explicit-date assignment overlap only, never a current-source failure fallback; no cached result, GPS movement claim or fleet complement.
+
 This directory packages the two parts of an OpenAI ChatGPT plugin:
 
 - `skills/lightning-reporting/SKILL.md`: the reusable operating rules.

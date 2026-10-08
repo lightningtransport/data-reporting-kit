@@ -13,7 +13,7 @@ Deno.test("current off-duty questions route to exact fresh Ninox share rather th
   for (const term of ["in the yard", "off duty", "not working", "not on the road", "Ready To Go", "Outside", "immediately", "truck_number", "Days In Yard", "86400000", "historical", "zero", "credentials", "JSON array"]) {
     assert(text.includes(term), `off-duty rule missing ${term}`);
   }
-  assert(String(SCHEMA_VERSION) === "3.8.2", "answer-affecting metadata version not bumped");
+  assert(String(SCHEMA_VERSION) === "3.8.3", "answer-affecting metadata version not bumped");
   assert(!JSON.stringify(GLOBAL_GUIDANCE).includes("in-yard/off-duty and insurance-choice calculation requires"), "contradictory unavailable rule retained");
   assert(JSON.stringify(TABLES.trucks).includes("off_duty_trucks"), "truck metadata must route current status questions");
 });

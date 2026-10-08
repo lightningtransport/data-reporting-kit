@@ -18,7 +18,10 @@ class KnowledgeBase:
         terms = set(_TOKEN.findall(query.lower()))
         matches: list[tuple[int, str]] = []
         for document_id, text in self.documents.items():
-            score = sum(text.lower().count(term) for term in terms)
+            # Cap body frequency so large dictionaries cannot bury a dedicated contract.
+            # Filename + first heading preserve discoverability without adding documents.
+            title_terms = set(_TOKEN.findall((document_id + " " + text.splitlines()[0]).lower())) if text else set()
+            score = sum(min(text.lower().count(term), 3) for term in terms) + 10 * len(terms & title_terms)
             if score:
                 matches.append((score, document_id))
         matches.sort(key=lambda item: (-item[0], item[1]))

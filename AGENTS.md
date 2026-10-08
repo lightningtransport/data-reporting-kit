@@ -47,7 +47,7 @@ tool. If the corrected request fails, disclose the unavailable guidance.
 
 **Non-negotiable analysis rules**
 
-- **On-road trucks for date D** (today in America/New_York for “now”): query `driver_pay?on_road_at=D` and paginate completely. Count distinct nonblank `Truck_Number` where `Out Date <= D` and `Return Date > D`. Null return dates and the return day do **not** qualify. No 18-month lookback, `returns` union, or `return_null` shortcut. This is distinct from the Ninox legacy insurance-choice formula.
+- **Current on-road / working trucks (owner-approved 2026-10-08):** fetch `https://lightningtransport.ninoxdb.com/share/eno5u22ebn2qdn215dpzwn02squ5wsixob8f?locale=en&utcoffset=-240` immediately before each answer, credential-free; follow [live on-road contract](docs/on-road-trucks.md). This primary most-current source answers current/now/today operational status. Fully validate all seven keys and exact `Status=On The Road Working` within 30 seconds overall and 2 MiB; count distinct `truck_number`, use exact source owner/dispatcher/insurance, and state fetch-start/completion timestamps. Failure means unknown/null, never zero; no cached/DriverPay fallback, GPS movement claim or fleet/off-duty complement. Historical or explicit-date assignment overlap alone uses fully paginated `driver_pay?on_road_at=D` (Out Date <= D, Return Date > D; null returns and return day excluded).
 
 - Settlements run Tuesday through Monday. Use an explicit period; never infer the current cycle from `To Report` alone.
 - For HTML reports and analytical settlement/fleet-history answers (trends, rankings), always fetch **at least three calendar months** ending today or at the user-named end date. The **settlement dashboard** loads **at least twelve calendar months**. The named week or day is UI focus only, not the sole data window. Paginate until complete. See `docs/html-reporting.md`.
@@ -65,7 +65,7 @@ tool. If the corrected request fails, disclose the unavailable guidance.
 - `returns.CDL` is a sensitive exact driver key: use it to resolve a return only when it matches a verified CDL in related approved data. Never use a name, Supabase `ID`, or `returns.Ninox_ID` as a substitute.
 
 *Evidence: approved business rule confirmed 2026-09-11; `returns.CDL` and `drivers.Date of Hire` physical columns verified on 2026-09-11.*
-- Schedule_Teams is external planned state; the prepared `out_schedule`/`departures` gateway path remains **not integrated** in installed clients until deployed and verified. The legacy Ninox insurance-choice formula is not available from these Supabase tables; this does not block the approved live off-duty source. The owner-approved DriverPay on-road count IS available and is not the complement of that feed.
+- Schedule_Teams is external planned state; the prepared `out_schedule`/`departures` gateway path remains **not integrated** in installed clients until deployed and verified. The legacy Ninox insurance-choice formula is not available from these Supabase tables; this does not block the approved live off-duty source. Current on-road/working membership uses the independent live on-road feed; DriverPay on_road_at is historical/explicit-date assignment overlap only.
 
 ## HTML reports
 

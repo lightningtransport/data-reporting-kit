@@ -1,5 +1,14 @@
 # Changelog
 
+## Schema 3.8.3 / client skill 0.11.4 — 2026-10-08
+
+- Adopt the owner-approved credential-free live Ninox on-road/working share as the primary most-current source for current/now/today status; fetch immediately, validate the complete seven-key array and exact On The Road Working status under 30 seconds / 2 MiB, count distinct truck_number, use exact source attribution, preserve timestamp/duplicate/conflict evidence and fail unknown/null rather than zero.
+- Retain DriverPay on_road_at strictly for historical/explicit-date assignment overlap; preserve the date predicate, null exclusions, anchors and pagination. No cached/DriverPay fallback, GPS movement claim or complement of independent off-duty/fleet sources.
+- Replace current dashboard loaders, both operational KPI hints and Technical details. Keep settlement-derived historical operating metrics unchanged. Disable the Jev current on-road route without a deterministic feed transport, forcing a no-answer fallback to approved direct retrieval rather than stale DriverPay.
+- Update canonical docs, curated policy, OpenAPI, runtime full/compact catalog/metadata and schema pins; package the self-contained mirrored source contract, bump HTML skills to 0.2.6 / 0.3.6, and register both live-source documents in canonical MCP search/fetch with explicit direct-source guidance. Title-aware bounded-frequency search ranking keeps dedicated contracts discoverable rather than buried under larger dictionaries; the document allowlist is unchanged apart from the two explicit source documents.
+- Rollout requires agent-reporting metadata deployment (existing custom-key auth unchanged), dashboard deployment, packaged skill publication/sync and MCP code reload; no new gateway report, table/migration or credentials. Repository preparation alone is not a deployed or installed-client verification.
+
+
 ## Client skill 0.11.3 — 2026-10-08
 
 - Correct fuel/diesel knowledge routing for the Spanish company-breakdown question: use existing approved routing/dictionary/metric documents, never infer `docs/diesel.md` from dashboard `/diesel`. Document the exact one-time recovery while preserving offset/limit and each tool’s advertised path/alias contract.

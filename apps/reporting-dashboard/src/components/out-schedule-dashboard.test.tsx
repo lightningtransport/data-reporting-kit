@@ -13,7 +13,7 @@ const data: OutSchedulePayload = {
   rows: [{ id: "1", truck: "10", outDate: "2026-10-05", day: "Monday", team: "A", driver2: "B", owner: "CDT", dispatch: "Dispatch", flatbed: "No", solo: "No" }],
   meta: { as_of: "2026-10-05T12:00:00Z", source_freshness: "live", total_count: 1, fetched_count: 1, pagination_complete: true, live: true, dataset: "Schedule_Teams", filters: {} },
 }
-const currentlyOut: TrucksCurrentlyOutPayload = { count: 7, meta: { ...data.meta, filters: { on_road_at: "2026-10-05" } } }
+const currentlyOut: TrucksCurrentlyOutPayload = { count: 7, meta: { ...data.meta, dataset: "live_ninox_on_road", fetch_started_at: "2026-10-05T11:59:59Z", filters: { source_url: "https://synthetic.invalid/on-road", Status: "On The Road Working" } } }
 
 test("Out Schedule integrates union KPIs and explicitly labels filters, day strip and table as source-only", () => {
   const from = "2026-10-05"
@@ -26,6 +26,8 @@ test("Out Schedule integrates union KPIs and explicitly labels filters, day stri
       <OutScheduleDashboard data={data} currentlyOut={currentlyOut} initialMonday={from} initialDepartureWeeks={{ thisWeek, nextWeek: unavailableDepartureWeek("2026-10-12", "2026-10-18") }} />
     </DashboardChrome></PathnameContext.Provider>
   )
+  assert.match(html, /Live Ninox · working membership/)
+  assert.doesNotMatch(html, /On road today \(DriverPay\)|DriverPay · active date interval|on_road_at=/)
   assert.match(html, />17</)
   assert.match(html, /Leaving selected week/)
   assert.match(html, /Schedule_Teams-only filters/)

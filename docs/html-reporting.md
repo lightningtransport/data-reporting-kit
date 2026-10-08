@@ -1,5 +1,7 @@
 # HTML reporting conventions
 
+**Current on-road / working trucks (owner-approved 2026-10-08):** fetch `https://lightningtransport.ninoxdb.com/share/eno5u22ebn2qdn215dpzwn02squ5wsixob8f?locale=en&utcoffset=-240` immediately before each answer, credential-free; follow [live on-road contract](on-road-trucks.md). This primary most-current source answers current/now/today operational status. Fully validate all seven keys and exact `Status=On The Road Working` within 30 seconds overall and 2 MiB; count distinct `truck_number`, use exact source owner/dispatcher/insurance, and state fetch-start/completion timestamps. Failure means unknown/null, never zero; no cached/DriverPay fallback, GPS movement claim or fleet/off-duty complement. Historical or explicit-date assignment overlap alone uses fully paginated `driver_pay?on_road_at=D` (Out Date <= D, Return Date > D; null returns and return day excluded).
+
 Read `AGENTS.md` first. These rules are for **Grok Bot and Cursor agents** that auto-configure from this kit.
 
 *Evidence: settlement dashboard C-level executive section and 12-month `settlements` load published 2026-09-15; Out Schedule + Trucks Return views added 2026-09-16; analytical HTML answers still use ≥3 months unless they are this dashboard.*
@@ -51,19 +53,19 @@ Not established (do not display or approximate): Ninox “Full Week” / “No F
 
 ### Out Schedule (`/out-schedule`)
 
-1. Distinct-truck KPIs: **On road today** (distinct DriverPay Truck_Number: Out Date <= today and Return Date > today), plus leaving this week / next week from the same-window DriverPay + Schedule_Teams distinct union (use `departures` after deployed verification). Week nav is calendar Mon ±7 days (empty weeks allowed).
+1. Distinct-truck KPIs: **On road today** (distinct truck_number in the fresh validated live on-road share, Status exactly On The Road Working), plus leaving this week / next week from the same-window DriverPay + Schedule_Teams distinct union (use `departures` after deployed verification). Week nav is calendar Mon ±7 days (empty weeks allowed).
 2. Mon–Sun day strip with distinct-truck counts per weekday so incomplete live weeks are visible (Schedule_Teams drops past planned days).
 3. Table collapsed to one row per truck per Out Date: Truck, Out Date, Day (derived), Driver 1, Driver 2, Owner, Dispatch, Flatbed, Solo. Sticky column headers in the scroll area.
 4. Light filters (truck/driver search, owner, dispatch), Export CSV of collapsed rows, truck count, **Technical details**.
-5. Do not substitute DriverPay history when the Ninox share fails; show an explicit error state. Insurance / Team Status / Truck Status / Notes are not in this share. Past planned days not still in the live share cannot be reconstructed here. On road today is DriverPay-only via on_road_at (America/New_York date); it is distinct from the Ninox legacy insurance-choice formula.
+5. Do not substitute DriverPay history when the Ninox share fails; show an explicit error state. Insurance / Team Status / Truck Status / Notes are not in this share. Past planned days not still in the live share cannot be reconstructed here. On road today uses the primary most-current live on-road share, not DriverPay; validate the entire bounded array without credentials, no cached/DriverPay fallback. Historical/explicit-date assignment overlap alone uses on_road_at. Fetch-start/completion evidence is not upstream-sync or GPS movement evidence.
 
 ### Trucks Return (`/trucks-return`)
 
-1. Distinct-truck KPIs: **On road today** (DriverPay on_road_at, distinct Truck_Number), returning this week, returning next week, and no date (empty `returns.Return Date`). Returning counts use the required union of `returns` plus qualifying DriverPay rows for the same Mon–Sun `Return Date` period. Calendar Mon ±7 week nav; Mon–Sun day strip for dated weeks.
+1. Distinct-truck KPIs: **On road today** (distinct truck_number from the fresh validated live on-road share), returning this week, returning next week, and no date (empty `returns.Return Date`). Returning counts use the required union of `returns` plus qualifying DriverPay rows for the same Mon–Sun `Return Date` period. Calendar Mon ±7 week nav; Mon–Sun day strip for dated weeks.
 2. Before merging DriverPay, exclude `Termination = Driver Changed` and `Transfer = Transfer To Other Truck`; calculate `tc`, `ts`, and `floor(tc / 2 + ts)`. Union distinct qualifying `Truck_Number` with distinct `returns.Truck` and deduplicate. If both sources contain the same truck/date, prefer current `returns` details in the table.
 3. Table collapsed to one row per truck per Return Date: Truck, Return Date, Day (derived), Driver 1, Driver 2, Insurance (never Phone/CDL). Sticky headers.
 4. Light filters, truck count, **Technical details**. Show source row/truck counts, overlap, source-only counts, union, `tc`, `ts`, formula count, formula-vs-distinct mismatch, date coverage, and pagination completeness.
-5. Live `returns` is volatile and may omit old history; DriverPay is not a substitute but the second required source. On road today is DriverPay-only via on_road_at (America/New_York date); it is distinct from the Ninox legacy insurance-choice formula.
+5. Live `returns` is volatile and may omit old history; DriverPay is not a substitute but the second required source. On road today uses the primary most-current live on-road share, not DriverPay; validate the entire bounded array without credentials, no cached/DriverPay fallback. Historical/explicit-date assignment overlap alone uses on_road_at. Fetch-start/completion evidence is not upstream-sync or GPS movement evidence.
 
 ### Diesel (`/diesel`)
 
@@ -89,7 +91,7 @@ Not established (do not display or approximate): Ninox “Full Week” / “No F
 - The $11,000 Gross count is a C-level physical-truck threshold on stored Gross.
 - Settlement trucks 1, 2, and 3 are non-physical owner-allocation buckets. Include them in matching owner totals; exclude them from physical-truck counts and rankings; badge them as non-physical.
 - Historical owner/dispatch and `fuel.owner` come from the historical row, not current `trucks`. In settlement and fuel owner-filtered reports, include exact `shared_owner` matches too; it is supplemental attribution for trucks operated under `SOLO INC.` or `FLATBED INC.`, not a replacement for the primary owner.
-- Planned Schedule_Teams UI is the dashboard `/out-schedule` view (live Ninox share). The legacy Ninox insurance-choice formula remains unavailable; the approved [live off-duty source](off-duty-trucks.md) answers current in-yard/off-duty/not-working questions (full feed including Ready To Go and Outside/vendor locations), while the DriverPay on-road metric remains available and is not its complement.
+- Planned Schedule_Teams UI is the dashboard `/out-schedule` view (live Ninox share). The legacy Ninox insurance-choice formula remains unavailable; the approved [live off-duty source](off-duty-trucks.md) answers current in-yard/off-duty/not-working questions (full feed including Ready To Go and Outside/vendor locations), while current on-road/working status uses the independent [live on-road source](on-road-trucks.md). Neither source is a fleet complement; DriverPay remains historical/explicit-date assignment overlap only.
 - `as_of` is request time. Source tables do not expose a Ninox sync timestamp; “up to date” means the latest imported rows, not proof that Ninox has closed the week.
 
 ## Local output convention

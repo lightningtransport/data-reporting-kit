@@ -1,5 +1,7 @@
 # Lightning reporting dashboard
 
+Current On road today / working KPIs on Out Schedule and Trucks Return read the [approved live on-road share](../../docs/on-road-trucks.md) immediately without a reporting key, cache or DriverPay fallback. The complete seven-key array and exact Status=On The Road Working are validated within a 30-second total deadline / 2 MiB. Failures produce null/unavailable, validated empty snapshots zero; Technical details retain source URL, retrieval timestamps, row/distinct/duplicate/conflict counts. These are working-membership KPIs, not GPS movement or historical DriverPay assignment overlap. Other report loaders still require their configured reporting credentials.
+
 Next.js App Router + shadcn/ui app for Grok Bot and Cursor agents. Views:
 
 | Path | View | Data |

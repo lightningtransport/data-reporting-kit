@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Lightning Reporting APIs
-  version: 3.8.2
+  version: 3.8.3
   license:
     name: Proprietary
     identifier: LicenseRef-Proprietary
@@ -19,7 +19,19 @@ paths:
         Explicit report requests use strict validation and pagination. A request that
         omits report is a legacy settlement_summary request, authorized as
         settlement_summary, with the unchanged successful {count,data} response shape.
-        On-road trucks on date D use driver_pay on_road_at=D: Out Date <= D
+        Current/now/today trucks on road or working use the primary most-current
+        credential-free live source https://lightningtransport.ninoxdb.com/share/eno5u22ebn2qdn215dpzwn02squ5wsixob8f?locale=en&utcoffset=-240
+        immediately before answering, not driver_pay or a new MCP/gateway report.
+        Validate all seven keys (truck_number, dispatcher, insurance, owner,
+        Samsara_Truck_ID, Status, Ninox_ID), exact Status=On The Road Working,
+        numeric positive integral IDs and string descriptions; count distinct truck_number.
+        Reject redirects, non-2xx/non-JSON, duplicate keys, invalid/schema-drift rows
+        or partial bodies within 30 seconds overall and 2 MiB. Exact source owner,
+        dispatcher and insurance; no shared_owner expansion. State fetch-start/completion
+        timestamps and row/distinct/full-validation evidence; upstream-sync time is unknown.
+        Failures mean unknown/null, not zero; a validated empty array means zero in that snapshot.
+        No cache/DriverPay fallback, GPS movement claim or fleet/off-duty complement.
+        Historical or explicit-date assignment overlap ONLY uses driver_pay on_road_at=D: Out Date <= D
         and Return Date > D; paginate and count distinct nonblank Truck_Number.
         Null returns and return day are excluded. For now use America/New_York date.
         Current trucks in the yard, off duty, not working or not on the road use
@@ -125,7 +137,7 @@ paths:
         - name: on_road_at
           in: query
           schema: {$ref: '#/components/schemas/IsoDate'}
-          description: DriverPay-only on-road as-of date D; an eligible anchor. Filters Out Date <= D and Return Date > D. Cannot combine with other date filters or return_null; count distinct nonblank Truck_Number across all pages.
+          description: Historical or explicit-date DriverPay assignment overlap only, not current operational working status; date D; an eligible anchor. Filters Out Date <= D and Return Date > D. Cannot combine with other date filters or return_null; count distinct nonblank Truck_Number across all pages.
         - name: out_from
           in: query
           schema: {$ref: '#/components/schemas/IsoDate'}
@@ -389,7 +401,7 @@ components:
       type: object
       required: [schema_version, report, source, filters, offset, limit, count, page_count, total_count, has_more, next_offset, as_of, data, request_id, period, status, complete]
       properties:
-        schema_version: {type: string, const: 3.8.2}
+        schema_version: {type: string, const: 3.8.3}
         report: {type: string, enum: [out_schedule, departures]}
         source: {type: string}
         filters: {type: object, additionalProperties: {type: string}}

@@ -1,5 +1,7 @@
 # ChatGPT plugin deployment
 
+Current operational on-road/working and yard/off-duty questions use the explicitly approved credential-free [on-road](on-road-trucks.md) and [off-duty](off-duty-trucks.md) direct source contracts. Both documents are registered for MCP search/fetch. The MCP server publishes guidance, not a dedicated live-share data tool: the host must immediately fetch the exact share with complete bounded validation, or disclose unavailable evidence. DriverPay on_road_at is historical/explicit-date assignment overlap only, never a current-source failure fallback; no cached result, GPS movement claim or fleet complement.
+
 The `chatgpt-plugin/` package makes this repository usable from standard ChatGPT conversations through a private workspace plugin and a remote MCP service.
 
 ## Components

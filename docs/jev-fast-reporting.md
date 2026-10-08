@@ -4,7 +4,7 @@
 
 The portable reporting client has an optional `ask` command. One batched TypeSafe Jev call chooses the workflow, time-window meaning, answer language, and whether the request is a plain unfiltered aggregate. Deterministic code resolves dates, checks current API permissions and metadata, retrieves complete data, computes exact metrics, and renders a template. No report rows, history, keys, or business totals are sent to Jev.
 
-The original Jev rollout did not change the Supabase `agent-reporting` function (then schema 3.8.1). The current client schema pin is 3.8.2 after the separate off-duty-source metadata update; that source is not a Jev fast path. Existing `catalog`, `metadata`, `query`, and remote MCP tool contracts remain unchanged apart from the documented schema version and new global routing guidance. This is not an automatic hook on every Hermes turn and not a new natural-language endpoint. The installed reporting skill selects `ask` only for appropriate routine questions; other clients must invoke the command themselves or integrate it separately.
+The original Jev rollout did not change the Supabase `agent-reporting` function (then schema 3.8.1). The current client schema pin is 3.8.3 after the current on-road-source metadata update; neither current-status share is a Jev fast path. Current on-road routing is disabled in both the local supported-window gate and deterministic plan builder, so even a confident or forged route cannot reach DriverPay. Existing `catalog`, `metadata`, `query`, and remote MCP tool contracts remain unchanged apart from the documented schema version and new global routing guidance. This is not an automatic hook on every Hermes turn and not a new natural-language endpoint. The installed reporting skill selects `ask` only for appropriate routine questions; other clients must invoke the command themselves or integrate it separately.
 
 ## Supported initial fast paths
 
@@ -12,7 +12,7 @@ The original Jev rollout did not change the Supabase `agent-reporting` function 
 |---|---|---|
 | Overall diesel gallons/adjusted spend | `diesel_totals` | Last full Tuesday–Monday week |
 | Current fleet count | `fleet_count` | Current state |
-| Trucks on the road | `on_road_count` | Today in America/New_York |
+| Current trucks on the road / working | Disabled (no deterministic direct-feed transport in `ask`) | Continue via [live on-road source](on-road-trucks.md); never DriverPay fallback |
 | Overall outside/on-road repair cost | `outside_repair_totals` | Last full Tuesday–Monday week |
 | Returning-truck count | `returning_trucks` | This or last full Tuesday–Monday week; required two-source union |
 | Departing-truck count | `departing_trucks` | This or last full Monday–Sunday week; governed live departure aggregate |

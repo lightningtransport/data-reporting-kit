@@ -37,7 +37,7 @@ QUESTIONS = {
         'criteria': {
             'diesel_totals': 'Purchased diesel gallons or adjusted diesel spend. Must explicitly mean diesel/diésel; generic fuel or DEF belongs to other.',
             'fleet_count': 'Count all trucks in the CURRENT fleet master. Not trucks on the road, active, insured, in yard, or a historical fleet.',
-            'on_road_count': 'Count trucks on the road/en carretera/en ruta today or now. Not yard, off-duty or insurance-choice calculation.',
+            'on_road_count': 'Current on-road/working trucks require the approved direct live Ninox feed, not DriverPay. This recognized workflow is unsupported by this fast path and must fall back without an answer.',
             'returning_trucks': 'Count trucks returning/regresando/que regresan in a requested week; not a driver list.',
             'departing_trucks': 'Count trucks leaving/saliendo/que salen in a requested week; include actual and planned departures.',
             'outside_repair_totals': 'Overall cost of all outside/on-road/not-company-shop repairs. No individual truck/trailer/category/owner breakdown.',
@@ -70,7 +70,6 @@ QUESTIONS = {
 SUPPORTED_WINDOWS = {
     'diesel_totals': {'last_full_week'},
     'fleet_count': {'today', 'unspecified'},
-    'on_road_count': {'today'},
     'outside_repair_totals': {'last_full_week'},
     'returning_trucks': {'current_week', 'last_full_week'},
     'departing_trucks': {'current_week', 'last_full_week'},

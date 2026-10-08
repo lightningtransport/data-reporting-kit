@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = "3.8.2";
+export const SCHEMA_VERSION = "3.8.3";
 export const SCHEMA_VERIFIED_AT = "2026-09-28T19:12:26Z";
 
 const field = (
@@ -23,8 +23,11 @@ export const GLOBAL_GUIDANCE = {
     "Do not answer a returning-trucks question from public.returns or DriverPay alone. Use Return Date only, paginate both reports completely, and disclose source freshness limitations.",
   ],
   on_road_trucks: [
-    'For an on-road count on date D (today in the requested business timezone for "now"), query driver_pay with on_road_at=D. Count distinct nonblank Truck_Number, not driver rows: "Out Date" <= date AND "Return Date" > date. The return date itself is off road; a null return date does not qualify.',
-    "Paginate every page before deduplicating. No lookback cutoff, returns-table union, transfer/termination exclusion, or current-trucks join is part of this owner-approved metric. Do not conflate it with the separate Ninox in-yard/insurance-choice calculation.",
+    "Current/now/today trucks on the road or working use the primary most-current approved live Ninox JSON source: https://lightningtransport.ninoxdb.com/share/eno5u22ebn2qdn215dpzwn02squ5wsixob8f?locale=en&utcoffset=-240 . Fetch immediately before each answer, separately without keys, Authorization, cookies or credentials. This is an external direct source route, not an agent-reporting or dedicated MCP report; unsupported clients disclose unavailable evidence.",
+    "Require a complete JSON array with exactly truck_number (positive integral number), dispatcher, insurance, owner, Samsara_Truck_ID (strings), Status exactly On The Road Working, and Ninox_ID (positive integral number). Validate every row before filtering. Reject redirects, non-2xx/non-JSON, duplicate keys, non-finite numbers, schema drift or partial bodies; bound total request/parse/validation to 30 seconds and body to 2 MiB. Count distinct truck_number; exact source owner/dispatcher/insurance, no shared_owner expansion or master substitution; disclose duplicate/conflicting attributes.",
+    "State source URL, fetch-start/completion timestamps/as_of, original row/distinct counts, requested filters and full validation. Fetch time is not upstream-sync time. Failure is unknown/null, never zero; only a validated empty array means zero in that snapshot. No cached/DriverPay fallback, GPS movement inference, historical reconstruction or off-duty/fleet complement. The packaged Jev current on-road route is disabled until it has a deterministic live-source transport.",
+    'Historical or explicit-date assignment overlap ONLY: query driver_pay with on_road_at=D. Count distinct nonblank Truck_Number, not driver rows: "Out Date" <= date AND "Return Date" > date. The return date itself is excluded; a null return date does not qualify. This is dated assignment evidence, not current operational working status.',
+    "Paginate every page before deduplicating. No lookback cutoff, returns-table union, transfer/termination exclusion, or current-trucks join is part of historical/explicit-date assignment overlap. Do not conflate it with the separate Ninox in-yard/insurance-choice calculation.",
   ],
   off_duty_trucks: {
     source_url: "https://lightningtransport.ninoxdb.com/share/jx7z6tkjcnxalvsui4icdnqjuszia04etdhi?locale=en&utcoffset=-240",
@@ -36,12 +39,12 @@ export const GLOBAL_GUIDANCE = {
       "Every truck listed is off duty, not working and not on the road, regardless of mechanic_status, including Ready To Go. Outside and service-vendor locations remain off duty; generic in-the-yard wording routes to the entire feed, not just yard_location=301 Yard. Filter yard_location only when a physical location is explicitly requested.",
       "Count distinct nonblank truck_number after safe key-format normalization; retain source row count and duplicate caveats. Use exact source owner and dispatcher for attribution; do not use settlement shared_owner or infer status from current trucks, zero mileage, Return Date, or Out Of Services.",
       "Days In Yard is a duration in milliseconds: divide by 86400000 to display days; preserve the raw value. Null duration means unknown, not zero. Preserve Samsara_Truck_ID and Ninox_ID as source identifiers, never substitute them for truck_number.",
-      "This is a current snapshot, not historical yard occupancy. State source URL, fetch timestamp/as_of, applied filters, row count, distinct-truck count and full-response validation. Fetch time is not a source-updated timestamp. Absence does not prove on-road status; never compute road count as fleet minus this feed. The separately defined DriverPay on_road_at metric and legacy insurance-choice formula remain distinct.",
+      "This is a current snapshot, not historical yard occupancy. State source URL, fetch timestamp/as_of, applied filters, row count, distinct-truck count and full-response validation. Fetch time is not a source-updated timestamp. Absence does not prove on-road status; never compute road count as fleet minus this feed. Current working/on-road membership uses the independent live source in on_road_trucks. DriverPay on_road_at is historical/explicit-date assignment overlap only; neither live feed is a fleet complement. The legacy insurance-choice formula remains distinct.",
     ],
   },
   unsupported_or_external_questions: [
     "The paused personal reporting-query endpoint does not support out_schedule or departures; use the authenticated agent-reporting endpoint. Planned schedule history can disappear from the volatile live share.",
-    "Current in-yard/off-duty/not-working questions use the approved live source in off_duty_trucks. Only the separate legacy insurance-choice calculation requires unavailable public.trucks fields. DriverPay on_road_at remains a distinct date-based metric.",
+    "Current in-yard/off-duty/not-working questions use the approved live source in off_duty_trucks. Only the separate legacy insurance-choice calculation requires unavailable public.trucks fields. Current working/on-road questions use on_road_trucks; DriverPay on_road_at is historical/explicit-date assignment overlap only.",
   ],
   outside_repairs: [
     "For repairs on the road, outside, or not performed in the company's shop, query public.\"Outside_Repairs\"; do not use settlements LTR Invoices (internal-shop expenses) as the outside-repair ledger.",
@@ -68,10 +71,10 @@ export const TABLES = {
     ninox_source: "DriverPay (WD)",
     row_grain: "One historical driver assignment/pay record. Team trucks normally produce two rows, one per driver; solo assignments normally produce one row with Solo_Driver_if_1 = 1.",
     primary_key: "ID (Supabase identity; not the Ninox DriverPay record ID)",
-    use_for: ["actual assignment history", "on-road trucks as of a date via on_road_at", "departures by Out Date", "returns by Return Date", "driver pay terms", "transfers", "terminations"],
-    do_not_use_for: ["planned teams", "weekly truck financial totals", "counting rows as trucks"],
+    use_for: ["actual assignment history", "historical or explicit-date assignment overlap via on_road_at", "departures by Out Date", "returns by Return Date", "driver pay terms", "transfers", "terminations"],
+    do_not_use_for: ["current operational working/on-road status (use GLOBAL_GUIDANCE.on_road_trucks)", "planned teams", "weekly truck financial totals", "counting rows as trucks"],
     calculation_rules: [
-      'On-road trucks on date D = distinct nonblank Truck_Number where "Out Date" <= D and "Return Date" > D; null returns do not qualify. Use on_road_at=D, paginate fully, and count unique trucks rather than driver rows. The date is inclusive for Out Date and exclusive for Return Date.',
+      'Historical or explicit-date assignment overlap only, not current working status: dated trucks on date D = distinct nonblank Truck_Number where "Out Date" <= D and "Return Date" > D; null returns do not qualify. Use on_road_at=D, paginate fully, and count unique trucks rather than driver rows. The date is inclusive for Out Date and exclusive for Return Date.',
       "Departure questions filter Out Date only. Return questions filter Return Date only. Do not require both unless the user explicitly asks for assignment overlap.",
       "For any returning-trucks question, exclude Termination = Driver Changed and Transfer = Transfer To Other Truck. Set tc to remaining non-solo rows and ts to remaining solo rows; the DriverPay formula count is floor(tc / 2 + ts). Build the merge input from distinct Truck_Number values in those same qualifying rows.",
       "DriverPay is only one side of a returning-trucks result. Union its qualifying truck numbers with distinct public.returns Truck values from the same inclusive Return Date period.",
@@ -228,12 +231,13 @@ export const TABLES = {
     ninox_source: "TrucksDB (E)",
     row_grain: "One current truck-master row per unique truck_number. ID is the primary key; truck_number has a unique constraint.",
     primary_key: "ID; truck_number is the unique business key",
-    use_for: ["current fleet identity", "current owner and dispatcher", "current vehicle/operational metadata"],
-    do_not_use_for: ["historical owner/dispatch attribution", "historical financial totals"],
+    use_for: ["current fleet identity", "current owner and dispatcher", "current vehicle/master metadata (not working membership)"],
+    do_not_use_for: ["current working/on-road membership (use GLOBAL_GUIDANCE.on_road_trucks)", "historical owner/dispatch attribution", "historical financial totals"],
     rules: [
       "The settlement-only 1/2/3 owner-expense allocation-bucket rule does not classify or filter current trucks rows.",
       "dispatcher and owner are current values. Use DriverPay or settlements fields for historical attribution.",
       "Out Of Services is a current dispatcher value, not the authoritative current off-duty list. Route current yard/off-duty/not-working questions to GLOBAL_GUIDANCE.off_duty_trucks and fetch its live Ninox share. The separate legacy insurance-choice formula still uses unavailable fields.",
+      "Current working/on-road membership comes from GLOBAL_GUIDANCE.on_road_trucks, not truck-master fields, insurance, mechanic status, GPS or the off-duty complement.",
       "Use literal stored mechanic_status values. Current values include Work in Progress, Heavy Work No ETA, Ready for Q.C., and Ready To Go; blank/null means no status is stored.",
     ],
     fields: {
@@ -393,7 +397,7 @@ export const REPORTS = {
     filters: {
       truck_number: "exact Truck_Number",
       driver_id: "exact DriversDB_ID",
-      on_road_at: "YYYY-MM-DD date D: Out Date <= D and Return Date > D (both dates must be present); paginate and count distinct nonblank Truck_Number. Exclusive of other date/return_null filters.",
+      on_road_at: "Historical or explicit-date assignment overlap ONLY, not current working status. YYYY-MM-DD date D: Out Date <= D and Return Date > D (both dates must be present); paginate and count distinct nonblank Truck_Number. Exclusive of other date/return_null filters.",
       out_from: "inclusive lower Out Date, YYYY-MM-DD",
       out_to: "inclusive upper Out Date, YYYY-MM-DD",
       return_from: "inclusive lower Return Date, YYYY-MM-DD",

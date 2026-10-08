@@ -19,6 +19,11 @@ def load_module():
 
 
 class PlanTests(unittest.TestCase):
+    def test_current_onroad_route_is_disabled_without_a_deterministic_live_feed_transport(self):
+        w = load_module()
+        with self.assertRaises(w.WorkflowFallback):
+            w.build_plan('on_road_count', 'today', datetime(2026, 10, 8, tzinfo=timezone.utc))
+
     def test_operational_periods_are_tuesday_monday_and_monday_is_partial(self):
         w = load_module()
         monday = datetime(2026, 10, 5, 16, tzinfo=timezone.utc)
@@ -33,7 +38,7 @@ class PlanTests(unittest.TestCase):
 
     def test_metadata_only_schema_3_8_2_keeps_existing_workflows_compatible(self):
         w = load_module()
-        w._schema({'schema_version': '3.8.2'})
+        w._schema({'schema_version': '3.8.3'})
 
     def test_departures_today_and_rejected_windows(self):
         w = load_module()
@@ -43,7 +48,8 @@ class PlanTests(unittest.TestCase):
         plan = w.build_plan('fleet_count', 'unspecified', now)
         self.assertEqual(plan['period']['from'], '2026-10-05')
         self.assertEqual(plan['queries'], [{'report': 'trucks', 'params': {}}])
-        self.assertEqual(w.build_plan('on_road_count', 'today', now)['queries'], [{'report': 'driver_pay', 'params': {'on_road_at': '2026-10-05'}}])
+        with self.assertRaises(w.WorkflowFallback):
+            w.build_plan('on_road_count', 'today', now)
         for workflow, window in [('bogus', 'today'), ('diesel_totals', 'current_week'), ('fleet_count', 'last_full_week'), ('returning_trucks', '2026-09-01'), ('on_road_count', 'unspecified')]:
             with self.subTest(workflow=workflow, window=window):
                 with self.assertRaises(w.WorkflowFallback):
@@ -69,8 +75,8 @@ class MockAPI:
     """Synthetic envelopes emulate the authenticated API and existing collection helper."""
     def __init__(self, rows=None):
         self.calls = []
-        self.catalog = {'schema_version': '3.8.2', 'principal': {'allowed_reports': list(FIELDS)}, 'reports': {r: {} for r in FIELDS}}
-        self.metadata = {r: {'schema_version': '3.8.2', 'report': r, 'source': 'mock.' + r,
+        self.catalog = {'schema_version': '3.8.3', 'principal': {'allowed_reports': list(FIELDS)}, 'reports': {r: {} for r in FIELDS}}
+        self.metadata = {r: {'schema_version': '3.8.3', 'report': r, 'source': 'mock.' + r,
                             'fields': {f: {'type': 'mock'} for f in fields},
                             'filters': {f: 'mock' for f in FILTERS[r]}} for r, fields in FIELDS.items()}
         self.metadata['departures'].pop('fields')
@@ -89,7 +95,7 @@ class MockAPI:
     def collect(self, report, params):
         self.calls.append(('collect', report, params.copy()))
         rows = self.rows.get(report, [])
-        return {'schema_version': '3.8.2', 'report': report, 'source': 'mock.' + report,
+        return {'schema_version': '3.8.3', 'report': report, 'source': 'mock.' + report,
                 'filters': {k: v for k, v in params.items() if k not in ('limit', 'include_sensitive')},
                 'data': rows, 'complete': True, 'fetched_count': len(rows), 'total_count': len(rows),
                 'as_of_first_page': '2026-10-06T15:00:00Z', 'as_of_last_page': '2026-10-06T15:00:01Z',
@@ -126,7 +132,7 @@ class ExecuteTests(unittest.TestCase):
         self.assertNotIn('data', result['evidence']['trucks'])
 
     def test_catalog_denial_and_schema_mismatch_never_query_data(self):
-        for schema, allowed, reason in [('unknown', list(FIELDS), 'unsupported_schema'), ('3.8.2', [], 'permission_denied')]:
+        for schema, allowed, reason in [('unknown', list(FIELDS), 'unsupported_schema'), ('3.8.3', [], 'permission_denied')]:
             api = MockAPI()
             api.catalog['schema_version'] = schema
             api.catalog['principal']['allowed_reports'] = allowed
@@ -163,15 +169,14 @@ class ExecuteTests(unittest.TestCase):
                 for truck, out, ret in [('001', '2020-01-01', '2026-10-07'), ('1.0', '2026-10-06', '2026-10-08'),
                                         ('2', '2026-10-01', '2026-10-06'), ('3', '2026-10-01', None),
                                         ('4', '2026-10-07', '2026-10-09'), (' ', '2026-10-01', '2026-10-09')]]
-        api = MockAPI({'driver_pay': rows})
-        result = self.run_workflow('on_road_count', api)
-        self.assertEqual(result['metrics']['on_road_count'], 1)
-        self.assertEqual(result['metrics']['excluded_null_return_rows'], 1)
-        self.assertEqual(api.calls[-1][2]['on_road_at'], '2026-10-06')
+        # Historical predicate remains separate; no current-status workflow can invoke it.
+        result = self.w._onroad(rows, {'from': '2026-10-06'})
+        self.assertEqual(result['on_road_count'], 1)
+        self.assertEqual(result['excluded_null_return_rows'], 1)
         for invalid in ['2026-02-30', '20261001', 123, 'yesterday']:
             rows[0]['Out Date'] = invalid
             with self.subTest(invalid=invalid), self.assertRaises(self.w.WorkflowFallback):
-                self.run_workflow('on_road_count', api)
+                self.w._onroad(rows, {'from': '2026-10-06'})
 
     def test_outside_repairs_once_truckless_and_null_cost_coverage(self):
         rows = [{'Date': '2026-09-29', 'Total Cost': '10.10', 'Truck': None},
@@ -415,7 +420,7 @@ class ExecuteTests(unittest.TestCase):
                 return api.request(params)
             offset = params['offset']
             api.calls.append(('page', params.copy()))
-            return {'schema_version': '3.8.2', 'report': 'trucks', 'source': 'mock.trucks', 'filters': {},
+            return {'schema_version': '3.8.3', 'report': 'trucks', 'source': 'mock.trucks', 'filters': {},
                     'offset': offset, 'page_count': 1, 'count': 1, 'total_count': 2,
                     'has_more': offset == 0, 'next_offset': 1 if offset == 0 else None,
                     'data': [{'ID': offset + 1, 'truck_number': offset + 1}],

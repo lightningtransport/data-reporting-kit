@@ -7,7 +7,7 @@ description: Use when answering questions about Lightning Transportation operati
 
 1. Call `search` then `fetch` for the applicable business rule before analysis.
 2. Call `catalog` before first use (compact by default; `compact=false` explicitly opts into full). Fetch selected `metadata` before unfamiliar fields, filters or calculations; compact routing summaries are not the field/calculation contract. Keep host output safety limits enabled.
-3. Use only `run_report` for data. Never ask for credentials or attempt direct Supabase/raw-table access.
+3. Use `run_report` for gateway data. The explicit exception is approved credential-free direct external shares: current on-road/working trucks use `docs/on-road-trucks.md`; current yard/off-duty/not-working trucks use `docs/off-duty-trucks.md`. Search/fetch those rules and immediately download the exact share with bounded complete validation using the host HTTP capability. This MCP exposes guidance, not a dedicated share report; if the host cannot fetch it, disclose unavailable evidence, never DriverPay/stale-cache/complement fallback. DriverPay `on_road_at` is historical/explicit-date assignment overlap only. Never ask for credentials or attempt direct Supabase/raw-table access.
 4. Explicitly request a date window for settlement questions. The settlement week is Tuesday through Monday.
 5. Stored `Gross`, `Total Expenses`, and `Net` are authoritative. `tonu` is already included in `Gross`; components are already included in `Total Expenses`.
 6. Settlement Truck `1`, `2`, and `3` are owner-allocation buckets for Carlos, Jorge, and CDT—not physical trucks. Include them in matching owner totals but exclude them from physical-truck counts/rankings.

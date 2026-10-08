@@ -114,11 +114,19 @@ Deno.test("live-report HTTP path enforces auth/audit/pagination and preserves ag
     const window = "out_from=2026-10-05&out_to=2026-10-11";
     const catalog = await request("report=catalog");
     assert(
-      catalog.body.schema_version === "3.8.2" &&
+      catalog.body.schema_version === "3.8.3" &&
         catalog.body.reports.departures && catalog.body.reports.out_schedule,
     );
     assert(catalog.body.guidance.off_duty_trucks.source_url === "https://lightningtransport.ninoxdb.com/share/jx7z6tkjcnxalvsui4icdnqjuszia04etdhi?locale=en&utcoffset=-240", "authenticated catalog omits approved off-duty feed");
+    const onRoadText = JSON.stringify(catalog.body.guidance.on_road_trucks);
+    assert(onRoadText.includes("https://lightningtransport.ninoxdb.com/share/eno5u22ebn2qdn215dpzwn02squ5wsixob8f?locale=en&utcoffset=-240"), "catalog omits current working source");
+    assert(onRoadText.includes("historical") && onRoadText.includes("unknown/null") && onRoadText.includes("GPS"), "catalog loses semantic/failure boundaries");
+    assert(!Object.keys(catalog.body.reports).includes("on_road_trucks"), "external share falsely claimed as a gateway report");
+    const driverPayMetadata = await request("report=driver_pay&metadata=true");
+    assert(driverPayMetadata.status === 200 && driverPayMetadata.body.filters.on_road_at.includes("Historical or explicit-date"));
+    assert(JSON.stringify(driverPayMetadata.body.do_not_use_for).includes("current operational"));
     const truckMetadata = await request("report=trucks&metadata=true");
+    assert(truckMetadata.body.guidance.on_road_trucks && JSON.stringify(truckMetadata.body.do_not_use_for).includes("current working"));
     assert(truckMetadata.status === 200 && truckMetadata.body.guidance.off_duty_trucks, "report metadata omits off-duty routing");
     const compactCatalog = await request("report=catalog&compact=true");
     assert(compactCatalog.status === 200, "compact catalog should be supported");
