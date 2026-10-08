@@ -164,6 +164,55 @@ For a current-week departure total, DriverPay is one required source, not a comp
 
 Use stored `Gross`, `Total Expenses`, and `Net`. Do not add `tonu` to Gross or expense components to Total Expenses. Require an explicit period; historical `To Report=Yes` rows make the flag unsafe as a current-cycle selector.
 
+### Settlement numeric coverage
+
+All listed expense components remain nullable numeric measures; `From`/`To` remain
+date-only fields. Null is unknown/unpopulated, not automatically zero or not applicable,
+including allocation buckets. Keep row completeness separate from populated numeric
+coverage; follow [settlement numeric coverage](metric-definitions.md#settlement-numeric-coverage).
+
+### Settlement source verification
+
+**Evidence verified 2026-10-08:** authenticated reporting/source inspection and isolated
+fixtures. The evaluated Facturacion export can omit these keys on allocation-bucket
+records while returning numbers, including explicit zeros, on physical-truck records.
+This is current export evidence, not proof of original historical values or zero semantics.
+
+| Export component | Verified DE export expression | Source type |
+|---|---|---|
+| `Otro` | `DE.D1` | number |
+| `LTR Invoices` | `DE.Q1` | number |
+| `Tolls` | `DE.W1` | number |
+| `BestPass` | `DE.E4` | number |
+| `CabCards` | `DE.F` | formula |
+| `Trailer Rentals` | `DE.T1` | formula |
+| `samsara` | `DE.U1` / GPS Samsara | formula |
+| `PrePass` | `DE.V1` | formula |
+
+These are verified export expressions, not proof of a deployed importer's mappings.
+Ordinary Ninox REST records may omit formula fields even when their evaluated values
+are populated. Therefore **raw REST record omission** alone cannot prove formula nullness;
+an authorized maintainer must inspect the actual view and evaluate its expressions.
+Preserve absent fields, explicit null, blank, zero and formula-produced values separately.
+
+Supabase settlement `ID` is a generated row identity, not a Ninox record ID. The separate
+maintenance-side `Ninox_ID`, where populated, must match the source record's top-level
+`id`; it is **not exposed by the settlement report**. Do not request it as an unsupported
+API field, guess it from `ID`, or replace stable gateway IDs. A missing source identity
+remains unresolved until a unique source-backed match is verified by authorized maintenance.
+
+An executed **ad-hoc** settlement import was verified, but a **scheduled Supabase settlement importer was not located** in the inspected systems. Its current writer/revision and
+period-by-period provenance remain unresolved. Do not certify deployed idempotence or
+infer its rules from the separately tracked fuel importer. Source-record generation,
+reporting deployments and instruction-sync jobs are not proof of settlement import.
+
+A future maintenance fix must first establish the actual writer, authoritative mappings
+and source identity; exercise isolated duplicate/number/state fixtures and a nonmutating
+dry-run. Any production identity or financial replacement requires **separate approval**
+of exact source-backed row/old/new values, protected stable IDs and cardinality, backup
+and exact readback. Preserve existing chat/audit evidence. Reporting agents must use
+the approved gateway, not seek raw-table or private Ninox access to bypass these limits.
+
 ## `fuel` — historic fuel transactions
 
 **Grain:** one fuel transaction row. Multiple rows can exist per truck and `Store Date`; do not count these rows as trucks or substitute their subtotals for weekly settlement totals.

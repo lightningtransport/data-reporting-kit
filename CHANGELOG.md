@@ -1,5 +1,12 @@
 # Changelog
 
+## Settlement clarification / client skill 0.11.6 — 2026-10-08
+
+- Clarify existing nullable settlement components: unknown/unpopulated is not zero or not applicable, including owner-allocation buckets. Separate complete row retrieval from numeric coverage; retain populated/null evidence, exact decimal aggregation, nonempty all-null amounts, date-only From/To and authoritative stored totals.
+- Document evaluated DE expense export expressions, raw formula-omission limits, generated ID versus maintenance-side source identity, and unresolved scheduled importer provenance. Keep private snapshots, row values, identity-repair manifests and execution logs out of this public repository.
+- Add sanitized documentation and HTTP-handler regressions preserving bucket rows/nulls, date/type metadata, exact owner/shared-owner filters, inclusive From bounds and stable pagination. Keep the repaired client adapter and model/provider unchanged; publication does not certify another user's native-wrapper reload or historical incident closure.
+- No function-source or runtime-metadata change; schema 3.8.3 / agent-reporting revision 125 remain unchanged. No financial/source-identity backfill, migration, security-control change or dashboard source/settings change. A main-branch push may trigger the existing hosting integration; no manual UI deployment is requested. Publish skill 0.11.6 and verify the active-profile instruction sync.
+
 ## Fuel validation / client skill 0.11.5 — 2026-10-08
 
 - Version the existing ME fuel importer and add isolated numeric regression coverage. Reject ambiguous locale/currency formatting, nonfinite/range/underflow values and precision-changing transport conversions; keep explicit null/blank unknowns distinct from zero. Fail closed on an omitted mapped numeric source key until sparse omission semantics are documented. Preserve mapping, cursor/sinceId, financial values and append-only behavior.

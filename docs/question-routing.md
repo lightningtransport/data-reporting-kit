@@ -68,6 +68,10 @@ filters and calculation rules checked against authenticated schema 3.8.2 metadat
 The affected third-party `get_reporting_knowledge` implementation is not in this
 repository; publication/sync does not prove that user's runtime has reloaded.*
 
+## Settlement numeric coverage
+
+Expense-breakdown questions route to `settlements` with explicit period/owner scope and complete pagination. Read [numeric coverage](metric-definitions.md#settlement-numeric-coverage) and [source verification](data-dictionary.md#settlement-source-verification). Return partial populated sums with coverage, not fabricated zero components; an all-null component is unknown. `From`/`To` select dates and are not numeric measures. Analysis/aggregation options belong to the client, not undocumented gateway GET parameters. Do not switch the model/provider or undo a repaired client adapter to mask source omissions. A source/import investigation is an authorized maintenance task, not permission for reporting agents to bypass the gateway or infer settlement mappings from the fuel importer.
+
 ## Date rules
 
 - Settlements: Tuesday `From` through the following Monday `To`. Use an exact Tuesday period anchor. Do not infer current cycle from `To Report` alone.

@@ -27,6 +27,22 @@ path, preserving `offset` and `limit` when the tool supports them. Do not retry 
 same rejected path, guess another filename, broaden the allowlist, or bypass the
 tool. If the corrected request fails, disclose the unavailable guidance.
 
+## Settlement numeric coverage
+
+Read `docs/metric-definitions.md` and `docs/data-dictionary.md` via search/fetch.
+Nullable components are unknown/unpopulated, not automatically zero, including
+allocation buckets. Row completeness does not certify numeric coverage. Aggregate
+valid populated numeric measures with exact decimal arithmetic; disclose populated/null
+counts and partial coverage, and preserve nonempty all-null amounts as null. Missing
+requested keys, malformed values, blanks, booleans and nonfinite numbers fail closed.
+`From`/`To` are dates and labels/identifiers are not summable amounts. Never reconstruct
+stored totals, force component reconciliation, or change the repaired native adapter/model.
+Supabase `ID` is not a Ninox record ID; maintenance-side `Ninox_ID` is not an exposed
+settlement-report field. Raw source record omission does not prove formula nullness.
+Do not infer deployed importer behavior from a fuel importer or an ad-hoc run.
+Preserve bucket financial rows, exact historical Owner OR shared_owner, inclusive From
+bounds, stable IDs, pagination and audit controls. No production backfill is authorized.
+
 ## Departure support and rollout
 
 Departure totals use the same inclusive `Out Date` window on **both** DriverPay and live Ninox Schedule_Teams. Normalize only truck-key format, union distinct nonblank trucks, and report source, overlap, source-only, and combined counts. Never add source counts, count assignment/driver rows, apply return exclusions, or use the returning-trucks formula. Use `departures` only after the deployed authenticated catalog confirms it; `out_schedule` is the planned list, not a combined total. See [departure contract](../../../docs/departures.md).

@@ -1,7 +1,7 @@
 ---
 name: itpros-supabase-reporting
 description: Answer Lightning reports through the approved reporting APIs.
-version: 0.11.5
+version: 0.11.6
 author: Ibrain Ortega, Hermes Agent
 license: Proprietary
 platforms: [linux, macos, windows]
@@ -204,6 +204,33 @@ Agent-key reports specified by this kit are `settlement_summary`, `settlements`,
 - `returns.Ninox_ID` is not a driver ID.
 - `returns.Truck` is numeric; `returns.Dispatcher` and `returns.Owner` are nullable, non-sensitive truck-dispatch/owner fields on the return row. Use exact `dispatcher` / `owner` filters within `return_from` / `return_to` and distinct `Truck` for return-row attribution. Do not pull current `trucks` for these values.
 - Schedule_Teams gateway support is prepared but installed clients are **not integrated** until deployed/verified; the legacy Ninox insurance-choice formula remains unsupported, but current in-yard/off-duty/not-working lists use the approved fresh external feed above; current on-road/working status uses the independent live on-road feed; DriverPay `on_road_at` is historical/explicit-date assignment overlap only.
+
+## Settlement numeric coverage
+
+Null components are unknown/unpopulated, not automatically zero or not applicable,
+including allocation buckets. `complete=true` certifies row retrieval, not numeric
+coverage. Use Decimal/equivalent exact decimal arithmetic for populated numeric
+measures, report populated/null counts and partial coverage by total/group, and
+preserve a nonempty all-null amount as null. A missing requested key is a projection
+error; malformed numbers, blanks, booleans and nonfinite values fail closed, while
+literal zero and legitimate negatives remain valid. `From`/`To` are date-only;
+labels/identifiers are not summable amounts. Never coalesce bucket components,
+exclude buckets from financial totals, rebuild stored Total Expenses/Net or force
+reconciliation. Keep the repaired native-client adapter and model/provider unchanged.
+
+Supabase `ID` is generated, not the source record ID. The maintenance-side `Ninox_ID`
+is not a supported settlement-report field; unresolved source identity stays unresolved.
+Ordinary Ninox REST omission does not prove formula nullness: authorized maintenance
+must evaluate actual export expressions. An ad-hoc import is not proof of a scheduled
+or versioned deployed settlement importer; do not extrapolate from the fuel importer.
+No source identity/financial backfill is authorized without separate exact-value approval.
+Preserve exact Owner OR shared_owner, inclusive From bounds, stable IDs, cardinality,
+pagination, permissions and audit/chat evidence. A current replay is not historical causation.
+
+These clarify the existing metadata, not new HTTP behavior. Read the canonical
+numeric/source guidance in `docs/metric-definitions.md` and `docs/data-dictionary.md`
+using advertised knowledge paths; the affected native wrapper still needs its own
+instruction sync/reload and replay before claiming rollout or incident closure.
 
 ## Fuel numeric coverage and native-client contract
 

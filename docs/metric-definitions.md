@@ -46,6 +46,47 @@ Only in `settlements` and settlement-derived reports, `Truck` 1=Carlos, 2=Jorge,
 - Exclude them from physical-truck counts and rankings.
 - Display them as non-physical owner-expense allocation buckets and state whether they were included.
 
+### Settlement numeric coverage
+
+Clarification of existing nullable numeric/date metadata and stored-total rules,
+verified against the authenticated gateway, evaluated Ninox export expressions and
+isolated fixtures on **2026-10-08**. This does not assign new financial meanings.
+
+- Nullable expense components are unknown/unpopulated, **not automatically zero**
+  or not applicable. This includes allocation buckets. Do not apply blanket
+  COALESCE/null-to-zero conversion or exclude buckets from owner financial totals.
+- `complete=true` certifies reconciled row retrieval, not numeric coverage. For
+  every requested measure and affected group, disclose **populated/null counts**,
+  coverage and whether a subtotal is partial. Aggregate valid populated values
+  only using **Decimal** or equivalent exact decimal arithmetic. A nonempty
+  **all-null** measure remains null; a validated empty selection is zero rows,
+  not evidence that an unavailable source or omitted component has zero expense.
+- A permitted JSON null is not an **absent projected key**. Missing requested keys
+  are schema/projection errors, not permitted nulls. An unprojected key is not
+  evidence of source absence. Blank strings, malformed numbers, booleans and
+  nonfinite values fail numeric validation; preserve literal **numeric zero** and
+  legitimate negative values. Do not guess currency/locale separators or silently
+  round precision away. Preserve absent/null/blank/zero distinctions in source
+  inspection; an evaluated sparse source export has a different contract from
+  the gateway's explicit nullable projection.
+- `From` and `To` are date-only fields, **not numeric measures**. Labels and
+  identifiers (including `Truck` and `ID`) are not summable amounts. Validate
+  requested numeric aggregations against metadata before evaluating them.
+- Keep **stored `Total Expenses` and `Net`** authoritative. Do not reconstruct them
+  from components, force category reconciliation, add included amounts twice, or
+  infer component values from a stored total. A populated total does not establish
+  component coverage.
+- Preserve exact historical `Owner` OR `shared_owner`, inclusive `From` bounds,
+  stable IDs, row cardinality, pagination, permissions and audit evidence. Overlapping
+  owner-filter totals are not additive or a financial allocation.
+- Keep the repaired native-client Decimal/quality/type validation and its current
+  model/provider unchanged. Fixture/gateway replay is not that user's native tool
+  execution and does not establish the historical failure's cause.
+
+Read [settlement source verification](data-dictionary.md#settlement-source-verification)
+for identity and evaluated formula limitations. No financial correction is authorized
+by this clarification.
+
 ## Operational metrics
 
 | Metric | Definition | Source |

@@ -53,6 +53,7 @@ Use transaction-level `fuel`, never settlements, for diesel gallons, fuel purcha
 - Use stored `Gross`, `Total Expenses`, and `Net` as authoritative. `tonu` is included in Gross and expense components are included in Total Expenses.
 - Use `settlement_summary` for headline weekly totals and `settlements` for components or owner/dispatch analysis.
 - Confirm the requested financial fields are populated before calling a settlement period complete.
+- **Settlement numeric coverage:** report valid populated component sums with populated/null counts and partial-coverage caveats; a nonempty all-null component remains null, never zero. Bucket classification does not establish zero/not-applicable semantics. Complete pagination alone is not financial completion. Reject summing `From`/`To`, labels or identifiers; follow [numeric coverage](metric-definitions.md#settlement-numeric-coverage).
 - Truck 1 (Carlos), 2 (Jorge), and 3 (CDT) are settlement-only, non-physical owner-expense buckets. Include them in the matching owner total, label them, and exclude them from physical-truck counts/rankings.
 
 ## Fleet, returns, and status

@@ -58,6 +58,10 @@ tool. If the corrected request fails, disclose the unavailable guidance.
 - For fuel analysis, use `Adjusted SubTotal` only when it is populated; report nulls rather than silently substituting `SubTotal`. Aggregate price per gallon is applicable spend divided by gallons, not an average of transaction rates.
 - Only in `settlements` and settlement-derived reports, Truck 1=Carlos, 2=Jorge, 3=CDT are non-physical owner-expense allocation buckets. Each holds its owner's total `truck_loans` and `Insurance` that are not assigned to a specific physical truck. Include it in that owner's general settlement total, label it as a non-physical owner-expense allocation bucket, and exclude it from physical-truck counts/rankings. Do not apply this rule to `trucks`, DriverPay, or returns.
 
+### Settlement numeric coverage
+
+Follow [settlement numeric coverage](metric-definitions.md#settlement-numeric-coverage): null components are not automatically zero, even on allocation buckets; do not coalesce them or reconstruct stored totals. Validate numeric measures independently of row retrieval, disclose populated/null counts, and retain null for a nonempty all-null amount. Dates, labels and identifiers are not summable measures. Source identity/import investigations follow [source verification](data-dictionary.md#settlement-source-verification), not assumptions about generated `ID` or a fuel importer.
+
 ## 5. Pagination and completeness
 
 - `count`/`page_count` is the current page. Use `total_count` and follow `next_offset` until `has_more=false` for complete answers.
