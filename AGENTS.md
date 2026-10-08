@@ -16,6 +16,18 @@ This repository is the canonical reporting contract for Lightning Transportation
 
 The seven reporting-source schemas contain 125 physical columns. The 14 `Outside_Repairs` columns and their types were verified against production on **2026-09-28**; the two new `returns` columns and its numeric `Truck` type were verified on **2026-09-25** (other columns on **2026-09-21**). The deployed catalog is the runtime contract. If it conflicts with the repository, stop and report the contradiction instead of guessing.
 
+## Knowledge document selection
+
+Never invent a document path from a report name or dashboard route. Use only exact
+paths advertised by the current knowledge tool (or IDs returned by `search`),
+including the `skills/` prefix for packaged skills. Fuel/diesel rules live in
+`docs/question-routing.md`, `docs/data-dictionary.md`, and
+`docs/metric-definitions.md`; `/diesel` is a dashboard route, not a document.
+If a knowledge request is rejected, retry once with an exact approved relevant
+path, preserving `offset` and `limit` when the tool supports them. Do not retry the
+same rejected path, guess another filename, broaden the allowlist, or bypass the
+tool. If the corrected request fails, disclose the unavailable guidance.
+
 ## Approved interfaces
 
 - Approved AI service accounts use the read-only `agent-reporting` Edge Function with their assigned `x-agent-key`.

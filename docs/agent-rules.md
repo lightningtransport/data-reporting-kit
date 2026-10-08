@@ -2,6 +2,18 @@
 
 These rules govern every Lightning Transportation answer.
 
+## Knowledge document selection
+
+Never invent a document path from a report name or dashboard route. Use only exact
+paths advertised by the current knowledge tool (or IDs returned by `search`),
+including the `skills/` prefix for packaged skills. Fuel/diesel rules live in
+`docs/question-routing.md`, `docs/data-dictionary.md`, and
+`docs/metric-definitions.md`; `/diesel` is a dashboard route, not a document.
+If a knowledge request is rejected, retry once with an exact approved relevant
+path, preserving `offset` and `limit` when the tool supports them. Do not retry the
+same rejected path, guess another filename, broaden the allowlist, or bypass the
+tool. If the corrected request fails, disclose the unavailable guidance.
+
 ## 1. Source and access
 
 - Approved service agents use `agent-reporting`; approved personal members use `reporting-query`.

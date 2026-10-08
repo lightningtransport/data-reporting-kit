@@ -24,6 +24,49 @@ Read `AGENTS.md` first. Use the smallest `agent-reporting` report that answers t
 | Current trucks in yard / off duty / not working | Approved live Ninox external JSON source (not an agent-reporting report name) | Fetch `https://lightningtransport.ninoxdb.com/share/jx7z6tkjcnxalvsui4icdnqjuszia04etdhi?locale=en&utcoffset=-240` immediately, credential-free, and validate the complete bounded array. Every row is off duty/not on road, even `Ready To Go` and Outside/vendor locations. General yard synonyms mean the full feed; physical location only when explicitly asked. Count distinct `truck_number`, use exact source owner/dispatcher, and disclose retrieval timestamps. Current snapshot only; no history, complement or absence proof. Failure is unknown, not zero. See [off-duty source contract](off-duty-trucks.md). |
 | Legacy Ninox insurance-choice formula | unsupported | Supabase lacks `days_in_yard_` and numeric insurance-choice fields. This formula limitation does not block the approved current off-duty feed and must not be conflated with the DriverPay on-road metric. |
 
+## Fuel / diesel knowledge routing and rejected-path recovery
+
+The Spanish question “reporte de petroleo dividido por companias” (also
+“reporte de petróleo dividido por compañías”, diesel/combustible by company)
+routes to the `fuel` report. Read these existing approved documents:
+`docs/question-routing.md`, `docs/data-dictionary.md`, and
+`docs/metric-definitions.md`, then fetch live `fuel` metadata for unfamiliar rules.
+The dashboard `/diesel` is **not a knowledge-document path**; there is no
+`docs/diesel.md` document. Never derive knowledge filenames from UI routes.
+
+For the recorded rejected request, the safe one-time recovery is:
+
+```json
+{"document": "docs/question-routing.md", "offset": 0, "limit": 16000}
+```
+
+Select this path only when the caller's tool advertises it as approved. Retry once,
+preserving `offset` and `limit`; if it fails again, disclose the limitation rather
+than bypassing the tool. A tool that uses document aliases or search IDs must use
+its own advertised identifier instead; do not add unsupported offset/limit fields.
+This is a client knowledge-routing correction, not a permission or schema change.
+
+For a company breakdown, `fuel` has no `company` field or filter. Explain that the
+available historical entity attribution is `owner`; confirm whether that is the
+requested meaning if it is unclear (do not invent supplier/company data). If no
+period is supplied or established in the conversation, ask for the date period
+before running numerical totals. Query inclusive `store_from` / `store_to`, use
+verified exact stored `Product` values for diesel (not substring guesses that can
+include additives/oil), and paginate completely before totals. Retain rows with a
+blank owner as unattributed instead of dropping them. Preserve `shared_owner`;
+owner-filtered queries match either field and can overlap. Do not add overlapping
+owner-filtered totals into a company-wide total. A primary-`owner` breakdown counts
+each transaction once; an underlying-owner allocation requires an explicit rule.
+Use populated `Adjusted SubTotal`, report missing amounts/gallons, and calculate
+applicable aggregate spend divided by gallons, not the mean transaction rate.
+For the UI, link https://lightning-settlement-dashboard.vercel.app/diesel.
+
+*Evidence: rejected non-existent path reported 2026-10-08; approved recovery paths
+confirmed against the supplied tool allowlist and canonical files; fuel fields,
+filters and calculation rules checked against authenticated schema 3.8.2 metadata.
+The affected third-party `get_reporting_knowledge` implementation is not in this
+repository; publication/sync does not prove that user's runtime has reloaded.*
+
 ## Date rules
 
 - Settlements: Tuesday `From` through the following Monday `To`. Use an exact Tuesday period anchor. Do not infer current cycle from `To Report` alone.

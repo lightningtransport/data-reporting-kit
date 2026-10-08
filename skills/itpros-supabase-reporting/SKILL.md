@@ -1,7 +1,7 @@
 ---
 name: itpros-supabase-reporting
 description: Answer Lightning reports through the approved reporting APIs.
-version: 0.11.2
+version: 0.11.3
 author: Ibrain Ortega, Hermes Agent
 license: Proprietary
 platforms: [linux, macos, windows]
@@ -14,6 +14,18 @@ metadata:
 # Lightning reporting
 
 Read repository `AGENTS.md` first. The canonical shared kit is `https://github.com/lightningtransport/data-reporting-kit`; its approved service-agent endpoint is `https://aaqquwhdglueqlnbifvn.supabase.co/functions/v1/agent-reporting`. Approved AI service agents use `agent-reporting`; the personal JWT-based `reporting-query` flow remains available only to already-approved Supabase members.
+
+## Knowledge document selection
+
+Never invent a document path from a report name or dashboard route. Use only exact
+paths advertised by the current knowledge tool (or IDs returned by `search`),
+including the `skills/` prefix for packaged skills. Fuel/diesel rules live in
+`docs/question-routing.md`, `docs/data-dictionary.md`, and
+`docs/metric-definitions.md`; `/diesel` is a dashboard route, not a document.
+If a knowledge request is rejected, retry once with an exact approved relevant
+path, preserving `offset` and `limit` when the tool supports them. Do not retry the
+same rejected path, guess another filename, broaden the allowlist, or bypass the
+tool. If the corrected request fails, disclose the unavailable guidance.
 
 ## Current off-duty trucks — approved direct external source
 

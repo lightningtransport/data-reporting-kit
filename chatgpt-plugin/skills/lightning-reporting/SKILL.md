@@ -15,6 +15,18 @@ description: Use when answering questions about Lightning Transportation operati
 8. Only set `include_sensitive=true` for an explicit user need. Do not repeat sensitive identifiers unnecessarily.
 9. Every final answer states report/source, normalized filters, period, result, row or distinct count, pagination completeness, `as_of`, source-freshness limitation, and material caveats.
 
+## Knowledge document selection
+
+Never invent a document path from a report name or dashboard route. Use only exact
+paths advertised by the current knowledge tool (or IDs returned by `search`),
+including the `skills/` prefix for packaged skills. Fuel/diesel rules live in
+`docs/question-routing.md`, `docs/data-dictionary.md`, and
+`docs/metric-definitions.md`; `/diesel` is a dashboard route, not a document.
+If a knowledge request is rejected, retry once with an exact approved relevant
+path, preserving `offset` and `limit` when the tool supports them. Do not retry the
+same rejected path, guess another filename, broaden the allowlist, or bypass the
+tool. If the corrected request fails, disclose the unavailable guidance.
+
 ## Departure support and rollout
 
 Departure totals use the same inclusive `Out Date` window on **both** DriverPay and live Ninox Schedule_Teams. Normalize only truck-key format, union distinct nonblank trucks, and report source, overlap, source-only, and combined counts. Never add source counts, count assignment/driver rows, apply return exclusions, or use the returning-trucks formula. Use `departures` only after the deployed authenticated catalog confirms it; `out_schedule` is the planned list, not a combined total. See [departure contract](../../../docs/departures.md).

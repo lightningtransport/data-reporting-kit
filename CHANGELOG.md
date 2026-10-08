@@ -1,5 +1,11 @@
 # Changelog
 
+## Client skill 0.11.3 — 2026-10-08
+
+- Correct fuel/diesel knowledge routing for the Spanish company-breakdown question: use existing approved routing/dictionary/metric documents, never infer `docs/diesel.md` from dashboard `/diesel`. Document the exact one-time recovery while preserving offset/limit and each tool’s advertised path/alias contract.
+- Add entrypoint, mandatory-rule and packaged Hermes/ChatGPT guidance against invented document paths, without weakening knowledge allowlists or changing API/schema/permissions. Clarify existing fuel metadata, date/product scope and overlapping owner attribution; no new company field or allocation rule.
+- Add canonical retrieval/routing and unknown-document rejection regressions. The third-party affected wrapper and its failure tracker are not present here; rollout and incident closure require that client’s sync/reload and replay.
+
 ## Client skill 0.11.2 — 2026-10-08
 
 - Make canonical ChatGPT MCP catalog discovery compact-first at the HTTP layer; Python `ReportingService.catalog()` and MCP `catalog({})` default to `compact=true`, with explicit `compact=false` full opt-in. Preserve returned permissions/global rules without local truncation.
