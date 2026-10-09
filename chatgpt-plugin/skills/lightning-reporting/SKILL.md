@@ -47,6 +47,18 @@ Do not infer deployed importer behavior from a fuel importer or an ad-hoc run.
 Preserve bucket financial rows, exact historical Owner OR shared_owner, inclusive From
 bounds, stable IDs, pagination and audit controls. No production backfill is authorized.
 
+## Provider versus gateway troubleshooting
+
+A primary timeout plus backup generation failure is not proof of a reporting gateway outage.
+Inspect actual tool envelopes; use authorized independent reporting checks before
+attributing a gateway failure. Without such evidence, describe AI model service
+unavailability and disclose unknown deployment/account health. Public status and
+unrelated local credentials cannot establish deployed credits/quotas. Do not change
+model identity, failover, native adapters/tools/skills or validation to hide failures.
+Read [the shared evidence contract](../../../docs/agent-reporting.md#provider-versus-gateway-troubleshooting)
+via the advertised search/fetch path. Provider billing/config access belongs to
+an authorized operator; never ask users to paste secrets. Keep incident evidence private.
+
 ## Departure support and rollout
 
 Departure totals use the same inclusive `Out Date` window on **both** DriverPay and live Ninox Schedule_Teams. Normalize only truck-key format, union distinct nonblank trucks, and report source, overlap, source-only, and combined counts. Never add source counts, count assignment/driver rows, apply return exclusions, or use the returning-trucks formula. Use `departures` only after the deployed authenticated catalog confirms it; `out_schedule` is the planned list, not a combined total. See [departure contract](../../../docs/departures.md).

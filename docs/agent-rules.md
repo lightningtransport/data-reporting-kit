@@ -72,6 +72,14 @@ Follow [settlement numeric coverage](metric-definitions.md#settlement-numeric-co
 - A successful empty page has `total_count = 0`; an offset beyond the available range returns HTTP 416.
 - An empty result is not proof of current upstream completeness because source-sync timestamps are unavailable.
 
+### Provider versus gateway troubleshooting
+
+A primary timeout plus backup generation failure is not proof of a reporting gateway outage.
+Attribute failures using actual tool/request evidence, not a generic unavailable message;
+public status/reachability is not deployed credential, credits or quota evidence.
+Preserve model identity, failover, client adapters and data/security validation.
+Follow [provider versus gateway troubleshooting](agent-reporting.md#provider-versus-gateway-troubleshooting).
+
 ## 6. Answer evidence
 
 Every answer states source, normalized filters, exact period, result, row/distinct count, pagination completeness, `as_of`, source-freshness limitation, and material caveats.

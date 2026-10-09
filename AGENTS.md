@@ -96,6 +96,14 @@ Every Settlements view must include **Summary**, weekly and monthly review modes
 
 For supported plain company-wide counts/totals, the packaged client `ask` command uses one TypeSafe Jev judgment followed by deterministic approved-report retrieval and answer assembly. Use it instead of, not in addition to, a full model planning loop. All calculation/date/permission rules above remain code-owned. Scoped, sensitive, explicit-date, complex, financial and uncertain questions keep the existing reasoning path. A fallback has no answer/total. Never send report rows, secrets or conversation history to Jev. See [client contract](docs/jev-fast-reporting.md).
 
+## Provider versus gateway troubleshooting
+
+A primary timeout plus backup generation failure is not proof of a reporting gateway outage.
+Inspect actual tool envelopes; independently check authorized reporting requests and
+verify deployment-linked provider credentials before health/credits/quota claims.
+Keep client model identity, failover and native adapters unchanged. Follow the
+[troubleshooting evidence contract](docs/agent-reporting.md#provider-versus-gateway-troubleshooting).
+
 ## Required answer evidence
 
 State source report/table, normalized filters, exact period, result and row/distinct count, pagination completeness, `as_of`, source-sync freshness limitation, and material grain/null/bucket/join/sensitivity caveats. Never present a truncated page or incomplete financial period as a complete total. HTML reports put the same evidence in the **Technical details** accordion.

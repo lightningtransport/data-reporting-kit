@@ -1,5 +1,12 @@
 # Changelog
 
+## Provider/gateway troubleshooting / client skill 0.11.9 — 2026-10-09
+
+- Publish owner-approved instruction-only guidance separating primary/backup completion failures from reporting-request evidence. Dual timeout/generation 502 is not proof of a gateway/data outage or exhausted funding/quota; use actual tool envelopes and independent authorized catalog/metadata/bounded-page checks before attribution.
+- Require deployment-linked provider credential/billing provenance. Public status and unauthenticated reachability cannot certify deployed completions, available credits or remaining quotas; missing access stays unknown with explicit blockers. Keep model identity, failover and repaired native client adapters/tools/skills unchanged.
+- Add the shared troubleshooting contract to the API guide, agent entrypoints, mandatory rules, curated response policy and both packaged skills. Add RED-to-GREEN guidance/distribution regressions and bump the Hermes reporting skill to 0.11.9 for version-aware sync. Keep incident-specific rows/counts, credentials, raw chat and audit evidence private.
+- No function-source or runtime-metadata change; no API/schema or financial-semantics change. No database writes, importer execution, dashboard source/settings change or manual deployment. A push/merge may trigger the existing hosting integration. Publication/sync is not proof of native-client rollout, deployed provider health or historical incident closure.
+
 ## Driver-insurance source replacement / client skill 0.11.8 — 2026-10-09
 
 - Replace the earlier driver-insurance share with the user-approved current JSON URL `https://lightningtransport.ninoxdb.com/share/x9f4rn221pibyhx3lwup2f8otfzfy8kijpk2?locale=en&utcoffset=-240` across every reporting instruction, packaged skill/reference, OpenAPI description and routing/registry regression. The old share is retired, not a fallback.

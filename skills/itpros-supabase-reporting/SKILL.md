@@ -1,7 +1,7 @@
 ---
 name: itpros-supabase-reporting
 description: Answer Lightning reports through the approved reporting APIs.
-version: 0.11.8
+version: 0.11.9
 author: Ibrain Ortega, Hermes Agent
 license: Proprietary
 platforms: [linux, macos, windows]
@@ -251,6 +251,20 @@ Preserve explicit date/product constraints and nonsensitive projection when the
 native client's `sensitive_user_need` is empty. Analysis/grouping/client-need options
 are not gateway GET parameters. A clean current replay or synthetic null test does
 not establish the cause of a historical failure. See `docs/metric-definitions.md`.
+
+## Provider versus gateway troubleshooting
+
+A primary timeout plus backup generation failure is not proof of a reporting gateway outage.
+Inspect actual tool envelopes and independently check authorized compact catalog,
+selected metadata and a bounded anchored page. Verify deployment-linked provider
+credentials before credits/quota claims; unrelated local keys and public status
+are insufficient. Missing access leaves health unknown. Describe dual completion
+failure as AI model service temporarily unavailable unless reporting-request evidence
+shows a separate failure. Keep model identity, failover, client adapters and native
+tool/skill seeding unchanged; never weaken auth, pagination or numeric validation.
+Keep private incident evidence out of the public kit. Follow the
+[shared evidence contract](../../docs/agent-reporting.md#provider-versus-gateway-troubleshooting).
+Instruction publication/sync is not proof of a running client's reload or incident closure.
 
 ## Verification
 

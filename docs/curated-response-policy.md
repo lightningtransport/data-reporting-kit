@@ -79,6 +79,15 @@ Use `outside_repairs` for road/outside/not-company-shop repair questions.
 - A repair can belong to multiple comma-separated work categories. Category totals overlap and cannot be summed as a grand total.
 - State repair count, pagination status, null cost coverage, source, and definitions used.
 
+## Provider versus gateway troubleshooting
+
+A primary timeout plus backup generation failure is not proof of a reporting gateway outage.
+Without reporting failure evidence, describe the AI model service as temporarily
+unavailable; do not claim a database/reporting outage or exhausted credits/quotas.
+Disclose unknown deployment/account health and access blockers; keep model identity,
+failover and native client adapters unchanged. Use the
+[troubleshooting evidence contract](agent-reporting.md#provider-versus-gateway-troubleshooting).
+
 ## Pre-answer quality gate
 
 Verify applicable items before reporting a number: correct source/grain; current metadata and exact filters; inclusive dates; full pagination; distinct-count/aggregation method; null coverage; required union and exclusions; financial completion; and concise evidence with appropriate limitations.

@@ -115,6 +115,55 @@ A request that omits `report` remains the legacy `settlement_summary` call only 
 
 New agents must always send an explicit report and use the strict/paginated contract.
 
+## Provider versus gateway troubleshooting
+
+**Scope and evidence:** owner-approved operational guidance, 2026-10-09. This
+separates completion-provider failures from reporting-request evidence; it does
+not diagnose a historical incident or change HTTP/API or financial semantics.
+
+1. **Identify the failing layer.** A primary `TimeoutError` followed by a backup
+   HTTP 502 `Provider generation failed` is completion/provider-layer failure
+   evidence, **not proof of a reporting gateway outage**, exhausted credits,
+   exhausted quotas, or an upstream data outage. Do not assume the reporting
+   tool ran. If a successful model generation contains reporting errors, inspect
+   its actual tool envelopes and attribute only the evidenced request failure.
+   Without reporting-request evidence, gateway health is unknown, not failed.
+2. **Check the gateway independently when authorized.** Use the assigned agent
+   key for compact `catalog`, selected-report `metadata`, and one bounded data
+   page with that report's documented anchors. Metadata accepts only `report`
+   and `metadata=true`; owner/date filters belong on the data request. Record
+   HTTP status, envelope success/error, normalized filters, pagination, `as_of`
+   and source-freshness fields when present. Distinguish auth/permission or
+   request-validation rejection from function/transport failure, incomplete
+   retrieval, and client numeric validation. A successful payload establishes
+   success for that request only; a current replay does not establish historical causation.
+   `as_of` is request time, not proof of upstream sync freshness.
+3. **Verify provider credential provenance before account checks.** Authorized
+   provider operators must identify the actual deployment, configured primary
+   and backup providers, and deployment-linked credentials/billing permissions.
+   Never use unrelated local keys as proof of deployed account health. Use
+   current documented read-only health/usage/billing endpoints; a public status
+   page or unauthenticated reachability response does not prove credential
+   validity, completion success, available credits, or remaining quotas. Usage
+   and costs are not remaining balance. If configuration or authorized access
+   is missing, report the specific blocker and leave account health unknown.
+4. **Describe the evidenced service, not a guessed outage.** For dual completion
+   failure without reporting failure evidence, say the **AI model service is temporarily unavailable**,
+   not that the reporting service or database is down. A separately observed
+   gateway failure should be reported separately with its request evidence.
+   Retry later within provider policy, or have an authorized operator address
+   verified funding/quota/status issues; do not infer a funding fix from a timeout/502 alone.
+5. **Keep repairs in scope.** Do not change model identity, disable failover,
+   modify the client adapter, or reseed native tools/skills to hide provider
+   failures or data defects. Do not loosen auth, sensitive-field gates,
+   pagination completeness or numeric validation. Existing null/blank/zero,
+   stored-total and allocation-bucket financial rules remain unchanged.
+6. **Keep evidence private and rollout claims separate.** Never publish business
+   rows, incident-specific owner counts, secrets, OAuth tokens, raw chat or audit
+   content here. Record only sanitized reusable guidance. Publishing/syncing
+   instructions is not proof of a running client's reload, deployed provider
+   health, or historical incident closure.
+
 ## Audit and access
 
 Each authorized data request records request ID, configured principal role in `role`, agent-key identifier and principal role as distinct JSON fields, applied filters, `include_sensitive`, limit, offset, row count, outcome, and time in `public.agent_query_audit`. The key value is never stored. Authorized data is returned only after the audit insert succeeds; audit failure returns `500`. Upstream query failures are sanitized to `500` responses.
