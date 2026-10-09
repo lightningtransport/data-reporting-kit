@@ -2,11 +2,11 @@
 
 ## Approval and source selection
 
-**Evidence:** user-approved source instruction 2026-10-09; live credential-free HTTP 200 `application/json`, no redirects, complete array and field/type coverage verified 2026-10-09 at 14:20:06Z. Observed row counts and insurance values are not durable facts.
+**Evidence:** user-approved replacement source instruction 2026-10-09; the URL below supersedes the earlier share. Live credential-free HTTP 200 `application/json`, no redirects, complete array and unchanged field/type contract verified 2026-10-09 at 14:33:08Z. Do not fall back to the retired share. Observed row counts and insurance values are not durable facts.
 
 Exact approved URL (preserve all query parameters):
 
-`https://lightningtransport.ninoxdb.com/share/go6oxo2dl22j6n2c8mtzl709vcyi66xkmetx?locale=en&utcoffset=-240`
+`https://lightningtransport.ninoxdb.com/share/x9f4rn221pibyhx3lwup2f8otfzfy8kijpk2?locale=en&utcoffset=-240`
 
 For **Drivers Insurance**, drivers with/under insurance, insured-driver lists/counts, insurance breakdowns, or an individual driver's current insurance, fetch this JSON **immediately before each answer**. The user identifies this as the company roster of drivers with or under insurance. Default scope is the entire feed; apply a specific insurer/name filter only when requested, using exact stored insurance values. Do not hard-code CTC, expand insurance codes into invented company names, or confuse driver Insurance with employer/company, truck insurance, settlement Insurance expense, or the unsupported legacy truck insurance-choice formula.
 

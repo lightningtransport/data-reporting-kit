@@ -5,7 +5,7 @@ import sys
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
-URL = "https://lightningtransport.ninoxdb.com/share/go6oxo2dl22j6n2c8mtzl709vcyi66xkmetx?locale=en&utcoffset=-240"
+URL = "https://lightningtransport.ninoxdb.com/share/x9f4rn221pibyhx3lwup2f8otfzfy8kijpk2?locale=en&utcoffset=-240"
 sys.path.insert(0, str(ROOT / "chatgpt-plugin/mcp-server/src"))
 from knowledge import KnowledgeBase  # pyright: ignore[reportMissingImports]
 

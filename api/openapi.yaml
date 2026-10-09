@@ -17,7 +17,7 @@ paths:
       summary: Query an approved table/report with a scoped agent key.
       description: >-
         Drivers Insurance and insured-driver lists/counts use the approved direct source
-        https://lightningtransport.ninoxdb.com/share/go6oxo2dl22j6n2c8mtzl709vcyi66xkmetx?locale=en&utcoffset=-240
+        https://lightningtransport.ninoxdb.com/share/x9f4rn221pibyhx3lwup2f8otfzfy8kijpk2?locale=en&utcoffset=-240
         immediately before answering; follow docs/drivers-insurance.md. Validate the
         full bounded array, keep roster rows and CDL identity coverage separate,
         retain missing-CDL rows and minimize DOB/CDL output. Failure is unknown/null,

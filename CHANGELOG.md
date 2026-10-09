@@ -1,5 +1,11 @@
 # Changelog
 
+## Driver-insurance source replacement / client skill 0.11.8 — 2026-10-09
+
+- Replace the earlier driver-insurance share with the user-approved current JSON URL `https://lightningtransport.ninoxdb.com/share/x9f4rn221pibyhx3lwup2f8otfzfy8kijpk2?locale=en&utcoffset=-240` across every reporting instruction, packaged skill/reference, OpenAPI description and routing/registry regression. The old share is retired, not a fallback.
+- Validate the new live source as credential-free HTTP 200 application/json, no redirects, complete bounded array with the same required and optional field/type contract. Preserve all insurance labels and missing-CDL entries; do not hard-code an insurer or publish business rows.
+- Bump the reporting skill to 0.11.8 to distribute the URL change. Existing freshness, privacy, identity-coverage and failure rules remain unchanged. No gateway schema/function/runtime-metadata, database or dashboard source change; installed agents require instruction sync, and loaded MCP knowledge needs a reload.
+
 ## Live driver-insurance guidance / client skill 0.11.7 — 2026-10-09
 
 - Adopt the user-approved live credential-free Ninox driver-insurance roster for Drivers Insurance, insured-driver lists/counts and current insurance breakdowns. Fetch immediately before each answer, validate the full bounded JSON array, use exact source labels and default to all rows, not one hard-coded insurer.
