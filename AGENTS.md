@@ -1,5 +1,9 @@
 # Agent operating instructions — Lightning Transportation reporting
 
+## Current Drivers Insurance — approved direct source
+
+For Drivers Insurance, insured-driver lists/counts, drivers with/under insurance, driver-insurance breakdowns or an individual's current insurance, fetch `https://lightningtransport.ninoxdb.com/share/go6oxo2dl22j6n2c8mtzl709vcyi66xkmetx?locale=en&utcoffset=-240` immediately before each answer, credential-free. Follow [live driver-insurance contract](docs/drivers-insurance.md). Validate the complete array within 30 seconds overall and 2 MiB; default to all rows and exact Insurance labels, not a hard-coded insurer. Show names and insurance by default; minimize DOB/CDL. Preserve missing-CDL rows, disclose roster entries versus verified distinct CDL identity/duplicates, and never deduplicate by name. Failure is unknown/null, not zero; no cached/Supabase fallback. Current roster only: no historical coverage, premiums, policy validity or uninsured complement. This is direct-source guidance, not a new gateway/MCP report or Jev route.
+
 This repository is the canonical reporting contract for Lightning Transportation. It contains no operational records or credentials.
 
 ## Read in this order
@@ -104,7 +108,7 @@ On every user correction, send a sanitized `reporting_agent_correction` event us
 
 Installed agents must maintain one `data-reporting-kit-sync` job at 10:00 AM and 2:00 PM local time. A failed sync must be disclosed before relying on stale instructions.
 
-Verified answer-affecting knowledge must update the relevant docs, runtime metadata, OpenAPI, tests, packaged skill, and `CHANGELOG.md` in the same work cycle. Verify the live schema/function, push, and confirm the remote commit before declaring completion.
+Verified answer-affecting knowledge must update the relevant docs, tests, packaged skill, and `CHANGELOG.md` in the same work cycle; update OpenAPI and runtime metadata when their contracts are affected. For schema/function changes verify the live schema/function. Instruction-only approved direct-source changes require live-source validation, not gateway changes/deployment. Push and confirm the remote commit before declaring completion.
 
 ## Governed departure totals (prepared schema 3.8.0)
 

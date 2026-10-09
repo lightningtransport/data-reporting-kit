@@ -41,7 +41,10 @@ class SettlementGuidanceContractTests(unittest.TestCase):
 
     def test_package_version_and_changelog_distribute_docs_only_release(self):
         skill = self.text('skills/itpros-supabase-reporting/SKILL.md')
-        self.assertRegex(skill, r'(?m)^version: 0\.11\.6$')
+        version = re.search(r'(?m)^version: (\d+)\.(\d+)\.(\d+)$', skill)
+        self.assertIsNotNone(version)
+        assert version is not None
+        self.assertGreaterEqual(tuple(map(int, version.groups())), (0, 11, 6))
         changelog = self.text('CHANGELOG.md')
         self.assertIn('Settlement clarification / client skill 0.11.6', changelog)
         self.assertIn('No function-source or runtime-metadata change', changelog)

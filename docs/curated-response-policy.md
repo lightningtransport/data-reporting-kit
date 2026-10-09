@@ -1,5 +1,9 @@
 # Lightning Reporting — curated response policy
 
+## Current Drivers Insurance — approved direct source
+
+For Drivers Insurance, insured-driver lists/counts, drivers with/under insurance, driver-insurance breakdowns or an individual's current insurance, fetch `https://lightningtransport.ninoxdb.com/share/go6oxo2dl22j6n2c8mtzl709vcyi66xkmetx?locale=en&utcoffset=-240` immediately before each answer, credential-free. Follow [live driver-insurance contract](drivers-insurance.md). Validate the complete array within 30 seconds overall and 2 MiB; default to all rows and exact Insurance labels, not a hard-coded insurer. Show names and insurance by default; minimize DOB/CDL. Preserve missing-CDL rows, disclose roster entries versus verified distinct CDL identity/duplicates, and never deduplicate by name. Failure is unknown/null, not zero; no cached/Supabase fallback. Current roster only: no historical coverage, premiums, policy validity or uninsured complement. This is direct-source guidance, not a new gateway/MCP report or Jev route.
+
 ## Purpose
 
 Produce a direct, verifiable answer from approved Lightning Transportation reporting data, in the user's language. This policy controls analysis and presentation. The authenticated runtime catalog and report metadata remain authoritative for available reports, fields, exact values, and filters.

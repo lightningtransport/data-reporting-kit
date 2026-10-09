@@ -1,5 +1,9 @@
 # Data dictionary
 
+## Current Drivers Insurance — approved direct source
+
+For Drivers Insurance, insured-driver lists/counts, drivers with/under insurance, driver-insurance breakdowns or an individual's current insurance, fetch `https://lightningtransport.ninoxdb.com/share/go6oxo2dl22j6n2c8mtzl709vcyi66xkmetx?locale=en&utcoffset=-240` immediately before each answer, credential-free. Follow [live driver-insurance contract](drivers-insurance.md). Validate the complete array within 30 seconds overall and 2 MiB; default to all rows and exact Insurance labels, not a hard-coded insurer. Show names and insurance by default; minimize DOB/CDL. Preserve missing-CDL rows, disclose roster entries versus verified distinct CDL identity/duplicates, and never deduplicate by name. Failure is unknown/null, not zero; no cached/Supabase fallback. Current roster only: no historical coverage, premiums, policy validity or uninsured complement. This is direct-source guidance, not a new gateway/MCP report or Jev route.
+
 The six prior reporting sources were verified against Supabase project `aaqquwhdglueqlnbifvn` on **2026-09-21**, with `returns` additions verified on **2026-09-25**: **111 physical columns** (`DriverPay` 26, `drivers` 17, `returns` 10, `settlements` 28, `trucks` 16, `fuel` 14). The 14 `Outside_Repairs` columns, types, nullability, and RLS were verified in production on **2026-09-28**, giving **125 verified columns across seven sources**. The `agent-reporting` function was deployed as version 114. The reporting system is single-organization. The authenticated catalog remains authoritative for each key's access.
 
 The authenticated `agent-reporting` metadata routes are the runtime contract. Call `?report=catalog` for the complete catalog or `?report=<name>&metadata=true` for one report.
