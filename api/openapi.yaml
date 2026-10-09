@@ -16,6 +16,13 @@ paths:
       operationId: runAgentReportingQuery
       summary: Query an approved table/report with a scoped agent key.
       description: >-
+        Drivers Insurance and insured-driver lists/counts use the approved direct source
+        https://lightningtransport.ninoxdb.com/share/go6oxo2dl22j6n2c8mtzl709vcyi66xkmetx?locale=en&utcoffset=-240
+        immediately before answering; follow docs/drivers-insurance.md. Validate the
+        full bounded array, keep roster rows and CDL identity coverage separate,
+        retain missing-CDL rows and minimize DOB/CDL output. Failure is unknown/null,
+        not zero; no cache/Supabase fallback, historical coverage or uninsured complement.
+        This instruction-only route adds no report enum, gateway behavior or runtime metadata.
         Explicit report requests use strict validation and pagination. A request that
         omits report is a legacy settlement_summary request, authorized as
         settlement_summary, with the unchanged successful {count,data} response shape.

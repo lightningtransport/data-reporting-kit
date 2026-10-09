@@ -1,5 +1,12 @@
 # Changelog
 
+## Live driver-insurance guidance / client skill 0.11.7 — 2026-10-09
+
+- Adopt the user-approved live credential-free Ninox driver-insurance roster for Drivers Insurance, insured-driver lists/counts and current insurance breakdowns. Fetch immediately before each answer, validate the full bounded JSON array, use exact source labels and default to all rows, not one hard-coded insurer.
+- Document exact source keys and optional/sparse attributes; preserve CDL strings/leading zeros, retain missing-CDL entries and distinguish roster rows from verified distinct-driver identity. Minimize DOB/CDL, flag source anomalies without repairs, and reject cached/Supabase fallbacks, historical coverage, policy-validity claims and uninsured complements.
+- Mirror the self-contained source contract in the reporting skill; register it in canonical MCP search/fetch and update agent entrypoints, routing, dictionary, metric, curated policy and OpenAPI descriptive guidance. Add real registry/routing/mirror regressions; no business rows or sensitive examples are published.
+- Instruction-only direct source: no gateway report enum, Supabase schema/function/runtime-metadata change, database writes or dashboard change/deployment. Publish reporting skill 0.11.7. Other agents require instruction sync; running MCP servers need a code reload to expose the added document. Publication is not proof of that rollout.
+
 ## Settlement clarification / client skill 0.11.6 — 2026-10-08
 
 - Clarify existing nullable settlement components: unknown/unpopulated is not zero or not applicable, including owner-allocation buckets. Separate complete row retrieval from numeric coverage; retain populated/null evidence, exact decimal aggregation, nonempty all-null amounts, date-only From/To and authoritative stored totals.

@@ -26,6 +26,7 @@ DOCUMENT_PATHS = (
     "docs/departures.md",
     "docs/on-road-trucks.md",
     "docs/off-duty-trucks.md",
+    "docs/drivers-insurance.md",
     "api/openapi.yaml",
 )
 
@@ -48,7 +49,8 @@ def create_server() -> FastMCP:
         instructions=(
             "Use search then fetch to retrieve current reporting rules. Use catalog before "
             "discovering reports, metadata before unfamiliar reports, and run_report only for "
-            "approved read-only gateway requests. Current on-road/working and off-duty questions "
+            "approved read-only gateway requests. Drivers Insurance/insured-driver lists, "
+            "current on-road/working and off-duty questions "
             "use the approved credential-free direct shares documented in the knowledge base; "
             "these are not MCP reports. If the host cannot fetch a share, disclose unavailable "
             "evidence, never fall back to DriverPay for current status. Never request sensitive fields unless the "
