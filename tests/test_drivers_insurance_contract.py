@@ -30,10 +30,49 @@ class DriversInsuranceContractTests(unittest.TestCase):
                          "CDL Number", "leading zeros", "missing", "duplicate",
                          "DOB", "Hire of Date", "State", "Years_of_Experience",
                          "First Name", "Last Name", "Insurance", "Gender",
-                         "historical", "names and insurance", "no credentials", "cookies",
+                         "historical", "full approved public field set", "no credentials", "cookies",
                          "Reject redirects", "cache bypass", "empty array",
                          "uninsured", "complement", "relational-fallback"]:
             self.assertIn(required, text)
+
+    def test_full_public_columns_and_native_routing(self):
+        keys = ["First Name", "Last Name", "Insurance", "CDL Number", "Gender",
+                "DOB", "State", "Hire of Date", "Years_of_Experience"]
+        for path in ["docs/drivers-insurance.md",
+                     "skills/itpros-supabase-reporting/references/drivers-insurance.md",
+                     "docs/question-routing.md", "api/openapi.yaml"]:
+            with self.subTest(path=path):
+                text = (ROOT / path).read_text()
+                self.assertIn("query_drivers_insurance", text)
+                for key in keys:
+                    self.assertIn(key, text)
+                self.assertIn("omit absent keys", text)
+                self.assertIn("never invent", text)
+        routing = (ROOT / "docs/question-routing.md").read_text()
+        for phrase in ["active on insurance", "all insurance driver data",
+                       "Do not substitute", "agent-reporting `drivers`"]:
+            self.assertIn(phrase, routing)
+
+    def test_no_narrow_client_projection_or_host_only_policies(self):
+        import re
+        paths = ["AGENTS.md", "README.md", "docs/agent-rules.md",
+                 "docs/curated-response-policy.md", "docs/data-dictionary.md",
+                 "docs/metric-definitions.md", "docs/agent-reporting.md",
+                 "docs/question-routing.md", "docs/drivers-insurance.md",
+                 "skills/itpros-supabase-reporting/SKILL.md",
+                 "skills/itpros-supabase-reporting/references/drivers-insurance.md",
+                 "chatgpt-plugin/skills/lightning-reporting/SKILL.md"]
+        for path in paths:
+            with self.subTest(path=path):
+                text = (ROOT / path).read_text()
+                self.assertNotRegex(text, re.compile(
+                    r"(?:show|output) names and insurance by default|"
+                    r"names and insurance(?: labels)? only", re.I))
+                self.assertNotIn("preview 20", text)
+        contract = (ROOT / "docs/drivers-insurance.md").read_text()
+        self.assertIn("chat and Excel", contract)
+        self.assertIn("sparse", contract)
+        self.assertIn("not Supabase `drivers`", contract)
 
     def test_actual_mcp_registry_search_fetch_exposes_contract(self):
         tree = ast.parse((ROOT / "chatgpt-plugin/mcp-server/src/server.py").read_text())

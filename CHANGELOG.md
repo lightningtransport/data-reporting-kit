@@ -1,5 +1,12 @@
 # Changelog
 
+## Full driver-insurance public columns / client skill 0.11.10 — 2026-10-09
+
+- Align the approved native/client `query_drivers_insurance` chat and Excel projection with all nine required ∪ optional Ninox keys when present: `First Name`, `Last Name`, `Insurance`, `CDL Number`, `Gender`, `DOB`, `State`, `Hire of Date`, `Years_of_Experience`. Omit absent keys; never invent or enrich missing values from other reports. Preserve exact Ninox `Hire of Date`, not Supabase `Date of Hire`, and document sparse optional attributes without freezing a roster count.
+- Route insured roster, active-on-insurance and all-insurance-driver-data requests to the existing native tool where installed, or the approved credential-free Ninox GET on other hosts. Keep source URL, bounded validation, identity coverage, no-Supabase-fallback and current-roster limitations unchanged; no gateway report enum or runtime behavior change.
+- Update canonical entrypoints, routing, mirrored skill reference, ChatGPT skill and instruction-only OpenAPI note; add public-column/routing/obsolete-wording regressions. Publish Hermes reporting skill 0.11.10 for version-aware synchronization. No host integration, seed.py, compose, VPS paths, export-size policy, provider copy or settlement implementation changes.
+- After publication, operators may pull guidance into the live mount through existing `sync-knowledge` / `sync-data-reporting-kit` scripts; host-owned policies must not be overwritten from this kit. No SSH or manual deployment is part of this change. Local instruction synchronization does not certify a running native-client reload.
+
 ## Provider/gateway troubleshooting / client skill 0.11.9 — 2026-10-09
 
 - Publish owner-approved instruction-only guidance separating primary/backup completion failures from reporting-request evidence. Dual timeout/generation 502 is not proof of a gateway/data outage or exhausted funding/quota; use actual tool envelopes and independent authorized catalog/metadata/bounded-page checks before attribution.

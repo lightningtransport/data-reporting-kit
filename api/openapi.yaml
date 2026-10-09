@@ -20,7 +20,12 @@ paths:
         https://lightningtransport.ninoxdb.com/share/x9f4rn221pibyhx3lwup2f8otfzfy8kijpk2?locale=en&utcoffset=-240
         immediately before answering; follow docs/drivers-insurance.md. Validate the
         full bounded array, keep roster rows and CDL identity coverage separate,
-        retain missing-CDL rows and minimize DOB/CDL output. Failure is unknown/null,
+        retain missing-CDL rows. Native/client query_drivers_insurance returns all approved
+        public keys when present in chat and Excel: First Name, Last Name, Insurance,
+        CDL Number, Gender, DOB, State, Hire of Date, Years_of_Experience; omit absent keys
+        and never invent values. Hire of Date is not Supabase Date of Hire. This is an
+        instruction-only native/direct-source contract, not a gateway report enum or
+        gateway behavior change; minimize unnecessary DOB/CDL repetition in summaries. Failure is unknown/null,
         not zero; no cache/Supabase fallback, historical coverage or uninsured complement.
         This instruction-only route adds no report enum, gateway behavior or runtime metadata.
         Explicit report requests use strict validation and pagination. A request that
