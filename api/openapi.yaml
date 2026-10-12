@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Lightning Reporting APIs
-  version: 3.8.3
+  version: 3.8.4
   license:
     name: Proprietary
     identifier: LicenseRef-Proprietary
@@ -43,9 +43,18 @@ paths:
         timestamps and row/distinct/full-validation evidence; upstream-sync time is unknown.
         Failures mean unknown/null, not zero; a validated empty array means zero in that snapshot.
         No cache/DriverPay fallback, GPS movement claim or fleet/off-duty complement.
-        Historical or explicit-date assignment overlap ONLY uses driver_pay on_road_at=D: Out Date <= D
+        Historical on-road / working truck counts prefer settlements: count distinct physical Truck
+        with Gross > 0 for the Tuesday-Monday settlement week; Gross = 0 means off duty,
+        not on the road. Exclude non-physical settlement allocation buckets 1/2/3.
+        Gross null is unknown, not zero; negative Gross classification is unestablished.
+        Paginate fully; period_from and period_to are inclusive From bounds (same Tuesday
+        for one week). State weekly scope, not exact-day/GPS/continuous driving proof;
+        past dates without explicit assignment wording use the containing settlement week.
+        Use historical Owner/Dispatch and Owner OR shared_owner; multiweek unique counts
+        union truck keys, never add weekly counts. No new Gross/status GET filter is added.
+        Explicitly requested assignment overlap ONLY uses driver_pay on_road_at=D: Out Date <= D
         and Return Date > D; paginate and count distinct nonblank Truck_Number.
-        Null returns and return day are excluded. For now use America/New_York date.
+        Null returns and return day are excluded; this is not the default historical on-road count.
         Current trucks in the yard, off duty, not working or not on the road use
         the approved external source in catalog guidance.off_duty_trucks:
         https://lightningtransport.ninoxdb.com/share/jx7z6tkjcnxalvsui4icdnqjuszia04etdhi?locale=en&utcoffset=-240
@@ -413,7 +422,7 @@ components:
       type: object
       required: [schema_version, report, source, filters, offset, limit, count, page_count, total_count, has_more, next_offset, as_of, data, request_id, period, status, complete]
       properties:
-        schema_version: {type: string, const: 3.8.3}
+        schema_version: {type: string, const: 3.8.4}
         report: {type: string, enum: [out_schedule, departures]}
         source: {type: string}
         filters: {type: object, additionalProperties: {type: string}}

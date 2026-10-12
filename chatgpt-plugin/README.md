@@ -1,6 +1,14 @@
 # Lightning Reporting ChatGPT Plugin
 
-Current operational on-road/working and yard/off-duty questions use the explicitly approved credential-free [on-road](../docs/on-road-trucks.md) and [off-duty](../docs/off-duty-trucks.md) direct source contracts. Both documents are registered for MCP search/fetch. The MCP server publishes guidance, not a dedicated live-share data tool: the host must immediately fetch the exact share with complete bounded validation, or disclose unavailable evidence. DriverPay on_road_at is historical/explicit-date assignment overlap only, never a current-source failure fallback; no cached result, GPS movement claim or fleet complement.
+## Historical on-road — settlement-week activity
+
+**Owner-approved 2026-10-12:** past on-road/working truck counts use `settlements` for the requested week. Stored `Gross > 0` means the physical truck was on road that settlement week; `Gross = 0` means off duty/not on road. Count distinct nonblank `Truck`, not rows, excluding settlement allocation buckets 1/2/3. A null Gross is unknown, not zero; negative Gross has no approved active/off-duty classification: disclose both as unresolved coverage, never silently classify them.
+
+Weeks run Tuesday–Monday. `period_from` and `period_to` are inclusive bounds on `From`, not `To`; for one week set both to the same Tuesday. Resolve an explicit past date without assignment wording to its containing settlement week and disclose the date-to-week resolution and exact Tuesday–Monday period. Use historical settlement `Owner`/`Dispatch`, exact `owner`/`dispatch` filters, and Owner OR shared_owner matching; never substitute current truck attribution. Paginate all rows and reconcile fetched count with `total_count`. Across multiple weeks, union distinct qualifying trucks; weekly counts are not additive.
+
+This is week-level activity, not exact-day status, GPS movement or proof of full-week driving. DriverPay `on_road_at` is only for explicitly requested assignment overlap, not the default historical on-road count. Current/now/today operational status still uses the fresh approved live Ninox feed unchanged. Report source, filters, resolved period, row/distinct counts, pagination, Gross coverage and source freshness.
+
+Current operational on-road/working and yard/off-duty questions use the explicitly approved credential-free [on-road](../docs/on-road-trucks.md) and [off-duty](../docs/off-duty-trucks.md) direct source contracts. Both documents are registered for MCP search/fetch. The MCP server publishes guidance, not a dedicated live-share data tool: the host must immediately fetch the exact share with complete bounded validation, or disclose unavailable evidence. DriverPay on_road_at is explicitly requested assignment overlap only, never a current-source failure fallback; no cached result, GPS movement claim or fleet complement.
 
 This directory packages the two parts of an OpenAI ChatGPT plugin:
 

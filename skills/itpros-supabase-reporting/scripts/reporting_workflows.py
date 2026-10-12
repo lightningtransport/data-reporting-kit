@@ -11,7 +11,7 @@ from typing import Callable
 from zoneinfo import ZoneInfo
 
 NY = ZoneInfo('America/New_York')
-SCHEMA_VERSION = '3.8.3'
+SCHEMA_VERSION = '3.8.4'
 
 
 class WorkflowFallback(Exception):

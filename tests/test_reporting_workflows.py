@@ -38,7 +38,7 @@ class PlanTests(unittest.TestCase):
 
     def test_metadata_only_schema_3_8_2_keeps_existing_workflows_compatible(self):
         w = load_module()
-        w._schema({'schema_version': '3.8.3'})
+        w._schema({'schema_version': '3.8.4'})
 
     def test_departures_today_and_rejected_windows(self):
         w = load_module()
@@ -75,8 +75,8 @@ class MockAPI:
     """Synthetic envelopes emulate the authenticated API and existing collection helper."""
     def __init__(self, rows=None):
         self.calls = []
-        self.catalog = {'schema_version': '3.8.3', 'principal': {'allowed_reports': list(FIELDS)}, 'reports': {r: {} for r in FIELDS}}
-        self.metadata = {r: {'schema_version': '3.8.3', 'report': r, 'source': 'mock.' + r,
+        self.catalog = {'schema_version': '3.8.4', 'principal': {'allowed_reports': list(FIELDS)}, 'reports': {r: {} for r in FIELDS}}
+        self.metadata = {r: {'schema_version': '3.8.4', 'report': r, 'source': 'mock.' + r,
                             'fields': {f: {'type': 'mock'} for f in fields},
                             'filters': {f: 'mock' for f in FILTERS[r]}} for r, fields in FIELDS.items()}
         self.metadata['departures'].pop('fields')
@@ -95,7 +95,7 @@ class MockAPI:
     def collect(self, report, params):
         self.calls.append(('collect', report, params.copy()))
         rows = self.rows.get(report, [])
-        return {'schema_version': '3.8.3', 'report': report, 'source': 'mock.' + report,
+        return {'schema_version': '3.8.4', 'report': report, 'source': 'mock.' + report,
                 'filters': {k: v for k, v in params.items() if k not in ('limit', 'include_sensitive')},
                 'data': rows, 'complete': True, 'fetched_count': len(rows), 'total_count': len(rows),
                 'as_of_first_page': '2026-10-06T15:00:00Z', 'as_of_last_page': '2026-10-06T15:00:01Z',
@@ -132,7 +132,7 @@ class ExecuteTests(unittest.TestCase):
         self.assertNotIn('data', result['evidence']['trucks'])
 
     def test_catalog_denial_and_schema_mismatch_never_query_data(self):
-        for schema, allowed, reason in [('unknown', list(FIELDS), 'unsupported_schema'), ('3.8.3', [], 'permission_denied')]:
+        for schema, allowed, reason in [('unknown', list(FIELDS), 'unsupported_schema'), ('3.8.4', [], 'permission_denied')]:
             api = MockAPI()
             api.catalog['schema_version'] = schema
             api.catalog['principal']['allowed_reports'] = allowed
@@ -420,7 +420,7 @@ class ExecuteTests(unittest.TestCase):
                 return api.request(params)
             offset = params['offset']
             api.calls.append(('page', params.copy()))
-            return {'schema_version': '3.8.3', 'report': 'trucks', 'source': 'mock.trucks', 'filters': {},
+            return {'schema_version': '3.8.4', 'report': 'trucks', 'source': 'mock.trucks', 'filters': {},
                     'offset': offset, 'page_count': 1, 'count': 1, 'total_count': 2,
                     'has_more': offset == 0, 'next_offset': 1 if offset == 0 else None,
                     'data': [{'ID': offset + 1, 'truck_number': offset + 1}],

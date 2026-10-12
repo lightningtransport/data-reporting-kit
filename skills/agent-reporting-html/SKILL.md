@@ -5,7 +5,7 @@ description: >-
   reports — auto-configure from this kit, fetch ≥12 months for the
   settlement dashboard and ≥3 months for other HTML/analytical settlement
   history, and ship the confirmed report sections.
-version: 0.2.6
+version: 0.2.7
 license: Proprietary
 platforms: [linux, macos, windows]
 metadata:
@@ -15,6 +15,14 @@ metadata:
 ---
 
 # Agent-reporting HTML reports
+
+## Historical on-road — settlement-week activity
+
+**Owner-approved 2026-10-12:** past on-road/working truck counts use `settlements` for the requested week. Stored `Gross > 0` means the physical truck was on road that settlement week; `Gross = 0` means off duty/not on road. Count distinct nonblank `Truck`, not rows, excluding settlement allocation buckets 1/2/3. A null Gross is unknown, not zero; negative Gross has no approved active/off-duty classification: disclose both as unresolved coverage, never silently classify them.
+
+Weeks run Tuesday–Monday. `period_from` and `period_to` are inclusive bounds on `From`, not `To`; for one week set both to the same Tuesday. Resolve an explicit past date without assignment wording to its containing settlement week and disclose the date-to-week resolution and exact Tuesday–Monday period. Use historical settlement `Owner`/`Dispatch`, exact `owner`/`dispatch` filters, and Owner OR shared_owner matching; never substitute current truck attribution. Paginate all rows and reconcile fetched count with `total_count`. Across multiple weeks, union distinct qualifying trucks; weekly counts are not additive.
+
+This is week-level activity, not exact-day status, GPS movement or proof of full-week driving. DriverPay `on_road_at` is only for explicitly requested assignment overlap, not the default historical on-road count. Current/now/today operational status still uses the fresh approved live Ninox feed unchanged. Report source, filters, resolved period, row/distinct counts, pagination, Gross coverage and source freshness.
 
 ## When
 
@@ -74,7 +82,7 @@ For Out Schedule / Trucks Return / Diesel UI questions, link the deep URLs above
 
 - Don't ship a one-off date slice without the 3-month backdrop for HTML or analytical settlement/fleet history.
 - Don't invent metrics or recompute stored Gross / Total Expenses / Net for headlines.
-- Current On road today / working KPIs use the primary most-current [live on-road source](../../docs/on-road-trucks.md), fetched immediately without credentials; validate every row under 30 seconds / 2 MiB, count distinct truck_number with exact Status=On The Road Working, preserve timestamps and unknown/null failures. No cached/DriverPay fallback, GPS movement or off-duty complement. Historical/explicit-date DriverPay assignment overlap remains via `on_road_at`; the legacy insurance-choice formula remains unsupported. Current yard/off-duty uses its independent [approved share](../../docs/off-duty-trucks.md). Planned Schedule_Teams UI is `/out-schedule`.
+- Current On road today / working KPIs use the primary most-current [live on-road source](../../docs/on-road-trucks.md), fetched immediately without credentials; validate every row under 30 seconds / 2 MiB, count distinct truck_number with exact Status=On The Road Working, preserve timestamps and unknown/null failures. No cached/DriverPay fallback, GPS movement or off-duty complement. Explicitly requested DriverPay assignment overlap remains via `on_road_at`; the legacy insurance-choice formula remains unsupported. Current yard/off-duty uses its independent [approved share](../../docs/off-duty-trucks.md). Planned Schedule_Teams UI is `/out-schedule`.
 
 ## Governed departure totals (prepared schema 3.8.0)
 

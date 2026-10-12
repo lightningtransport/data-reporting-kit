@@ -1,5 +1,13 @@
 # Data dictionary
 
+## Historical on-road — settlement-week activity
+
+**Owner-approved 2026-10-12:** past on-road/working truck counts use `settlements` for the requested week. Stored `Gross > 0` means the physical truck was on road that settlement week; `Gross = 0` means off duty/not on road. Count distinct nonblank `Truck`, not rows, excluding settlement allocation buckets 1/2/3. A null Gross is unknown, not zero; negative Gross has no approved active/off-duty classification: disclose both as unresolved coverage, never silently classify them.
+
+Weeks run Tuesday–Monday. `period_from` and `period_to` are inclusive bounds on `From`, not `To`; for one week set both to the same Tuesday. Resolve an explicit past date without assignment wording to its containing settlement week and disclose the date-to-week resolution and exact Tuesday–Monday period. Use historical settlement `Owner`/`Dispatch`, exact `owner`/`dispatch` filters, and Owner OR shared_owner matching; never substitute current truck attribution. Paginate all rows and reconcile fetched count with `total_count`. Across multiple weeks, union distinct qualifying trucks; weekly counts are not additive.
+
+This is week-level activity, not exact-day status, GPS movement or proof of full-week driving. DriverPay `on_road_at` is only for explicitly requested assignment overlap, not the default historical on-road count. Current/now/today operational status still uses the fresh approved live Ninox feed unchanged. Report source, filters, resolved period, row/distinct counts, pagination, Gross coverage and source freshness.
+
 ## Current Drivers Insurance — approved direct source
 
 For Drivers Insurance, insured-driver lists/counts, drivers with/under insurance, driver-insurance breakdowns or an individual's current insurance, fetch `https://lightningtransport.ninoxdb.com/share/x9f4rn221pibyhx3lwup2f8otfzfy8kijpk2?locale=en&utcoffset=-240` immediately before each answer, credential-free. Follow [live driver-insurance contract](drivers-insurance.md). Validate the complete array within 30 seconds overall and 2 MiB; default to all rows and exact Insurance labels, not a hard-coded insurer. The approved native/client `query_drivers_insurance` returns all required and optional Ninox keys when present in chat and Excel; omit absent keys and never invent values. The full public field set is `First Name`, `Last Name`, `Insurance`, `CDL Number`, `Gender`, `DOB`, `State`, `Hire of Date`, and `Years_of_Experience`. Treat DOB/CDL as sensitive; avoid unnecessary repetition outside the requested roster output. Preserve missing-CDL rows, disclose roster entries versus verified distinct CDL identity/duplicates, and never deduplicate by name. Failure is unknown/null, not zero; no cached/Supabase fallback. Current roster only: no historical coverage, premiums, policy validity or uninsured complement. This is direct-source guidance, not a new gateway/MCP report or Jev route.
@@ -47,7 +55,7 @@ The settlement-only Truck 1/2/3 owner-expense allocation rule does not apply to 
 
 **Grain:** one driver assignment/pay record. Team trucks normally produce two rows, one per driver; a solo normally produces one row with `Solo_Driver_if_1 = 1`.
 
-**Current on-road / working trucks (owner-approved 2026-10-08):** fetch `https://lightningtransport.ninoxdb.com/share/eno5u22ebn2qdn215dpzwn02squ5wsixob8f?locale=en&utcoffset=-240` immediately before each answer, credential-free; follow [live on-road contract](on-road-trucks.md). This primary most-current source answers current/now/today operational status. Fully validate all seven keys and exact `Status=On The Road Working` within 30 seconds overall and 2 MiB; count distinct `truck_number`, use exact source owner/dispatcher/insurance, and state fetch-start/completion timestamps. Failure means unknown/null, never zero; no cached/DriverPay fallback, GPS movement claim or fleet/off-duty complement. Historical or explicit-date assignment overlap alone uses fully paginated `driver_pay?on_road_at=D` (Out Date <= D, Return Date > D; null returns and return day excluded).
+**Current on-road / working trucks (owner-approved 2026-10-08):** fetch `https://lightningtransport.ninoxdb.com/share/eno5u22ebn2qdn215dpzwn02squ5wsixob8f?locale=en&utcoffset=-240` immediately before each answer, credential-free; follow [live on-road contract](on-road-trucks.md). This primary most-current source answers current/now/today operational status. Fully validate all seven keys and exact `Status=On The Road Working` within 30 seconds overall and 2 MiB; count distinct `truck_number`, use exact source owner/dispatcher/insurance, and state fetch-start/completion timestamps. Failure means unknown/null, never zero; no cached/DriverPay fallback, GPS movement claim or fleet/off-duty complement. Only explicitly requested assignment overlap uses fully paginated `driver_pay?on_road_at=D` (Out Date <= D, Return Date > D; null returns and return day excluded).
 
 **External on-road schema:** seven keys `truck_number` (numeric), `dispatcher`, `insurance`, `owner`, `Samsara_Truck_ID`, `Status` (strings), `Ninox_ID` (numeric); Status is exactly `On The Road Working`. This adds no Supabase physical columns.
 
@@ -141,7 +149,7 @@ For a current-week departure total, DriverPay is one required source, not a comp
 | `truck_insurance` | text | yes | Period-specific truck insurance category/code. |
 | `Dispatch` | text | yes | Historical dispatch value for this period. Ninox `DE.X3`. |
 | `Owner` | text | yes | Historical owner/entity for this period. |
-| `Gross` | numeric | yes | Stored total gross before percentage/expenses. Ninox `DE.L4`. |
+| `Gross` | numeric | yes | Stored total gross before percentage/expenses. Ninox `DE.L4`. Historical settlement-week physical-truck activity: > 0 on road, = 0 off duty; null unknown, negative unclassified. Exclude 1/2/3 from physical counts only. |
 | `tonu` | numeric | yes | Imported physical name for additional/Compass income already included in Gross; do not treat as tonnage quantity or add again. Related Ninox concept `DE.M1 / Facturado Compass`. |
 | `Total Expenses` | numeric | yes | Stored full expense total; components and driver pay are already included. Ninox `DE.Z4`. |
 | `Net` | numeric | yes | Stored authoritative net. Intended subtraction has rare live exceptions. Ninox `DE.A5`. |

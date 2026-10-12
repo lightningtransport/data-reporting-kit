@@ -3,7 +3,7 @@ name: reporting-html-shadcn
 description: >-
   Use when a Grok Bot or Cursor agent builds Lightning reporting HTML dashboards
   so every screen reuses the same shadcn-like components and styles.
-version: 0.3.6
+version: 0.3.7
 license: Proprietary
 platforms: [linux, macos, windows]
 metadata:
@@ -14,7 +14,15 @@ metadata:
 
 # Reporting HTML (shadcn-style)
 
-Current On road today / working KPIs on Out Schedule and Trucks Return use the independent [live on-road contract](../../docs/on-road-trucks.md): immediate credential-free fetch, all-row validation, 30-second total / 2 MiB bound, distinct truck_number, exact Status=On The Road Working. Render unavailable/null, never zero on source failure; retain fetch-start/completion, row/distinct/duplicate evidence in Technical details. No cached/DriverPay fallback, GPS movement inference or fleet/off-duty complement. Historical/explicit-date assignment overlap remains DriverPay on_road_at; do not change settlement-derived historical operating metrics.
+## Historical on-road — settlement-week activity
+
+**Owner-approved 2026-10-12:** past on-road/working truck counts use `settlements` for the requested week. Stored `Gross > 0` means the physical truck was on road that settlement week; `Gross = 0` means off duty/not on road. Count distinct nonblank `Truck`, not rows, excluding settlement allocation buckets 1/2/3. A null Gross is unknown, not zero; negative Gross has no approved active/off-duty classification: disclose both as unresolved coverage, never silently classify them.
+
+Weeks run Tuesday–Monday. `period_from` and `period_to` are inclusive bounds on `From`, not `To`; for one week set both to the same Tuesday. Resolve an explicit past date without assignment wording to its containing settlement week and disclose the date-to-week resolution and exact Tuesday–Monday period. Use historical settlement `Owner`/`Dispatch`, exact `owner`/`dispatch` filters, and Owner OR shared_owner matching; never substitute current truck attribution. Paginate all rows and reconcile fetched count with `total_count`. Across multiple weeks, union distinct qualifying trucks; weekly counts are not additive.
+
+This is week-level activity, not exact-day status, GPS movement or proof of full-week driving. DriverPay `on_road_at` is only for explicitly requested assignment overlap, not the default historical on-road count. Current/now/today operational status still uses the fresh approved live Ninox feed unchanged. Report source, filters, resolved period, row/distinct counts, pagination, Gross coverage and source freshness.
+
+Current On road today / working KPIs on Out Schedule and Trucks Return use the independent [live on-road contract](../../docs/on-road-trucks.md): immediate credential-free fetch, all-row validation, 30-second total / 2 MiB bound, distinct truck_number, exact Status=On The Road Working. Render unavailable/null, never zero on source failure; retain fetch-start/completion, row/distinct/duplicate evidence in Technical details. No cached/DriverPay fallback, GPS movement inference or fleet/off-duty complement. Explicitly requested assignment overlap remains DriverPay on_road_at; do not change settlement-derived historical operating metrics.
 
 ## When
 

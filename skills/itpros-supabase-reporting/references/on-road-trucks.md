@@ -1,5 +1,13 @@
 # Live on-road / working trucks — owner-approved Ninox source
 
+## Historical on-road — settlement-week activity
+
+**Owner-approved 2026-10-12:** past on-road/working truck counts use `settlements` for the requested week. Stored `Gross > 0` means the physical truck was on road that settlement week; `Gross = 0` means off duty/not on road. Count distinct nonblank `Truck`, not rows, excluding settlement allocation buckets 1/2/3. A null Gross is unknown, not zero; negative Gross has no approved active/off-duty classification: disclose both as unresolved coverage, never silently classify them.
+
+Weeks run Tuesday–Monday. `period_from` and `period_to` are inclusive bounds on `From`, not `To`; for one week set both to the same Tuesday. Resolve an explicit past date without assignment wording to its containing settlement week and disclose the date-to-week resolution and exact Tuesday–Monday period. Use historical settlement `Owner`/`Dispatch`, exact `owner`/`dispatch` filters, and Owner OR shared_owner matching; never substitute current truck attribution. Paginate all rows and reconcile fetched count with `total_count`. Across multiple weeks, union distinct qualifying trucks; weekly counts are not additive.
+
+This is week-level activity, not exact-day status, GPS movement or proof of full-week driving. DriverPay `on_road_at` is only for explicitly requested assignment overlap, not the default historical on-road count. Current/now/today operational status still uses the fresh approved live Ninox feed unchanged. Report source, filters, resolved period, row/distinct counts, pagination, Gross coverage and source freshness.
+
 ## Approval and source selection
 
 **Evidence:** business-owner instruction approved 2026-10-08; credential-free HTTP 200 `application/json`, no redirects, complete JSON array and seven-key row schema verified live 2026-10-08 at 15:09:09Z. No observed count is a durable fact.
@@ -34,7 +42,7 @@ The verified schema has no established nullable-field contract. Reject null/type
 
 ## Historical assignment overlap is a separate metric
 
-Retain `driver_pay?on_road_at=YYYY-MM-DD` **only for historical or explicit-date assignment overlap**. Count distinct nonblank `Truck_Number` with `Out Date <= D` and `Return Date > D`, excluding null returns and the return day, after complete pagination. No lookback cutoff, return-union, transfer/termination exclusions or `return_null` shortcut. Preserve historical row owner/dispatch. Label it **dated DriverPay assignment overlap**, not most-current working status. An explicit calendar date asks for this dated metric (even if it happens to equal today's date); explicit current-status wording still asks for the live snapshot. Explain the distinction if both are requested.
+Retain `driver_pay?on_road_at=YYYY-MM-DD` **only for explicitly requested assignment overlap**. Count distinct nonblank `Truck_Number` with `Out Date <= D` and `Return Date > D`, excluding null returns and the return day, after complete pagination. No lookback cutoff, return-union, transfer/termination exclusions or `return_null` shortcut. Preserve historical row owner/dispatch. Label it **dated DriverPay assignment overlap**, not most-current working status. An explicit past calendar date without assignment wording resolves to the containing settlement week under the historical rule above, not this assignment metric. Explicit current-status wording still asks for the live snapshot. Explain the distinction if both metrics are requested.
 
 Today's share cannot reconstruct a past status or future state. Never use DriverPay as a current-source failure fallback. The independent [off-duty contract](off-duty-trucks.md) remains a separate feed: neither list is a verified exhaustive fleet partition. Never compute working trucks as fleet minus off-duty, off-duty as fleet minus working, or infer the opposite state from absence. Disclose conflicting source evidence rather than silently reconciling different snapshots/definitions. The legacy Ninox insurance-choice formula remains unsupported and is not reconstructed by this share.
 

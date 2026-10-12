@@ -1,5 +1,12 @@
 # Changelog
 
+## Client skill 0.11.11 — 2026-10-12
+
+- Adopt owner-approved historical on-road settlement-week activity: distinct physical trucks with stored Gross > 0; Gross = 0 is off duty/not on road. Exclude settlement allocation buckets 1/2/3; null Gross is unknown and negative Gross remains unclassified, with unresolved coverage disclosed.
+- Resolve explicit past dates without assignment wording to their containing Tuesday–Monday settlement week. Both inclusive period bounds apply to From (one week uses the same Tuesday); paginate completely, preserve historical Owner/Dispatch and exact Owner OR shared_owner matching. Multiweek union counts are not additive weekly totals; no exact-day, GPS or full-week-driving claim.
+- Reserve DriverPay on_road_at for explicitly requested assignment overlap; current live Ninox routing remains unchanged. Update canonical guidance, byte-identical on-road reference, ChatGPT instructions and HTML skills (agent-reporting-html 0.2.7, reporting-html-shadcn 0.3.7), with focused RED/GREEN content regressions.
+- Version runtime catalog/metadata and OpenAPI as schema 3.8.4 and retain matching deterministic-client pins. No dashboard code, financial formula, report/filter API, authorization or business-data change. Runtime deployment and active-profile synchronization are verified separately; other running clients still require their own instruction sync/reload.
+
 ## Full driver-insurance public columns / client skill 0.11.10 — 2026-10-09
 
 - Align the approved native/client `query_drivers_insurance` chat and Excel projection with all nine required ∪ optional Ninox keys when present: `First Name`, `Last Name`, `Insurance`, `CDL Number`, `Gender`, `DOB`, `State`, `Hire of Date`, `Years_of_Experience`. Omit absent keys; never invent or enrich missing values from other reports. Preserve exact Ninox `Hire of Date`, not Supabase `Date of Hire`, and document sparse optional attributes without freezing a roster count.

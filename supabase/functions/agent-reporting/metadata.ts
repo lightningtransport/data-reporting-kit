@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = "3.8.3";
+export const SCHEMA_VERSION = "3.8.4";
 export const SCHEMA_VERIFIED_AT = "2026-09-28T19:12:26Z";
 
 const field = (
@@ -26,8 +26,16 @@ export const GLOBAL_GUIDANCE = {
     "Current/now/today trucks on the road or working use the primary most-current approved live Ninox JSON source: https://lightningtransport.ninoxdb.com/share/eno5u22ebn2qdn215dpzwn02squ5wsixob8f?locale=en&utcoffset=-240 . Fetch immediately before each answer, separately without keys, Authorization, cookies or credentials. This is an external direct source route, not an agent-reporting or dedicated MCP report; unsupported clients disclose unavailable evidence.",
     "Require a complete JSON array with exactly truck_number (positive integral number), dispatcher, insurance, owner, Samsara_Truck_ID (strings), Status exactly On The Road Working, and Ninox_ID (positive integral number). Validate every row before filtering. Reject redirects, non-2xx/non-JSON, duplicate keys, non-finite numbers, schema drift or partial bodies; bound total request/parse/validation to 30 seconds and body to 2 MiB. Count distinct truck_number; exact source owner/dispatcher/insurance, no shared_owner expansion or master substitution; disclose duplicate/conflicting attributes.",
     "State source URL, fetch-start/completion timestamps/as_of, original row/distinct counts, requested filters and full validation. Fetch time is not upstream-sync time. Failure is unknown/null, never zero; only a validated empty array means zero in that snapshot. No cached/DriverPay fallback, GPS movement inference, historical reconstruction or off-duty/fleet complement. The packaged Jev current on-road route is disabled until it has a deterministic live-source transport.",
-    'Historical or explicit-date assignment overlap ONLY: query driver_pay with on_road_at=D. Count distinct nonblank Truck_Number, not driver rows: "Out Date" <= date AND "Return Date" > date. The return date itself is excluded; a null return date does not qualify. This is dated assignment evidence, not current operational working status.',
+    'Explicitly requested historical or explicit-date assignment overlap ONLY (not the default historical on-road count): query driver_pay with on_road_at=D. Count distinct nonblank Truck_Number, not driver rows: "Out Date" <= date AND "Return Date" > date. The return date itself is excluded; a null return date does not qualify. This is dated assignment evidence, not current operational working status.',
     "Paginate every page before deduplicating. No lookback cutoff, returns-table union, transfer/termination exclusion, or current-trucks join is part of historical/explicit-date assignment overlap. Do not conflate it with the separate Ninox in-yard/insurance-choice calculation.",
+  ],
+  historical_on_road_trucks: [
+    "Owner-approved business rule 2026-10-12: the preferred source for historical on-road / working truck counts is settlements, not DriverPay assignment overlap or today's live feeds. Gross > 0 means the physical truck was on the road during that Tuesday-through-Monday settlement week; Gross = 0 means off duty / not on the road for that settlement week.",
+    "Use explicit settlement weeks: period_from and period_to both bound From inclusively; for one week supply the same Tuesday in both. State Tuesday From and Monday To. A past date without an explicit assignment-overlap request uses the containing settlement week and discloses weekly, not exact-day, resolution. No GPS movement or continuous full-week driving claim.",
+    "Complete pagination before counting distinct nonblank Truck with valid populated Gross > 0. Exclude settlement-only non-physical allocation buckets 1/2/3 even if Gross is positive. Count each physical truck once per week; for a multiweek unique total union qualifying truck keys, never add weekly distinct counts.",
+    "Gross = 0 rows do not qualify for the historical on-road count. Gross null is unknown, not zero; negative Gross has no approved working/off-duty classification. Disclose unknown Gross, negative Gross and missing truck keys; malformed amounts fail closed. Missing rows are not off-duty proof; incomplete retrieval or unestablished coverage cannot prove an exhaustive count.",
+    "Use historical Owner and Dispatch, with exact owner matching Owner OR shared_owner. Preserve both owner fields, avoid adding overlapping owner totals, and do not drop retired trucks missing from current trucks. State period, filters, retrieved rows, qualifying distinct trucks, zero/unknown/negative coverage, pagination, as_of and unknown upstream freshness.",
+    "Only an explicitly requested dated assignment overlap uses driver_pay on_road_at=D with its existing Out Date <= D and Return Date > D predicate, null exclusions and pagination. Label that different metric; it is not the default historical on-road count. Current/now/today status continues to use the approved fresh live on-road share.",
   ],
   off_duty_trucks: {
     source_url: "https://lightningtransport.ninoxdb.com/share/jx7z6tkjcnxalvsui4icdnqjuszia04etdhi?locale=en&utcoffset=-240",
@@ -71,7 +79,7 @@ export const TABLES = {
     ninox_source: "DriverPay (WD)",
     row_grain: "One historical driver assignment/pay record. Team trucks normally produce two rows, one per driver; solo assignments normally produce one row with Solo_Driver_if_1 = 1.",
     primary_key: "ID (Supabase identity; not the Ninox DriverPay record ID)",
-    use_for: ["actual assignment history", "historical or explicit-date assignment overlap via on_road_at", "departures by Out Date", "returns by Return Date", "driver pay terms", "transfers", "terminations"],
+    use_for: ["actual assignment history", "explicitly requested historical or explicit-date assignment overlap via on_road_at (not the default historical on-road count)", "departures by Out Date", "returns by Return Date", "driver pay terms", "transfers", "terminations"],
     do_not_use_for: ["current operational working/on-road status (use GLOBAL_GUIDANCE.on_road_trucks)", "planned teams", "weekly truck financial totals", "counting rows as trucks"],
     calculation_rules: [
       'Historical or explicit-date assignment overlap only, not current working status: dated trucks on date D = distinct nonblank Truck_Number where "Out Date" <= D and "Return Date" > D; null returns do not qualify. Use on_road_at=D, paginate fully, and count unique trucks rather than driver rows. The date is inclusive for Out Date and exclusive for Return Date.',
@@ -173,7 +181,7 @@ export const TABLES = {
     ninox_source: "Facturacion (DE)",
     row_grain: "One truck identifier or owner-allocation bucket for one Tuesday-through-Monday settlement period. (Truck, From, To) is unique in verified live data.",
     primary_key: "ID (Supabase identity)",
-    use_for: ["weekly gross", "expenses", "net", "mileage", "driver-pay expense", "period-specific owner and dispatch attribution"],
+    use_for: ["weekly gross", "expenses", "net", "mileage", "driver-pay expense", "period-specific owner and dispatch attribution", "historical on-road truck counts by settlement week using Gross > 0"],
     do_not_use_for: ["current truck ownership", "current driver assignment", "adding components to already-complete totals"],
     period_rules: [
       "From is Tuesday and To is the following Monday. Both facts were verified across current live rows.",
@@ -187,6 +195,7 @@ export const TABLES = {
       "Display Truck 1, 2, and 3 as non-physical owner-expense allocation buckets; exclude them from physical-truck counts/rankings. Do not apply this classification to trucks, DriverPay, returns, or non-settlement fleet joins.",
     ],
     calculation_rules: [
+      "Historical on-road count: distinct physical Truck with Gross > 0 during the settlement week; Gross = 0 means off duty / not on the road. Exclude allocation buckets 1/2/3. Null Gross is unknown; negative Gross classification is unestablished. Follow GLOBAL_GUIDANCE.historical_on_road_trucks for dates, pagination and coverage.",
       "Use stored Gross as total gross. The physical field tonu is an additional income component already included in Gross; the Ninox source catalog maps the related source concept to Facturado Compass. Do not interpret it as freight tonnage or add it again.",
       "Use stored Total Expenses for total-expense questions. It already includes component expenses and Total Driver Pay; do not add components again.",
       "Use stored Net as authoritative. Gross_with_%_deduction_All − Total Expenses is the intended formula but verified live data contains rare exceptions and rows with null expense totals.",
@@ -199,7 +208,7 @@ export const TABLES = {
       truck_insurance: field("text", true, "Truck insurance category/code for this settlement period."),
       Dispatch: field("text", true, "Historical dispatch value for this settlement period. Use exact stored values; history includes group labels and legacy dispatcher names.", { ninox_field: "DE.X3" }),
       Owner: field("text", true, "Historical owner/entity for this settlement period."),
-      Gross: field("numeric", true, "Stored total gross income before company percentage and expenses. Do not add tonu again.", { ninox_field: "DE.L4" }),
+      Gross: field("numeric", true, "Stored total gross income before company percentage and expenses. Do not add tonu again. For historical settlement-week working status, Gross > 0 means on road; Gross = 0 means off duty. Null is unknown; negative status is unestablished.", { ninox_field: "DE.L4" }),
       tonu: field("numeric", true, "Physical field name retained from import. Additional/Compass income component already included in Gross; do not treat as a tonnage quantity or add again.", { ninox_related_field: "DE.M1 / Facturado Compass" }),
       "Total Expenses": field("numeric", true, "Stored complete settlement-expense total. Do not add component columns again.", { ninox_field: "DE.Z4" }),
       Net: field("numeric", true, "Stored settlement net and authoritative net value. The intended subtraction formula has rare live exceptions.", { ninox_field: "DE.A5" }),
